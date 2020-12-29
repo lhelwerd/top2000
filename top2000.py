@@ -3,6 +3,7 @@ import bisect
 import csv
 import itertools
 import json
+import os.path
 import sys
 
 removes = [
@@ -57,6 +58,7 @@ title_fixes = {
     "Gotta Catch 'M All (Pokemon Theme Song)": "Gotta Catch 'Em All",
     "Killing In The Name Of": "Killing In The Name",
     "Knocking On Heaven's Door": "Knockin' On Heaven's Door",
+    "Knockin On Heaven's Door": "Knockin' On Heaven's Door",
     "Sad Man\u00b4s Tongue": "Sad Man's Tongue",
     "She's Always A Woman To Me": "She's Always A Woman",
     "Nothing Compares 2u": "Nothing Compares 2 U",
@@ -127,7 +129,7 @@ title_fixes = {
     "Kristallnaach": "Kristallnach",
     "Oh Well (Part I)": "Oh Well",
     "Oh Well!": "Oh Well",
-    "You'll Never Walk Alone": "You Never Walk Alone",
+    #"You'll Never Walk Alone": "You Never Walk Alone", # Gerry / Lee
     "Nightboat To Cairo": "Night Boat To Cairo",
     "He Ain't Heavy, He's My Brother": "He Ain't Heavy... He's My Brother",
     "Comptine D'Un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi (Am\u00e9lie)": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
@@ -149,7 +151,14 @@ title_fixes = {
     "ROOSTER": "Rooster",
     "NOVOCAINE FOR THE SOUL": "Novocaine For The Soul",
     "HEY BOY HEY GIRL": "Hey Boy Hey Girl",
-    "bad guy": "Bad Guy"
+    "bad guy": "Bad Guy",
+    "Dear Mr President": "Dear Mr. President",
+    "Bloasmuziek": "Blaosmuziek",
+    "PANAMA": "Panama",
+    "HOT FOR TEACHER": "Hot For Teacher",
+    "AMERIKA": "Amerika",
+    "CIVIL WAR": "Civil War",
+    "EPIC": "Epic"
 }
 
 # Crosby, Stills & Nash (& Young)? Wordt vaak bij elkaar gerekend
@@ -158,9 +167,11 @@ artist_splits = [" & ", " Feat. ", " feat. ", " ft ", " ft. ", " Ft. ", ", ", " 
 artist_replaces = {
     " en ": " & ",
     " + ": " & ",
+    ", ": " & ",
     " \u039b ": " And ", # Lambda
     " Feat. ": " ft. ",
     "Pink": "P!nk",
+    "Jay Z": "Jay-Z",
     " Vs ": " vs. ",
     " vs ": " vs. ",
     "Edith": "\u00c9dith",
@@ -168,6 +179,11 @@ artist_replaces = {
     "The Jimi Hendrix Experience": "Jimi Hendrix",
     "Earth Wind & Fire": "Earth, Wind & Fire",
     "Santana Ft. Rob Thomas": "Santana & Rob Thomas",
+}
+artist_groups = {
+    "Earth Wind & Fire": "Earth, Wind & Fire",
+    "Jay Z": "Jay-Z",
+    "Pharrell": "Pharrell Williams"
 }
 # TODO: Verplaats een aantal artiesten naar artist_replaces zodat ze ook in
 # samenwerkingen worden aangepast
@@ -239,7 +255,15 @@ artist_full_replaces = {
     "PRODIGY": "Prodigy",
     "BUSH": "Bush",
     "EELS": "Eels",
-    "JOHAN": "Johan"
+    "JOHAN": "Johan",
+    "The Golden Earrings": "Golden Earrings",
+    "": "Lewis Capaldi",
+    "Billie Eillish": "Billie Eilish",
+    "GUANO APES": "Guano Apes",
+    "UGLY KID JOE": "Ugly Kid Joe",
+    "CREED": "Creed",
+    "Earth Wind & Fire ft. The Emotions": "Earth, Wind & Fire ft. The Emotions",
+    "Edith Piaf": "\u00c9dith Piaf"
 }
 
 def find_alternatives(text):
@@ -297,6 +321,10 @@ def find_artist_alternatives(artist):
             alternative = split.join(parts[::-1])
             alternatives[alternative] = True
 
+    for search, group in artist_groups.items():
+        if search in artist:
+            alternatives[group] = True
+
     for search, replace in artist_replaces.items():
         #print(artist, search, replace)
         alternative = artist.replace(search, replace)
@@ -308,13 +336,15 @@ def find_artist_alternatives(artist):
     if artist in artist_full_replaces:
         artist = artist_full_replaces[artist]
     # Ensure normal key is last
+    alternatives.pop(artist, None)
     alternatives[artist] = True
 
     return list(alternatives.keys())
 
 def check_collision(key, data, year, pos_field):
     return (year is not None and str(year) in data["tracks"][key]) \
-            or (pos_field is not None and pos_field in data["tracks"][key])
+            or (pos_field is not None and (year is None or year in pos_field) \
+                and pos_field in data["tracks"][key])
 
 def update_row(key, row, data, year=None, pos_field=None, best_key=None):
     new_row = row.copy()
@@ -368,7 +398,7 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
         # Date/time row, track last_time
         return row[title_field]
 
-    if last_time is not None:
+    if last_time is not None and year is None:
         row['timestamp'] = last_time
         last_time = None
 
@@ -376,8 +406,10 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
     title_alternatives = find_title_alternatives(row[title_field])
     best_key = None
     key = None
-    if pos_field in row and year is not None:
-        row[str(year)] = row[pos_field]
+    if year is not None:
+        row.pop("prv", None)
+        if pos_field in row:
+            row[str(year)] = row[pos_field]
 
     keys = set()
     rejected_keys = set()
@@ -392,7 +424,7 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
     if best_key is None:
         best_key = key # original artist/title combination
 
-    #if "Prince" in row[artist_field] and "Sign" in row[title_field]:
+    #if "Gaga" in row[artist_field] and "Shallow" in row[title_field]:
     #   print(year, artist_alternatives, title_alternatives, best_key,
     #         data["tracks"][best_key])
     best_key, ok = update_row(best_key, row, data, best_key=best_key)
@@ -407,6 +439,9 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
 
     if pos_field in row:
         position = int(row[pos_field])
+        if year is not None:
+            data["tracks"][best_key][str(year)] = row[pos_field]
+
         positions[position] = [best_key] + [key for key in keys if best_key[0].startswith(key[0]) or not any(rejected_key[0].startswith(key[0]) for rejected_key in rejected_keys)]
         if year is None: # current year
             data["tracks"][best_key]["best"] = True
@@ -427,36 +462,44 @@ def main(argv):
     json_name_format = "top2000-{}.json"
     artist_field = "a"
     title_field = "s"
-    current_year = int(argv[0]) if len(argv) > 0 else 2019
+    current_year = int(argv[0]) if len(argv) > 0 else 2020
     previous_year = str(current_year - 1)
     current_year_name = argv[1] if len(argv) > 1 else json_name_format.format(current_year)
-    overview_csvs = (argv[2::2], argv[3::2]) if len(argv) > 3 else [
-        (csv_name_format.format(year), year) for year in ("2014", "2015", "2016", "2017", "2018")
+    overviews = (argv[2::3], argv[3::3], argv[4::3]) if len(argv) > 3 else [
+        (csv_name_format.format(year), json_name_format.format(year), year)
+        for year in ("2014", "2015", "2016", "2017", "2018", "2019")
     ]
 
     data = {"artists": {}, "tracks": {}}
     positions = read_json_file(current_year_name, data, year=None,
                                artist_field=artist_field,
                                title_field=title_field)
-    for (overview_csv_name, year) in overview_csvs:
-        read_csv_file(overview_csv_name, data, year=year,
-                      pos_field="pos {}".format(year))
+    for (overview_csv_name, overview_json_name, year) in overviews:
+        if os.path.exists(overview_json_name):
+            read_json_file(overview_json_name, data, year=year,
+                           artist_field=artist_field,
+                           title_field=title_field)
+        else:
+            read_csv_file(overview_csv_name, data, year=year,
+                          pos_field="pos {}".format(year))
 
     columns_per_page = 2
     rows_per_page = 100
     reverse = False
     # Headers sizes for 2 columns, 3 headers: 1,05cm 6,36cm 8,55cm
-    # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,60cm 0,60cm
+    # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,90cm 0,30cm
     # Disable print header/footer. Scale factor: 62%
     # Layout -> Print ranges -> Edit -> Repeat rows -> $1
-    # Add grey border at bottom of each row and between each 3-header column
+    # Add grey border at (bottom of each row and) between each 3-header column
     header = ["nr.", "artiest", "titel"] * columns_per_page
     with open("output.csv", "w", encoding='utf-8') as output_file:
         writer = csv.writer(output_file)
         writer.writerow(header)
         rows = []
         last_position = None
+        last_timestamp = None
         lines = 0
+        extra_lines = 0
         for position, keys in sorted(positions.items(),
                                      key=lambda p: -p[0] if reverse else p[0]):
             if reverse:
@@ -471,18 +514,20 @@ def main(argv):
             artist = track["artiest"]
             title = track["titel"]
 
-            extra_text = "\u2234" # therefore sign
+            #extra_text = "\u2234" # therefore sign
+            extra_text = "\U0001f195" # new sign
             if previous_year in track:
                 previous_position = int(track[previous_year])
                 diff = abs(position - previous_position)
                 if position < previous_position:
                     #extra_text = "\xE2\x86\x91{}".format(diff) # upwards arrow
-                    extra_text = "\u2b06{}".format(diff) # upwards arrow
+                    extra_text = "\u2b06\ufe0e{}".format(diff) # upwards arrow
                 elif position > previous_position:
                     #extra_text = "\xE2\x86\x93{}".format(diff) # downwards arrow
-                    extra_text = "\u2b07{}".format(diff) # downwards arrow
+                    extra_text = "\u2b07\ufe0e{}".format(diff) # downwards arrow
                 else:
-                    extra_text = "\u21c4" # left right arrow
+                    #extra_text = "\u21c4" # left right arrow
+                    extra_text = "\U0001f51b" # left right arrow
             else:
                 for year in range(current_year-2, first_year-1, -1):
                     if str(year) in track and track[str(year)] != "0":
@@ -490,8 +535,9 @@ def main(argv):
                         #    extra_text = "\xE2\x9F\xB3" * (current_year - year 
                         #    - 1)
                         #else:
-                        extra_text = "\u27f2{}".format(year) # rotation
+                        #extra_text = "\u27f2{}".format(year) # rotation
                         #extra_text = "\xE2\x86\xBA{}".format(year) # rotation
+                        extra_text = "\U0001f504{}".format(year) # arrow circle
                         break
 
             max_artist = 0
@@ -524,49 +570,70 @@ def main(argv):
             #    parts = track['timestamp'].split(' ')
             #    artist += " {}/12 {:02}:00".format(parts[0], 
             #    int(parts[2].split('-')[0]))
+            if 'timestamp' in track and last_timestamp is not None:
+                parts = track['timestamp'].split(' ')
+                timestamp = " {}/12 {:02}:00".format(parts[0], int(parts[2].split('-')[0]))
+                if timestamp != last_timestamp:
+                    last_timestamp = timestamp
+                    if add_row(rows, ['', timestamp, ''], positions, position,
+                               last_position, extra_lines, rows_per_page,
+                               columns_per_page, reverse):
+                        #print('WRITE')
+                        writer.writerows(rows)
+                        rows = []
+                        extra_lines = 0
+                    else:
+                        extra_lines += 1
 
             row = [position, artist, "{} ({})".format(title, extra_text)]
             #writer.writerow(row)
 
             line = "{}. {} - {} ({})".format(position, artist, title, extra_text)
-            #if "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("jaar" not in track or track["jaar"] != str(current_year)) #and position > 1773:
+            #if "2018" not in track and "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("yr" not in track or track["yr"] != str(current_year)): #and position > 1773:
             #if "2018" not in track and ("2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
-            #if 'jaar' not in track:
+            #if "2019" not in track and ("2018" in track or "2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
+            #if 'yr' not in track and 'jaar' not in track:
             #if artist.isupper() or title.isupper() or artist.islower() or title.islower():
                 #pass
-            if ("prv" in track and int(track["prv"]) != int(track.get("2018", 0))):
-                lines += 1
-                print(line)
-                #print("{} prv={} 2018={}".format(line, track["prv"], track.get("2018")))
+            #if ("prv" in track and int(track["prv"]) != int(track.get("2019", 0))):
+                #lines += 1
+                #print(line)
+                #print("{} prv={} 2019={}".format(line, track["prv"], track.get("2019")))
                 #print(keys)
                 #print(track)
 
-            if reverse:
-                page_position = (len(positions) - position + 1) % (rows_per_page * columns_per_page)
-            else:
-                page_position = position % (rows_per_page * columns_per_page)
-
-            if columns_per_page > 1 and (page_position == 0 or page_position > rows_per_page):
-                if reverse:
-                    last_row = (len(positions) - last_position + 1) % rows_per_page
-                else:
-                    last_row = last_position % rows_per_page
-                rows[last_row].extend(row)
-            else:
-                rows.append(row)
-
-            if page_position == 0:
+            if add_row(rows, row, positions, position, last_position,
+                       extra_lines, rows_per_page, columns_per_page, reverse):
                 #print('WRITE')
                 writer.writerows(rows)
                 rows = []
+                extra_lines = 0
 
-            last_position = position
+            last_position = position #+ extra_lines
 
         if rows:
             writer.writerows(rows)
 
 
     print('{} lines above are indication of fixes that may need to be applied.'.format(lines))
+
+def add_row(rows, row, positions, position, last_position, extra_lines,
+            rows_per_page, columns_per_page, reverse):
+    if reverse:
+        page_position = (len(positions) - position + 1 - extra_lines) % (rows_per_page * columns_per_page)
+    else:
+        page_position = (position + extra_lines) % (rows_per_page * columns_per_page)
+
+    if columns_per_page > 1 and (page_position == 0 or page_position > rows_per_page):
+        if reverse:
+            last_row = (len(positions) - last_position + 1) % rows_per_page
+        else:
+            last_row = last_position % rows_per_page
+        rows[last_row].extend(row)
+    else:
+        rows.append(row)
+
+    return page_position == 0
 
 if __name__ == "__main__":
     main(sys.argv[1:])
