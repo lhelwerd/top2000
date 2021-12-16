@@ -37,13 +37,15 @@ title_fixes = {
     "True Colors": "True Colours",
     "Wake Me Up Before You Gogo": "Wake Me Up Before You Go-Go",
     "Wake Me Up Before You Go Go": "Wake Me Up Before You Go-Go",
-    "Une Belle Histoire / Een Mooi Verhaal": "Une Belle Histoire",
+    "Une Belle Histoire (Een Mooi Verhaal)": "Une Belle Histoire / Een Mooi Verhaal",
+    "Une Belle Histoire/Een Mooi Verhaal": "Une Belle Histoire / Een Mooi Verhaal",
     "It's A Man's Man's World": "It's A Man's Man's Man's World",
     "My Heart Will Go On (Love Theme From 'Tittanic')": "My Heart Will Go On",
     "Het Land Van...": "Het Land Van\u2026",
     "Het Land Van": "Het Land Van\u2026",
     "Its The End Of The World": "It's The End Of The World As We Know It (And I Feel Fine)",
     "Ouverture": "Overture",
+    "One Love/People Get Ready": "One Love / People Get Ready",
     "One Love - People Get Ready": "One Love / People Get Ready",
     "If There's Something": "If There Is Something",
     "The Sun Always Shines On TV": "The Sun Always Shines On T.V.",
@@ -52,7 +54,8 @@ title_fixes = {
     "Crying": "Cryin'",
     "Paloma Blanca": "Una Paloma Blanca",
     "Ik Heb Je Lief": "'k Heb Je Lief",
-    "Ain't Got No, I Got Life": "Ain't Got No - I Got Life",
+    "Ain't Got No - I Got Life": "Ain't Got No, I Got Life",
+    "Ain't Got No, I Got Life (Original)": "Ain't Got No, I Got Life",
     "Non Non Rien N'a Chang\u00e9": "Non, Non, Rien N'a Chang\u00e9",
     "Somebody To Love (Live)": "Somebody To Love (Live)",
     "Gotta Catch 'M All (Pokemon Theme Song)": "Gotta Catch 'Em All",
@@ -66,6 +69,7 @@ title_fixes = {
     "Sinds 1 Dag Of 2 (32 Jaar)": "32 Jaar (Sinds 1 Dag Of 2)",
     "Laat Me (Vivre)": "Laat Me / Vivre",
     "Laat Me/Vivre": "Laat Me / Vivre",
+    "The Load Out/Stay": "The Load Out / Stay",
     "Staying Alive": "Stayin' Alive",
     "Welterusten Meneer De President": "Welterusten, Mijnheer De President",
     "Freedom! '90": "Freedom",
@@ -129,11 +133,12 @@ title_fixes = {
     "Kristallnaach": "Kristallnach",
     "Oh Well (Part I)": "Oh Well",
     "Oh Well!": "Oh Well",
-    #"You'll Never Walk Alone": "You Never Walk Alone", # Gerry / Lee
+    "You Never Walk Alone": "You'll Never Walk Alone", # Gerry / Lee
     "Nightboat To Cairo": "Night Boat To Cairo",
     "He Ain't Heavy, He's My Brother": "He Ain't Heavy... He's My Brother",
     "Comptine D'Un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi (Am\u00e9lie)": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
     "Comptine D'un Autre \u00c9t\u00e9": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'un Autre Ete, L'Apres Midi (Amelie)": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
     "Heart Shaped Box": "Heart-Shaped Box",
     "Rock 'N' Roll": "Rock And Roll",
     "Tous Les Memes": "Tous Les M\u00eames",
@@ -158,7 +163,16 @@ title_fixes = {
     "HOT FOR TEACHER": "Hot For Teacher",
     "AMERIKA": "Amerika",
     "CIVIL WAR": "Civil War",
-    "EPIC": "Epic"
+    "EPIC": "Epic",
+    "Belle Helene": "Belle H\u00e9l\u00e8ne",
+    "Ob La Di, Ob La Da": "Ob-La-Di, Ob-La-Da",
+    "Venise (Elle Voulait Qu'on L'Appelle)": "Elle Voulait Qu'on l'Appelle Venise",
+    "Good Old Fashioned Boy": "Good Old-Fashioned Lover Boy",
+    ".. In Paris": "Niggas In Paris", # Zielige poging tot zelfcensuur
+    "Het Is Een Nacht": "Het Is Een Nacht... (Levensecht)",
+    "Het Is Een Nacht (Levensecht)": "Het Is Een Nacht... (Levensecht)",
+    "Het Is Een Nacht (Levensecht...)": "Het Is Een Nacht... (Levensecht)",
+    "I Was Made For Loving You": "I Was Made For Lovin' You"
 }
 
 # Crosby, Stills & Nash (& Young)? Wordt vaak bij elkaar gerekend
@@ -179,11 +193,16 @@ artist_replaces = {
     "The Jimi Hendrix Experience": "Jimi Hendrix",
     "Earth Wind & Fire": "Earth, Wind & Fire",
     "Santana Ft. Rob Thomas": "Santana & Rob Thomas",
+    "Sinead O'Connor": "Sin\u00e9ad O'Connor",
+    "Daniel Lohues": "Dani\u00ebl Lohues",
+    "Gilbert Becaud": "Gilbert B\u00e9caud",
+    "Boney M": "Boney M."
 }
 artist_groups = {
     "Earth Wind & Fire": "Earth, Wind & Fire",
     "Jay Z": "Jay-Z",
-    "Pharrell": "Pharrell Williams"
+    "Pharrell": "Pharrell Williams",
+    "Golden Earrings": "Golden Earring"
 }
 # TODO: Verplaats een aantal artiesten naar artist_replaces zodat ze ook in
 # samenwerkingen worden aangepast
@@ -199,8 +218,9 @@ artist_full_replaces = {
     "Herbert Gronemeyer": "Herbert Gr\u00f6nemeyer",
     "Neet Oet Lottum": "Neet O\u00e9t Lottum",
     "Bachman Turner Overdrive": "Bachman-Turner Overdrive",
-    "Dj Tiesto": "DJ Ti\u00ebsto",
-    "Tiesto": "DJ Ti\u00ebsto",
+    "DJ Tiesto": "Ti\u00ebsto",
+    "Dj Tiesto": "Ti\u00ebsto",
+    "Tiesto": "Ti\u00ebsto",
     "Celine Dion": "C\u00e9line Dion",
     "Jackson 5": "Jackson Five",
     "U2 & Mary J. Blige": "U2 & Mary J Blige",
@@ -263,7 +283,8 @@ artist_full_replaces = {
     "UGLY KID JOE": "Ugly Kid Joe",
     "CREED": "Creed",
     "Earth Wind & Fire ft. The Emotions": "Earth, Wind & Fire ft. The Emotions",
-    "Edith Piaf": "\u00c9dith Piaf"
+    "Edith Piaf": "\u00c9dith Piaf",
+    "Armin van Buuren ft.Trevor Guthrie": "Armin van Buuren feat. Trevor Guthrie"
 }
 
 def find_alternatives(text):
@@ -354,7 +375,9 @@ def update_row(key, row, data, year=None, pos_field=None, best_key=None):
             if pos_field is not None and pos_field in data["tracks"][key]:
                 return best_key, False
 
-            if best_key == key or (best_key is None and data["tracks"][key]["best"] is not True):
+            if best_key == key or (best_key is None and \
+                "best" in data["tracks"][key] and \
+                data["tracks"][key]["best"] is not True):
                 #print("Collision: {!r} {!r} {!r} {!r}".format(key, best_key, row, data["tracks"][key]))
                 data["tracks"][key] = new_row
 
@@ -380,20 +403,25 @@ def read_csv_file(csv_name, data, year=None, pos_field="pos",
 
     return positions
 
-def read_json_file(json_name, data, year=None, pos_field="pos",
-                   artist_field="a", title_field="s"):
+def read_json_file(json_name, data, fields, year=None):
+    pos_field = fields.get("pos", "position")
+    artist_field = fields.get("artist", "artist")
+    title_field = fields.get("title", "title")
+    prv_field = fields.get("prv", "lastPosition")
+
     positions = {}
     last_time = None
     with open(json_name, 'r') as json_file:
-        rows = json.load(json_file)["data"][0]
+        rows = fields["rows"](json.load(json_file))
         for row in rows:
             last_time = read_row(row, data, positions, year, pos_field,
-                                 artist_field, title_field, last_time=last_time)
+                                 artist_field, title_field, prv_field,
+                                 last_time=last_time)
 
     return positions
 
 def read_row(row, data, positions, year, pos_field, artist_field, title_field,
-             last_time=None):
+             prv_field="prv", last_time=None):
     if pos_field in row and row[pos_field] == "":
         # Date/time row, track last_time
         return row[title_field]
@@ -407,7 +435,7 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
     best_key = None
     key = None
     if year is not None:
-        row.pop("prv", None)
+        row.pop(prv_field, None)
         if pos_field in row:
             row[str(year)] = row[pos_field]
 
@@ -458,27 +486,49 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
 
 def main(argv):
     first_year = 1999
+    first_csv_year = 2014 # Contains all the previous years
     csv_name_format = "TOP-2000-{}.csv"
     json_name_format = "top2000-{}.json"
-    artist_field = "a"
-    title_field = "s"
-    current_year = int(argv[0]) if len(argv) > 0 else 2020
+    # JSON fields
+    fields = {
+        2019: {
+            "artist": "a",
+            "title": "s",
+            "pos": "pos",
+            "prv": "prv",
+            "rows": lambda data: data["data"][0]
+        },
+        2020: {
+            "artist": "a",
+            "title": "s",
+            "pos": "pos",
+            "prv": "prv",
+            "rows": lambda data: data["data"][0]
+        },
+        2021: {
+            # See read_json_file for the defaults
+            "rows": lambda data: data["positions"]
+        }
+    }
+    current_year = int(argv[0]) if len(argv) > 0 else 2021
     previous_year = str(current_year - 1)
-    current_year_name = argv[1] if len(argv) > 1 else json_name_format.format(current_year)
+    current_year_name = argv[1] if len(argv) > 1 else \
+        csv_name_format.format(current_year)
+        #json_name_format.format(current_year)
     overviews = (argv[2::3], argv[3::3], argv[4::3]) if len(argv) > 3 else [
-        (csv_name_format.format(year), json_name_format.format(year), year)
-        for year in ("2014", "2015", "2016", "2017", "2018", "2019")
+        (csv_name_format.format(year), json_name_format.format(year), str(year))
+        for year in range(first_csv_year, current_year)
     ]
 
     data = {"artists": {}, "tracks": {}}
-    positions = read_json_file(current_year_name, data, year=None,
-                               artist_field=artist_field,
-                               title_field=title_field)
+    #positions = read_json_file(current_year_name, data, fields[current_year],
+    #                           year=None) # Default year
+    positions = read_csv_file(current_year_name, data, year=None,
+                              pos_field="positie")
     for (overview_csv_name, overview_json_name, year) in overviews:
         if os.path.exists(overview_json_name):
-            read_json_file(overview_json_name, data, year=year,
-                           artist_field=artist_field,
-                           title_field=title_field)
+            read_json_file(overview_json_name, data, fields[int(year)],
+                           year=year)
         else:
             read_csv_file(overview_csv_name, data, year=year,
                           pos_field="pos {}".format(year))
@@ -490,6 +540,7 @@ def main(argv):
     # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,90cm 0,30cm
     # Disable print header/footer. Scale factor: 62%
     # Layout -> Print ranges -> Edit -> Repeat rows -> $1
+    # Bold first row, right-align first and fourth column
     # Add grey border at (bottom of each row and) between each 3-header column
     header = ["nr.", "artiest", "titel"] * columns_per_page
     with open("output.csv", "w", encoding='utf-8') as output_file:
@@ -514,20 +565,24 @@ def main(argv):
             artist = track["artiest"]
             title = track["titel"]
 
-            #extra_text = "\u2234" # therefore sign
-            extra_text = "\U0001f195" # new sign
+            extra_text = "\u2234" # therefore sign
+            #extra_text = "\U0001f195" # new sign
             if previous_year in track:
                 previous_position = int(track[previous_year])
                 diff = abs(position - previous_position)
                 if position < previous_position:
                     #extra_text = "\xE2\x86\x91{}".format(diff) # upwards arrow
-                    extra_text = "\u2b06\ufe0e{}".format(diff) # upwards arrow
+                    #extra_text = "\u2b06\ufe0e{}".format(diff) # upwards arrow
+                    #extra_text = "\u21b0{}".format(diff) # upwards arrow
+                    extra_text = "\u219f{}".format(diff) # upwards arrow
                 elif position > previous_position:
                     #extra_text = "\xE2\x86\x93{}".format(diff) # downwards arrow
-                    extra_text = "\u2b07\ufe0e{}".format(diff) # downwards arrow
+                    #extra_text = "\u2b07\ufe0e{}".format(diff) # downwards arrow
+                    #extra_text = "\u21b2{}".format(diff) # downwards arrow
+                    extra_text = "\u21a1{}".format(diff) # downwards arrow
                 else:
-                    #extra_text = "\u21c4" # left right arrow
-                    extra_text = "\U0001f51b" # left right arrow
+                    extra_text = "\u21c4" # left right arrow
+                    #extra_text = "\U0001f51b" # left right arrow
             else:
                 for year in range(current_year-2, first_year-1, -1):
                     if str(year) in track and track[str(year)] != "0":
@@ -537,7 +592,8 @@ def main(argv):
                         #else:
                         #extra_text = "\u27f2{}".format(year) # rotation
                         #extra_text = "\xE2\x86\xBA{}".format(year) # rotation
-                        extra_text = "\U0001f504{}".format(year) # arrow circle
+                        extra_text = "\u21ba{}".format(year) # rotation
+                        #extra_text = "\U0001f504{}".format(year) # arrow circle
                         break
 
             max_artist = 0
@@ -589,16 +645,18 @@ def main(argv):
             #writer.writerow(row)
 
             line = "{}. {} - {} ({})".format(position, artist, title, extra_text)
+            prv_field = "lastPosition"
+            #if all(str(year) not in track for year in range(first_csv_year, current_year)) and ("jaar" not in track or track["jaar"] != str(current_year)):# and position < 978:
             #if "2018" not in track and "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("yr" not in track or track["yr"] != str(current_year)): #and position > 1773:
             #if "2018" not in track and ("2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
             #if "2019" not in track and ("2018" in track or "2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
             #if 'yr' not in track and 'jaar' not in track:
-            #if artist.isupper() or title.isupper() or artist.islower() or title.islower():
+            #if (artist.isupper() or title.isupper() or artist.islower() or title.islower()) and track["artiest"] not in ("U2", "10cc", "INXS", "KISS", "Q65", "LP", "ABBA", "MGMT", "R.E.M.", "UB40", "3JS", "BAP", "AC/DC"):
                 #pass
-            #if ("prv" in track and int(track["prv"]) != int(track.get("2019", 0))):
+            #if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))):
                 #lines += 1
                 #print(line)
-                #print("{} prv={} 2019={}".format(line, track["prv"], track.get("2019")))
+                #print("{} prv={} {}={}".format(line, track[prv_field], previous_year, track.get(previous_year)))
                 #print(keys)
                 #print(track)
 
