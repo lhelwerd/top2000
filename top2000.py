@@ -1,10 +1,18 @@
+"""
+Parse lists of numbers in the NPO Radio 2 Top 2000 from various years.
+"""
+
+# pylint: disable=too-many-arguments, too-many-locals, too-many-branches
+# pylint: disable=too-many-statements, too-many-lines
+# pylint: disable=too-many-boolean-expressions
+
 from collections import OrderedDict
 from datetime import datetime
 import bisect
 import csv
 import itertools
 import json
-import os.path
+from pathlib import Path
 import sys
 
 removes = [
@@ -20,7 +28,7 @@ title_fixes = {
     "Lola (live)": "Lola (live)",
     "Somebody Will Know Somebody": "Somebody Will Know Someday",
     "Don't Stand To Close To Me": "Don't Stand So Close To Me",
-    "Read All About It": "Read All About It, Pt. 1",
+    #"Read All About It": "Read All About It, Pt. 1", # See Part 3
     "Ms Jackson": "Ms. Jackson",
     "Mr Rock & Roll": "Mr. Rock & Roll",
     "Suite Judy Blue Eyes": "Suite: Judy Blue Eyes",
@@ -44,6 +52,7 @@ title_fixes = {
     "Une Belle Histoire (Een Mooi Verhaal)": "Une Belle Histoire / Een Mooi Verhaal",
     "Une Belle Histoire/Een Mooi Verhaal": "Une Belle Histoire / Een Mooi Verhaal",
     "It's A Man's Man's World": "It's A Man's Man's Man's World",
+    "It's A Man's Man's  Man's World": "It's A Man's Man's Man's World",
     "My Heart Will Go On (Love Theme From 'Tittanic')": "My Heart Will Go On",
     "Het Land Van...": "Het Land Van\u2026",
     "Het Land Van": "Het Land Van\u2026",
@@ -86,7 +95,6 @@ title_fixes = {
     "Leaving On A Jetplane": "Leaving On A Jet Plane",
     "Running With The Devil": "Runnin' With The Devil",
     "Voodoo Chile": "Voodoo Child (Slight Return)",
-    "The Times They Are A-Changing": "The Times They Are A Changin'",
     "Sgt Pepper's Lonely Hearts Club Band": "Sgt. Pepper's Lonely Hearts Club Band",
     "Don't Stop Till You Get Enough": "Don't Stop 'til You Get Enough",
     "Zwart-Wit": "Zwart Wit",
@@ -98,6 +106,7 @@ title_fixes = {
     "Candle In The Wind 1997": "Candle In The Wind",
     "Land Van Maas En Waal": "Het Land Van Maas En Waal",
     "Jumping Jack Flash": "Jumpin' Jack Flash",
+    "Oh Well!": "Oh Well (Part 1)",
     "Oh Well, Pt. 1": "Oh Well (Part 1)",
     "Oh Well - Part 1": "Oh Well (Part 1)",
     "Oh Well (Part I)": "Oh Well (Part 1)",
@@ -134,24 +143,31 @@ title_fixes = {
     "Can't Help Falling In Love With You": "Can't Help Falling In Love",
     "Joan Of Arc (Maid Of Orleans)": "Maid Of Orleans",
     "Papa Was A Rolling Stone": "Papa Was A Rollin' Stone",
+    "Killer / Papa Was A Rollin' Stone": "Killer/Papa Was A Rollin' Stone",
     "Like A Rollin' Stone": "Like A Rolling Stone",
     "Kristallnaach": "Kristallnach",
-    "Oh Well (Part I)": "Oh Well",
-    "Oh Well!": "Oh Well",
     "You Never Walk Alone": "You'll Never Walk Alone", # Gerry / Lee
     "Nightboat To Cairo": "Night Boat To Cairo",
     "He Ain't Heavy, He's My Brother": "He Ain't Heavy... He's My Brother",
-    "Comptine D'Un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi (Am\u00e9lie)": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
-    "Comptine D'un Autre \u00c9t\u00e9": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
-    "Comptine D'un Autre Ete, L'Apres Midi (Amelie)": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
-    "Comptine D'un Autre Ete, L'apres Midi (Amelie)": "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'Un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi (Am\u00e9lie)": \
+        "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'un Autre \u00c9t\u00e9": \
+        "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'un Autre Ete, L'Apres Midi (Amelie)": \
+        "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'un Autre Ete, L'apres Midi (Amelie)": \
+        "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'un Autre \u00c9te, L'apres Midi (Amelie)": \
+        "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Comptine D'un Autre \u00c9t\u00e9, L'Apres Midi (Amelie)": \
+        "Comptine D'un Autre \u00c9t\u00e9: L'Apr\u00e8s-Midi",
+    "Il Est Cinq Heures Paris s'\u00c9veille": \
+        "Il Est Cinq Heures Paris S'\u00c9veille",
     "Heart Shaped Box": "Heart-Shaped Box",
     "Rock 'N' Roll": "Rock And Roll",
     "Tous Les Memes": "Tous Les M\u00eames",
     "I Love You Like Myself": "I Love You Like I Love Myself",
     "Sex Machine": "Get Up (I Feel Like Being a) Sex Machine",
-    "It's A Man's Man's World": "It's A Man's Man's Man's World",
-    "It's A Man's Man's  Man's World": "It's A Man's Man's Man's World",
     "You Make Lovin' Fun": "You Make Loving Fun",
     "Intro/Sweet Jane": "Sweet Jane",
     "High And Dry": "High & Dry",
@@ -185,11 +201,13 @@ title_fixes = {
     "Pak Maar Mijn Hand": "Pak Maar M'n Hand",
     "Voila": "Voil\u00e0",
     "THE LONELIEST": "The Loneliest",
-    "Peaceful Easy Feelin'": "Peaceful Easy Feeling"
+    "Peaceful Easy Feelin'": "Peaceful Easy Feeling",
+    "Een Nacht Alleen": "1 Nacht Alleen",
+    "Oxygene IV": "Oxyg\u00e8ne IV"
 }
 
-# No splits are made for these groups, i.e. the combining characters are seen 
-# as part of the group name. Avoids some weirdness like Nick & Simon getting 
+# No splits are made for these groups, i.e. the combining characters are seen
+# as part of the group name. Avoids some weirdness like Nick & Simon getting
 # tracks from Simon & Garfunkel, or incorrect combining character replacements
 # Crosby, Stills & Nash (& Young)? are often considered together
 artist_no_splits = [
@@ -199,7 +217,7 @@ artist_no_splits = [
 ]
 artist_splits = [
     " & ", " Feat. ", " feat. ", " ft ", " ft. ", " Ft. ", ", ", " And ",
-    " en ", " x ", "  "
+    " en ", " x ", "  ", "vs. "
 ]
 artist_replaces = {
     " en ": " & ",
@@ -226,12 +244,13 @@ artist_replaces = {
     "Rene Froger": "Ren\u00e9 Froger",
     "Bokkers": "B\u00f6kkers",
     "BL\u00d8F": "Bl\u00f8f",
-    "Olivia Newton John": "Olivia Newton-John"
+    "Olivia Newton John": "Olivia Newton-John",
 }
-# Full artists that have their tracks merged with the other group, but this 
+# Full artists that have their tracks merged with the other group, but this
 # does not lead to replacements
 artist_groups = {
     "Earth Wind & Fire": "Earth, Wind & Fire",
+    "Earth, Wind & Fire & The Emotions": "Earth, Wind & Fire",
     "Jay Z": "Jay-Z",
     "Pharrell": "Pharrell Williams",
     "Golden Earrings": "Golden Earring",
@@ -316,18 +335,32 @@ artist_full_replaces = {
     "UGLY KID JOE": "Ugly Kid Joe",
     "CREED": "Creed",
     "Earth Wind & Fire ft. The Emotions": "Earth, Wind & Fire ft. The Emotions",
+    "Earth, Wind & Fire & The Emotions": "Earth, Wind & Fire ft. The Emotions",
+    "Earth & Wind & Fire & The Emotions": "Earth, Wind & Fire ft. The Emotions",
     "Edith Piaf": "\u00c9dith Piaf",
     "Armin van Buuren ft.Trevor Guthrie": "Armin van Buuren ft. Trevor Guthrie",
+    "Swedish House Mafia ft.The Weeknd": "Swedish House Mafia ft. The Weeknd",
     "Ronde": "Rond\u00e9",
     "Maneskin": "M\u00e5neskin",
     "Silk Sonic (Bruno Mars & Anderson .Paak)": "Silk Sonic",
+    "Silk Sonic (Bruno Mars & Anderson .Paak )": "Silk Sonic",
     "Motorhead": "Mot\u00f6rhead",
     "DI-RECT": "Di-rect",
-    "Bob Marley/The Wailers": "Bob Marley & The Wailers"
+    "Bob Marley/The Wailers": "Bob Marley & The Wailers",
+    #"Elvis": "Elvis Presley",
+    "Elvis Vs JXL": "Elvis Presley vs. Junkie XL",
+    "Elvis vs JXL": "Elvis Presley vs. Junkie XL",
+    "Elvis vs. JXL": "Elvis Presley vs. Junkie XL"
 }
 
 def find_alternatives(text):
-    alternatives = set(text.replace(remove, "") for remove in removes if remove in text)
+    """
+    Find alternative names that could be used in earlier years instead of the
+    exact string in `text`, which is either an artitst or title.
+    """
+
+    alternatives = set(text.replace(remove, "") for remove in removes
+                       if remove in text)
 
     # Non-breaking space
     if "\u00a0" in text:
@@ -340,6 +373,11 @@ def find_alternatives(text):
     return alternatives
 
 def find_title_alternatives(title):
+    """
+    Find alternative titles for the `title` that could be used in earlier
+    years. The returned list includes the preferred title as last argument.
+    """
+
     # Byte order mark, non-breaking space, curly quote
     title = title.replace("\ufeff", "").replace("\u00a0", " ").replace("\u2019", "'")
 
@@ -348,7 +386,10 @@ def find_title_alternatives(title):
 
     alternatives = list(find_alternatives(title))
     if " (" in title:
-        alternatives.append(title.split(" (")[0])
+        prefix = title.split(" (")[0]
+        if prefix in title_fixes:
+            return [title_fixes[prefix]]
+        alternatives.append(prefix)
     if title.startswith("("):
         alternatives.append(title.replace("(", "").replace(")", ""))
         alternatives.append(title.split(") ")[-1])
@@ -356,7 +397,34 @@ def find_title_alternatives(title):
     alternatives.append(title)
     return alternatives
 
+def find_artist_splits(artist):
+    """
+    Find separate artists in a potential group of musicians listed in the string
+    `artist`. The returned dictionary contains the splits names as keys in order
+    of finding them. This function should not be used on artists of which it is
+    known that they should not be split up. The second return value provides a
+    count of splits found.
+    """
+
+    alternatives = OrderedDict()
+    split_count = 0
+    for split in artist_splits:
+        if split in artist:
+            split_count += 1
+            parts = artist.split(split)
+            alternatives.update(OrderedDict.fromkeys(parts, True))
+            alternative = split.join(parts[::-1])
+            alternatives[alternative] = True
+
+    return alternatives, split_count
+
 def find_artist_alternatives(artist):
+    """
+    Find alternative artists which may have data on the titles of the `artist`
+    in earlier years. The returned list includes the preferred artist name as
+    the last element.
+    """
+
     # Byte order mark
     if "\ufeff" in artist:
         artist = artist.replace("\ufeff", "")
@@ -371,13 +439,7 @@ def find_artist_alternatives(artist):
         # Do not generate any splits
         return [artist]
 
-    alternatives = OrderedDict()
-    for split in artist_splits:
-        if split in artist:
-            parts = artist.split(split)
-            alternatives.update(OrderedDict.fromkeys(parts, True))
-            alternative = split.join(parts[::-1])
-            alternatives[alternative] = True
+    alternatives, split_count = find_artist_splits(artist)
 
     for search, group in artist_groups.items():
         if search in artist:
@@ -394,6 +456,8 @@ def find_artist_alternatives(artist):
 
     if artist in artist_full_replaces:
         artist = artist_full_replaces[artist]
+        if split_count == 0:
+            alternatives.update(find_artist_splits(artist)[0])
     # Ensure normal key is last
     alternatives.pop(artist, None)
     alternatives[artist] = True
@@ -401,22 +465,32 @@ def find_artist_alternatives(artist):
     return list(alternatives.keys())
 
 def check_collision(key, data, year, pos_field):
+    """
+    Check if a track already has data for the current year.
+    """
+
     return (year is not None and str(year) in data["tracks"][key]) \
             or (pos_field is not None and year is None \
                 and pos_field in data["tracks"][key])
 
 def update_row(key, row, data, year=None, pos_field=None, best_key=None):
+    """
+    Update data for a track.
+    """
+
     new_row = row.copy()
     if key in data["tracks"]:
         if check_collision(key, data, year, pos_field):
-            #print(f"Potential collision ({year]: {key!r} {best_key!r} {row!r} {data['tracks'][key]!r}")
+            #print(f"Potential collision ({year]: {key!r} {best_key!r} {row!r}")
+            #print(data['tracks'][key])
             if pos_field in data["tracks"][key]:
                 return best_key, False
 
             if best_key == key or (best_key is None and \
                 "best" in data["tracks"][key] and \
                 data["tracks"][key]["best"] is not True):
-                #if data["tracks"][key]["artiest"].lower() == "di-rect" and data["tracks"][key]["titel"] == "Times Are Changing":
+                #if data["tracks"][key]["artiest"].lower() == "di-rect":
+                #if data["tracks"][key]["titel"] == "Times Are Changing":
                 #print(f"Collision ({year}): {key!r} {best_key!r} {row!r} {data['tracks'][key]!r}")
                 data["tracks"][key] = new_row
 
@@ -430,22 +504,30 @@ def update_row(key, row, data, year=None, pos_field=None, best_key=None):
     #print(key, data["tracks"][key])
     return best_key, True
 
-def read_csv_file(csv_name, data, year=None, positions=None, pos_field="pos",
-                  artist_field="artiest", title_field="titel",
+def read_csv_file(csv_path, data, year=None, positions=None, pos_field="pos",
+                  artist_field="artiest", title_field="titel", offset=0,
                   encoding="utf-8"):
+    """
+    Read a CSV file with track position data.
+    """
     if positions is None:
         positions = {}
     last_time = None
-    with open(csv_name, 'r', encoding=encoding) as csv_file:
+    with csv_path.open('r', encoding=encoding) as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
             # Python 3.6 provides OrderedDict which is slower to process
             last_time = read_row(dict(row), data, positions, year, pos_field,
-                                 artist_field, title_field, last_time=last_time)
+                                 artist_field, title_field, last_time=last_time,
+                                 offset=offset)
 
     return positions
 
-def read_old_json_file(json_name, data, fields, year):
+def read_old_json_file(json_path, data, fields, year):
+    """
+    Read a JSON file with track position data in a flattened array of objects.
+    """
+
     pos_field = fields.get("pos", "position")
     artist_field = fields.get("artist", "artist")
     title_field = fields.get("title", "title")
@@ -453,7 +535,7 @@ def read_old_json_file(json_name, data, fields, year):
 
     positions = {}
     last_time = None
-    with open(json_name, 'r', encoding='utf-8') as json_file:
+    with json_path.open('r', encoding='utf-8') as json_file:
         rows = fields["rows"](json.load(json_file))
         for row in rows:
             last_time = read_row(row, data, positions, year, pos_field,
@@ -462,7 +544,12 @@ def read_old_json_file(json_name, data, fields, year):
 
     return positions
 
-def read_json_file(json_name, data, fields, year):
+def read_json_file(json_path, data, fields, year):
+    """
+    Read a JSON file with track position data in an array of objects with
+    nested position and track data.
+    """
+
     # In "position"
     pos_field = fields.get("pos", "current")
     prv_field = fields.get("prv", "previous")
@@ -473,7 +560,8 @@ def read_json_file(json_name, data, fields, year):
     time_field = fields.get("time", "broadcastUnixTime")
 
     positions = {}
-    with open(json_name, 'r') as json_file:
+    # Check if all the JSONs are UTF-8 encoded
+    with json_path.open('r', encoding='utf-8') as json_file:
         rows = fields["rows"](json.load(json_file))
         for row in rows:
             row['pos'] = row['position'][pos_field]
@@ -486,7 +574,11 @@ def read_json_file(json_name, data, fields, year):
     return positions
 
 def read_row(row, data, positions, year, pos_field, artist_field, title_field,
-             prv_field="prv", time_field=None, last_time=None):
+             prv_field="prv", time_field=None, last_time=None, offset=0):
+    """
+    Read data extracted from a CSV row or JSON array element.
+    """
+
     if pos_field in row and row[pos_field] == "":
         # Date/time row, track last_time
         return row[title_field]
@@ -508,7 +600,7 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
 
     artist_alternatives = find_artist_alternatives(row[artist_field])
     title_alternatives = find_title_alternatives(row[title_field])
-    position = int(row[pos_field]) if pos_field in row else None
+    position = int(row[pos_field]) + offset if pos_field in row else None
     best_key = None
     key = None
     if year is not None:
@@ -529,8 +621,9 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
             if key in keys or key in rejected_keys:
                 continue
 
-            best_key, ok = update_row(key, row, data, year, pos_field, best_key)
-            if ok:
+            best_key, valid = update_row(key, row, data, year, pos_field,
+                                         best_key)
+            if valid:
                 keys.add(key)
             else:
                 rejected_keys.add(key)
@@ -538,10 +631,11 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
     if best_key is None:
         best_key = key # original artist/title combination
 
-    #if "eagles" in row[artist_field].lower() and "Peaceful Easy" in row[title_field]:
-    #   print(year, artist_alternatives, title_alternatives, best_key,
-    #         data["tracks"][best_key])
-    best_key, ok = update_row(best_key, row, data, best_key=best_key)
+    #if "iron butterfly" in row[artist_field].lower():#and "Comptine" in row[title_field]:
+    #if "Boogie Wonderland" in row[title_field]:
+    #    print(year, artist_alternatives, title_alternatives, best_key,
+    #          data["tracks"][best_key])
+    best_key = update_row(best_key, row, data, best_key=best_key)[0]
     if year is None: # only update to best combination for current year
         data["tracks"][best_key]["artiest"] = artist_alternatives[-1]
         data["tracks"][best_key]["titel"] = title_alternatives[-1]
@@ -559,7 +653,12 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
         if year is not None:
             data["tracks"][best_key][str(year)] = row[pos_field]
 
-        positions[position] = [best_key] + [key for key in keys if best_key[0].startswith(key[0]) or not any(rejected_key[0].startswith(key[0]) for rejected_key in rejected_keys)]
+        positions[position] = [best_key] + [
+            key for key in keys
+            if best_key[0].startswith(key[0]) or
+            not any(rejected_key[0].startswith(key[0])
+                    for rejected_key in rejected_keys)
+        ]
         if year is None: # current year
             data["tracks"][best_key]["best"] = True
             for key in [best_key] + list(keys):
@@ -575,32 +674,46 @@ def read_row(row, data, positions, year, pos_field, artist_field, title_field,
 
 def read_files(fields, current_year, current_year_csv=None,
                current_year_json=None, overviews=None):
+    """
+    Read JSON and/or CSV files for the current year.
+    """
+
     data = {"artists": {}, "tracks": {}}
     positions = {}
     # Read current year
-    if current_year_json is not None:
-        positions = read_json_file(current_year_json, data,
+    if current_year_json is not None and current_year_json != "":
+        positions = read_json_file(Path(current_year_json), data,
                                    fields[current_year], year=None)
-    if current_year_csv is not None:
-        positions = read_csv_file(current_year_csv, data, year=None,
+    if current_year_csv is not None and current_year_csv != "":
+        positions = read_csv_file(Path(current_year_csv), data, year=None,
                                   positions=positions, pos_field="positie",
+                                  offset=fields[current_year].get("offset", 0),
                                   encoding=fields[current_year].get("encoding", "utf-8"))
 
     if overviews is None:
         return positions, data
 
     for (overview_csv_name, overview_json_name, year) in overviews:
-        if os.path.exists(overview_json_name) and not fields[int(year)].get("skip"):
-            read_old_json_file(overview_json_name, data, fields[int(year)],
+        overview_json_path = Path(overview_json_name)
+        if overview_json_path.exists() and not fields[int(year)].get("skip"):
+            if fields[int(year)].get("old"):
+                read_old_json_file(overview_json_path, data,
+                                   fields[int(year)], year=year)
+            else:
+                read_json_file(overview_json_path, data, fields[int(year)],
                                year=year)
         else:
-            read_csv_file(overview_csv_name, data, year=year,
+            read_csv_file(Path(overview_csv_name), data, year=year,
                           pos_field=f"pos {year}",
                           encoding=fields.get(int(year), {}).get("encoding", "utf-8"))
 
     return positions, data
 
 def main(argv):
+    """
+    Main entry point.
+    """
+
     first_year = 1999
     first_csv_year = 2014 # Contains all the previous years
     csv_name_format = "TOP-2000-{}.csv"
@@ -637,9 +750,22 @@ def main(argv):
             "encoding": "windows-1252",
             # See read_json_file for the defaults
             "rows": lambda data: data["positions"]
+        },
+        2023: {
+            # CSV offset (temporary for De Extra 500 2023)
+            #"offset": 2000,
+            # See read_json_file for the defaults
+            "rows": lambda data: data["positions"]
         }
     }
-    current_year = int(argv[0]) if len(argv) > 0 else 2022
+    try:
+        current_year = int(argv[0]) if len(argv) > 0 else 2023
+    except ValueError:
+        print('Usage: python top2023.py [year] [csv] [json]', file=sys.stderr)
+        print('       [overview_csv] [overview_json] [overview_year] ...',
+              file=sys.stderr)
+        return 0
+
     current_year_csv = argv[1] if len(argv) > 1 else \
         csv_name_format.format(current_year)
     current_year_json = argv[2] if len(argv) > 2 else \
@@ -672,16 +798,20 @@ def main(argv):
     }
 
     for output_format, options in settings.items():
-        ok = output_file(positions, data, first_year, current_year,
-                        filename=f"output-{output_format}.csv", **options)
-        if not ok:
+        success = output_file(positions, data, first_year, current_year,
+                              path=Path(f"output-{output_format}.csv"),
+                              **options)
+        if not success:
             return 1
 
     return 0
 
 def output_file(positions, data, first_year, current_year, columns_per_page=2,
-                rows_per_page=100, reverse=False, columns=None,
-                filename="output.csv"):
+                rows_per_page=100, reverse=False, columns=None, path=None):
+    """
+    Write a CSV file as output.
+    """
+
     previous_year = str(current_year - 1)
     if columns is None:
         columns = OrderedDict([
@@ -689,16 +819,18 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
             ("artist", "artiest"),
             ("title", "titel")
         ])
+    if path is None:
+        path = Path("output.csv")
 
     # Headers sizes for 2 columns, 3 headers: 1,05cm 6,36cm 8,55cm
     # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,90cm 0,30cm
     # Disable print header/footer. Scale factor: 62%
-    # Layout -> Print ranges -> Edit -> Repeat rows -> $1
+    # Format -> Print ranges -> Edit -> Rows to repeat -> $1
     # Bold first row, right-align first and fourth column
     # Add grey border at bottom of each/first row, between each 3-header column
     header = list(columns.values()) * columns_per_page
-    with open(filename, "w", encoding='utf-8') as output_file:
-        writer = csv.writer(output_file)
+    with path.open("w", encoding='utf-8') as output:
+        writer = csv.writer(output)
         writer.writerow(header)
         rows = []
         last_position = None
@@ -741,8 +873,8 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
                 for year in range(current_year-2, first_year-1, -1):
                     if str(year) in track and track[str(year)] != "0":
                         #if current_year - year - 1 <= 1:
-                        #    extra_text = "\xE2\x9F\xB3" * (current_year - year 
-                        #    - 1)
+                        #    extra_text = "\xE2\x9F\xB3"
+                        #    extra_text *= current_year - year - 1
                         #else:
                         #extra_text = f"\u27f2{year}" # rotation
                         #extra_text = f"\xE2\x86\xBA{year}" # rotation
@@ -768,7 +900,11 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
                 #if title.startswith("Als Ik Je Weer Zie"):
                 #    print(possible_key, num_tracks, track_position,
                 #          max_artist, max_track_position)
-                if num_tracks > max_artist or (num_tracks == max_artist and track_position > max_track_position):
+                if num_tracks > max_artist or \
+                        (num_tracks == max_artist and
+                         track_position > max_track_position):
+                    # Doesn't it make more sense to do track_position < max...
+                    # so that we show the best position among the artists?
                     max_artist = num_tracks
                     max_artist_key = possible_key[0]
                     max_track_position = data["artists"][possible_key[0]].index(position)
@@ -803,7 +939,7 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
                     parts = track['timestamp'].split(' ')
                     time = f" {parts[0]}/12 {int(parts[2].split('-')[0]):02}:00"
                     if time != last_timestamp:
-                        last_timestamp = times
+                        last_timestamp = time
                         if add_row(rows, ['', time, ''], positions, position,
                                    last_position, extra_lines, rows_per_page,
                                    columns_per_page, reverse):
@@ -814,7 +950,8 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
                         else:
                             extra_lines += 1
                 elif isinstance(track['timestamp'], int):
-                    cells["timestamp"] = datetime.strftime(datetime.fromtimestamp(track['timestamp'] / 1000), "%d.%H:%M")
+                    date = datetime.fromtimestamp(track['timestamp'] / 1000)
+                    cells["timestamp"] = datetime.strftime(date, "%d.%H:%M")
                 #else:
                 #    print(track)
             #else:
@@ -823,10 +960,16 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
             row = [cells.get(column, "") for column in columns]
             #writer.writerow(row)
 
+            # pylint: disable=line-too-long
+
+            # Start debug lines
+
             #line = f"{position}. {artist} - {title} ({extra_text})"
             #prv_field = "prv"
+
             # SONGS THAT WERE RELEASED BEFORE THIS YEAR BUT ARE NEW
-            #if all(str(year) not in track for year in range(first_csv_year, current_year)) and ("jaar" not in track or track["jaar"] != str(current_year)):# and position < 412:
+            #first_csv_year = 2014
+            #if all(str(year) not in track for year in range(first_csv_year, current_year)) and ("jaar" not in track or track["jaar"] != str(current_year)):#and position < 1224:
             # OLD VERSIONS OF THE FORMER
             #if "2018" not in track and "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("yr" not in track or track["yr"] != str(current_year)): #and position > 1773:
             #if "2018" not in track and ("2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
@@ -863,10 +1006,16 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
 
 def add_row(rows, row, positions, position, last_position, extra_lines,
             rows_per_page, columns_per_page, reverse):
+    """
+    Insert a row in the proper location of a page of a CSV spreadsheet if it
+    were printed in certain column counts and rows per page.
+    """
+
+    rows_total = rows_per_page * columns_per_page
     if reverse:
-        page_position = (len(positions) - position + 1 - extra_lines) % (rows_per_page * columns_per_page)
+        page_position = (len(positions) - position + 1 - extra_lines) % rows_total
     else:
-        page_position = (position + extra_lines) % (rows_per_page * columns_per_page)
+        page_position = (position + extra_lines) % rows_total
 
     if columns_per_page > 1 and (page_position == 0 or page_position > rows_per_page):
         if reverse:
