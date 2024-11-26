@@ -1,0 +1,15 @@
+# Input data files
+*.csv
+*.json
+!schema/*.json
+*.odt
+*.ods
+*.pdf
+*.xls
+*.xlsx
+
+# Development files
+*~
+__pycache__
+*.pyc
+env/
