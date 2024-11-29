@@ -29,16 +29,16 @@ def read_files(fields, current_year, current_year_csv=None,
 
     for (overview_csv_name, overview_json_name, year) in overviews:
         overview_json_path = Path(overview_json_name)
-        if overview_json_path.exists() and not fields[int(year)].get("skip"):
-            if fields[int(year)].get("old"):
+        if overview_json_path.exists() and not fields[year].get("skip"):
+            if fields[year].get("old"):
                 read_old_json_file(overview_json_path, data,
-                                   fields[int(year)], year=year)
+                                   fields[year], year=str(int(year)))
             else:
-                read_json_file(overview_json_path, data, fields[int(year)],
-                               year=year)
+                read_json_file(overview_json_path, data, fields[year],
+                               year=str(int(year)))
         else:
             read_csv_file(Path(overview_csv_name), data, year=year,
                           pos_field=f"pos {year}",
-                          encoding=fields.get(int(year), {}).get("encoding", "utf-8"))
+                          encoding=fields.get(year, {}).get("encoding", "utf-8"))
 
     return positions, data

@@ -53,33 +53,46 @@ def main(argv):
             "rows": lambda data: data["positions"]
         },
         2023: {
-            # CSV offset (temporary for De Extra 500 2023)
-            #"offset": 2000,
+            # See read_json_file for the defaults
+            "rows": lambda data: data["positions"]
+        },
+        2023.5: {
+            # CSV position offset (for De Extra 500 2023)
+            "offset": 2000,
+            "csv_name": "De-Extra-500-2023.csv",
+            "json_name": "de-extra-500-van-2023-12-11.json",
             # See read_json_file for the defaults
             "rows": lambda data: data["positions"]
         }
     }
     try:
-        current_year = int(argv[0]) if len(argv) > 0 else 2023
+        current_year = float(argv[0]) if len(argv) > 0 else 2023
     except ValueError:
         print('Usage: python -m top2000 [year] [csv] [json]', file=sys.stderr)
         print('       [overview_csv] [overview_json] [overview_year] ...',
               file=sys.stderr)
         return 0
 
+    current_fields = fields.get(current_year, {})
     current_year_csv = argv[1] if len(argv) > 1 else \
-        csv_name_format.format(current_year)
+        current_fields.get("csv_name", csv_name_format).format(current_year)
     current_year_json = argv[2] if len(argv) > 2 else \
-        json_name_format.format(current_year)
-    overviews = (argv[3::3], argv[4::3], argv[5::3]) if len(argv) > 5 else [
-        (csv_name_format.format(year), json_name_format.format(year), str(year))
-        for year in range(first_csv_year, current_year)
+        current_fields.get("json_name", json_name_format).format(current_year)
+    old_years = set(range(first_csv_year, int(current_year)))
+    old_years.update(fields.keys())
+    old_years.discard(current_year)
+    old = tuple(zip(argv[3::3], argv[4::3],
+                    (int(year) for year in argv[5::3]))) if len(argv) > 5 else [
+        (fields.get(year, {}).get("csv_name", csv_name_format).format(year),
+         fields.get(year, {}).get("json_name", json_name_format).format(year),
+         year)
+        for year in sorted(old_years)
     ]
 
     positions, data = read_files(fields, current_year,
                                  current_year_csv=current_year_csv,
                                  current_year_json=current_year_json,
-                                 overviews=overviews)
+                                 overviews=old)
 
     settings = {
         "double": {

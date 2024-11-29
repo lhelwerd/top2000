@@ -74,7 +74,7 @@ def output_file(positions, data, first_year, current_year, columns_per_page=2,
                     extra_text = "\u21c4" # left right arrow
                     #extra_text = "\U0001f51b" # left right arrow
             else:
-                for year in range(current_year-2, first_year-1, -1):
+                for year in range(int(current_year)-2, first_year-1, -1):
                     if str(year) in track and track[str(year)] != "0":
                         #if current_year - year - 1 <= 1:
                         #    extra_text = "\xE2\x9F\xB3"
