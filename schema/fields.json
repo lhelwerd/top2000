@@ -1,0 +1,95 @@
+{
+    "$id": "https://lhelwerd.github.io/top2000/schema/fields.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Input file field mapping (JSON) and reading parameters (CSV)",
+    "$ref": "#/$defs/fields",
+    "$defs": {
+        "fields": {
+            "type": "object",
+            "properties": {
+                "years": {
+                    "type": "array",
+                    "items": {"$ref": "#/$defs/year"}
+                }
+            }
+        },
+        "year": {
+            "type": "object",
+            "properties": {
+                "year": {
+                    "type": "number",
+                    "minimum": 1999,
+                    "description": "Year for which the fields are configured."
+                },
+                "artist": {
+                    "type": "string",
+                    "default": "artist",
+                    "description": "Name of the artist field in a track."
+                },
+                "title": {
+                    "type": "string",
+                    "default": "title",
+                    "description": "Name of a song title field in a track."
+                },
+                "pos": {
+                    "type": "string",
+                    "default": "current",
+                    "description": "Name of a position field."
+                },
+                "prv": {
+                    "type": "string",
+                    "default": "previous",
+                    "description": "Name of a previous year position field."
+                },
+                "time": {
+                    "type": "string",
+                    "default": "broadcastUnixTime",
+                    "description": "Name of a timestamp field."
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {"type": ["string", "integer"]},
+                    "default": ["data", 0],
+                    "description": "Nested path to the relevant track data in the JSON response."
+                },
+                "csv": {
+                    "type": "object",
+                    "properties": {
+                        "encoding": {
+                            "type": "string",
+                            "description": "Character set encoding to read the CSV file as."
+                        },
+                        "offset": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Count to add to the CSV positions."
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Name format of the input CSV file."
+                        }
+                    }
+                },
+                "json": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name format of the input JSON file."
+                        },
+                        "old": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether the JSON file should be parsed as a legacy API response."
+                        },
+                        "skip": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to skip reading the JSON file."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

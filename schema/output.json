@@ -1,0 +1,51 @@
+{
+    "$id": "https://lhelwerd.github.io/top2000/schema/output.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Settings for different output formats",
+    "$ref": "#/$defs/output",
+    "$defs": {
+        "output": {
+            "type": "object",
+            "properties": {
+                "csv": {"$ref": "#/$defs/csv"}
+            }
+        },
+        "csv": {
+            "type": "object",
+            "patternProperties": {
+                "^[A-Za-z0-9_]+$": {
+                    "type": "object",
+                    "properties": {
+                        "columns_per_page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 2,
+                            "description": "Number of times the chart list is placed next to each other."
+                        },
+                        "rows_per_page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 100,
+                            "description": "Number of tracks placed below each other before moving to the next column on the page."
+                        },
+                        "reverse": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to output the lowest placed track first."
+                        },
+                        "column": {
+                            "type": "object",
+                            "patternProperties": {
+                                "^[a-z_]+$": {
+                                    "type": "string",
+                                    "description": "Localized column name."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

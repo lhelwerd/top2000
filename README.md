@@ -10,7 +10,7 @@ performs, with consideration for collaborations and individual artist charts.
 
 ## Requirements
 
-The module is written for recent Python versions, currently Python 3.6 and 
+The module is written for recent Python versions, currently Python 3.11 and 
 later is supported. The intention is to have few (if any) package dependencies.
 
 Necessary data files for different years were previously obtainable from the 
@@ -31,6 +31,23 @@ display of these texts between the files.
 
 In this repository, use `python -m top2000` to run the module to read the files 
 and output charts.
+
+This repository contains some settings files which may be customized in order 
+to adjust the normalization and formatting of this module. The following 
+settings files are considered:
+
+- `fields.toml`: File reading settings for different years of chart files, with 
+  subfields for JSON and CSV fields.
+- `fixes.toml`: Groups of lists and mappings of character sequences to adjust 
+  when finding alternative writing forms and preferred names of tracks and 
+  artists, which help with combining data of charts from different years or in 
+  different formats as well as external data.
+- `output.toml`: Formatting settings for different output formats, such as 
+  a multi-columnar CSV layout.
+
+In order to validate JSON files from APIs and TOML setting files, first install 
+`check-jsonschema` with `pip install check-jsonschema==0.30.0`, then run 
+`./validate_schema.sh` in this repository.
 
 ## License
 

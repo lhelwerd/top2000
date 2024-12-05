@@ -1,0 +1,138 @@
+{
+    "$id": "https://lhelwerd.github.io/top2000/schema/top2000.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "API response for official NPO Radio 2 Top 2000 list",
+    "$ref": "#/$defs/top2000",
+    "$defs": {
+        "top2000": {
+            "type": "object",
+            "oneOf": [
+                {
+                    "properties": {
+                        "positions": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/position2022+"}
+                        }
+                    },
+                    "required": ["positions"]
+                },
+                {
+                    "properties": {
+                        "positions": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/position2021"}
+                        }
+                    },
+                    "required": ["positions"]
+                },
+                {
+                    "properties": {
+                        "data": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {"$ref": "#/$defs/position2020-"}
+                            }
+                        }
+                    },
+                    "required": ["data"]
+                }
+            ]
+        },
+        "position2022+": {
+            "type": "object",
+            "properties": {
+                "broadcastUnixTime": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Approximate UNIX timestamp when the track at the position is played during the Top 2000."
+                },
+                "position": {
+                    "type": "object",
+                    "properties": {
+                        "current": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2500,
+                            "description": "Position of the track during the year that the API response describes."
+                        },
+                        "previous": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2000,
+                            "description": "Position of the track during the previous year. Zero means new."
+                        }
+                    },
+                    "required": ["current", "previous"]
+                },
+                "track": {
+                    "type": "object",
+                    "properties": {
+                        "artist": {
+                            "type": "string",
+                            "description": "Artist of the track."
+                        },
+                        "title": {
+                            "type": "string",
+                            "description": "Title of the track."
+                        }
+                    },
+                    "required": ["artist", "title"]
+                }
+            },
+            "required": ["position", "track"]
+        },
+        "position2021": {
+            "type": "object",
+            "properties": {
+                "position": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2000,
+                    "description": "Position of the track during the year that the API response describes."
+                },
+                "lastPosition": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2000,
+                    "description": "Position of the track during the previous year. Zero means new."
+                },
+                "artist": {
+                    "type": "string",
+                    "description": "Artist of the track."
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Title of the track."
+                }
+            },
+            "required": ["position", "lastPosition", "artist", "title"]
+        },
+        "position2020-": {
+            "type": "object",
+            "properties": {
+                "pos": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2000,
+                    "description": "Position of the track during the year that the API response describes."
+                },
+                "prv": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2000,
+                    "description": "Position of the track during the previous year. Zero means new."
+                },
+                "a": {
+                    "type": "string",
+                    "description": "Artist of the track."
+                },
+                "s": {
+                    "type": "string",
+                    "description": "Title of the track."
+                }
+            },
+            "required": ["pos", "prv", "a", "s"]
+        }
+    }
+}

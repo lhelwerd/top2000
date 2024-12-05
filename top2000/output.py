@@ -2,232 +2,356 @@
 CSV chart output.
 """
 
-# pylint: disable=too-many-arguments, too-many-locals, too-many-branches
-# pylint: disable=too-many-statements
-
-from collections import OrderedDict
 import csv
 from datetime import datetime
 from pathlib import Path
+import tomllib
+from typing import Sequence
+from .readers.base import Base as ReaderBase, Key, Row as Track, Positions, \
+    Tracks, Artists
 
-def output_file(positions, data, first_year, current_year, columns_per_page=2,
-                rows_per_page=100, reverse=False, columns=None, path=None):
+Setting = int | bool | dict[str, str]
+
+class Format:
     """
-    Write a CSV file as output.
+    Output formatter.
     """
 
-    previous_year = str(current_year - 1)
-    if columns is None:
-        columns = OrderedDict([
-            ("position", "nr."),
-            ("artist", "artiest"),
-            ("title", "titel")
-        ])
-    if path is None:
-        path = Path("output.csv")
+    def __init__(self, first_year: float, current_year: float) -> None:
+        self._first_year = int(first_year)
+        self._current_year = int(current_year)
+        with Path("output.toml").open("rb") as settings_file:
+            settings: dict[str, dict[str, dict[str, Setting]]] = \
+                tomllib.load(settings_file)
+            self._settings = settings.get(self.format, {})
 
-    # Headers sizes for 2 columns, 3 headers: 1,05cm 6,36cm 8,55cm
-    # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,90cm 0,30cm
-    # Disable print header/footer. Scale factor: 62%
-    # Format -> Print ranges -> Edit -> Rows to repeat -> $1
-    # Bold first row, right-align first and fourth column
-    # Add grey border at bottom of each/first row, between each 3-header column
-    header = list(columns.values()) * columns_per_page
-    with path.open("w", encoding='utf-8') as output:
-        writer = csv.writer(output)
-        writer.writerow(header)
-        rows = []
-        last_position = None
-        last_timestamp = None
-        lines = 0
-        extra_lines = 0
-        for position, keys in sorted(positions.items(),
-                                     key=lambda p: -p[0] if reverse else p[0]):
+        self.reset()
+
+    @property
+    def format(self) -> str:
+        """
+        Retrieve the format name as used in the output settings.
+        """
+
+        raise NotImplementedError("Must be defined by subclasses")
+
+    @property
+    def output_names(self) -> tuple[str, ...]:
+        """
+        Retrieve the output names relevant for this format.
+        """
+
+        return tuple(self._settings.keys())
+
+    def _get_int_setting(self, output_format: str, key: str,
+                         default: int = 0) -> int:
+        setting = self._settings.get(output_format, {}).get(key, default)
+        assert isinstance(setting, int), f"{key} must be an integer"
+        return setting
+
+    def _get_bool_setting(self, output_format: str, key: str,
+                          default: bool = False) -> bool:
+        setting = self._settings.get(output_format, {}).get(key, default)
+        assert isinstance(setting, bool), f"{key} must be a boolean"
+        return setting
+
+    def _get_dict_setting(self, output_format: str, key: str) -> dict[str, str]:
+        setting = self._settings.get(output_format, {}).get(key, {})
+        assert isinstance(setting, dict), f"{key} must be a mapping"
+        return setting
+
+    def reset(self) -> None:
+        """
+        Reset current output format state.
+
+        Subclasses may call this whenever they want to set variables to initial
+        state.
+        """
+
+    def output_file(self, data: ReaderBase, output_format: str,
+                    path: Path | None = None) -> bool:
+        """
+        Output a formatted file based on positions and associated track data.
+        """
+
+        raise NotImplementedError("Must be implemented by subclasses")
+
+class CSV(Format):
+    """
+    CSV file with multi-column layout.
+    """
+
+    @property
+    def format(self) -> str:
+        return "csv"
+
+    def reset(self) -> None:
+        self._rows: list[list[str]] = []
+        self._last_position: int | None = None
+        self._last_timestamp: str | None = None
+        self._lines = 0
+        self._extra_lines = 0
+
+    def output_file(self, data: ReaderBase, output_format: str,
+                    path: Path | None = None) -> bool:
+        if path is None:
+            path = Path(f"output-{output_format}.csv")
+
+        # Headers sizes for 2 columns, 3 headers: 1,05cm 6,36cm 8,55cm
+        # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,90cm 0,30cm
+        # Disable print header/footer. Scale factor: 62%
+        # Format -> Print ranges -> Edit -> Rows to repeat -> $1
+        # Bold first row, right-align first and fourth column
+        # Add grey border at bottom of each/first row, between 3-header column
+        columns = self._get_int_setting(output_format, "columns_per_page", 2)
+        column_names = self._get_dict_setting(output_format, "columns")
+        reverse = self._get_bool_setting(output_format, "reverse")
+        header = list(column_names.values()) * columns
+        self.reset()
+        with path.open("w", encoding='utf-8') as output:
+            writer = csv.writer(output)
+            writer.writerow(header)
+            for position, keys in self._sort_positions(data.positions, reverse):
+                self._check_position(position, reverse)
+
+                cells = self._format_cells(position, keys, data.tracks,
+                                           data.artists)
+                if self._format_timestamp(output_format, cells, data.positions,
+                                          position):
+                    writer.writerows(self._rows)
+                    self._rows = []
+
+                row = [cells.get(column, "") for column in column_names]
+                #writer.writerow(row)
+
+                self.validate_row(keys, cells, data.tracks, data.artists)
+
+                if self.add_row(output_format, row, data.positions, position):
+                    #print('WRITE')
+                    writer.writerows(self._rows)
+                    self._rows = []
+                    self._extra_lines = 0
+
+                self._last_position = position #+ self.extra_lines
+
+            if self._rows:
+                writer.writerows(self._rows)
+
+
+        print(f'{self._lines} lines above indicate problems with tracks.')
+        return self._lines == 0
+
+    def _sort_positions(self, positions: Positions,
+                        reverse: bool) -> list[tuple[int, list[Key]]]:
+        return sorted(positions.items(),
+                      key=lambda pair: -pair[0] if reverse else pair[0])
+
+    def _check_position(self, position: int, reverse: bool) -> None:
+        if self._last_position is not None:
             if reverse:
-                if last_position is not None and position + 1 != last_position:
+                if position + 1 != self._last_position:
                     raise ValueError(f"Missing: {position + 1}")
             else:
-                if last_position is not None and position - 1 != last_position:
+                if position - 1 != self._last_position:
                     raise ValueError(f"Missing: {position - 1}")
 
-            key = keys[0]
-            track = data["tracks"][key]
-            artist = track["artiest"]
-            title = track["titel"]
+    def _format_cells(self, position: int, keys: Sequence[Key],
+                      tracks: Tracks, artists: Artists) -> dict[str, str]:
+        key = keys[0]
+        track = tracks[key]
+        artist = str(track["artiest"])
+        title = str(track["titel"])
 
-            extra_text = "\u2234" # therefore sign
-            #extra_text = "\U0001f195" # new sign
-            if previous_year in track:
-                previous_position = int(track[previous_year])
-                diff = abs(position - previous_position)
-                if position < previous_position:
-                    #extra_text = f"\xE2\x86\x91{diff}" # upwards arrow
-                    #extra_text = f"\u2b06\ufe0e{diff}" # upwards arrow
-                    #extra_text = f"\u21b0{diff}" # upwards arrow
-                    extra_text = f"\u219f{diff}" # upwards arrow
-                elif position > previous_position:
-                    #extra_text = f"\xE2\x86\x93{diff}" # downwards arrow
-                    #extra_text = f"\u2b07\ufe0e{diff}" # downwards arrow
-                    #extra_text = f"\u21b2{diff}" # downwards arrow
-                    extra_text = f"\u21a1{diff}" # downwards arrow
-                else:
-                    extra_text = "\u21c4" # left right arrow
-                    #extra_text = "\U0001f51b" # left right arrow
-            else:
-                for year in range(int(current_year)-2, first_year-1, -1):
-                    if str(year) in track and track[str(year)] != "0":
-                        #if current_year - year - 1 <= 1:
-                        #    extra_text = "\xE2\x9F\xB3"
-                        #    extra_text *= current_year - year - 1
-                        #else:
-                        #extra_text = f"\u27f2{year}" # rotation
-                        #extra_text = f"\xE2\x86\xBA{year}" # rotation
-                        extra_text = f"\u21ba{year}" # rotation
-                        #extra_text = f"\U0001f504{year}" # arrow circle
-                        break
+        extra_text = self._format_rank_change(track, position)
 
-            # Album version indicator
-            if track.get("album_version"):
-                title += " \u29be"
+        # Album version indicator
+        if track.get("album_version"):
+            title += " \u29be"
 
-            max_artist = 0
-            max_artist_key = None
-            max_track_position = 0
-            for possible_key in keys:
-                #if track["titel"] == "We All Stand Together":
-                #    print(possible_key, max_artist, max_artist_key,
-                #          data["artists"].get(possible_key[0]))
-                if possible_key[0] not in data["artists"]:
-                    continue
-                num_tracks = len(data["artists"][possible_key[0]])
-                track_position = data["artists"][possible_key[0]].index(position)
-                #if title.startswith("Als Ik Je Weer Zie"):
-                #    print(possible_key, num_tracks, track_position,
-                #          max_artist, max_track_position)
-                if num_tracks > max_artist or \
-                        (num_tracks == max_artist and
-                         track_position > max_track_position):
-                    # Doesn't it make more sense to do track_position < max...
-                    # so that we show the best position among the artists?
-                    max_artist = num_tracks
-                    max_artist_key = possible_key[0]
-                    max_track_position = data["artists"][possible_key[0]].index(position)
+        max_artist_key = self._find_artist_chart(position, keys, artists)
+        extra_text += self._format_artist_chart(position,
+                                                max_artist_key, artists)
 
-            #artist_key = key[0]
-            if max_artist_key in data["artists"]:
-                artist_tracks = data["artists"][max_artist_key]
-                #print(max_artist_key, artist_tracks)
-                artist_pos = artist_tracks.index(position)+1
-                #if len(artist_tracks) == artist_pos:
-                #    extra_text += f" {artist_pos}"
+        for title_year_field in ('yr', 'jaar'):
+            if title_year_field in track:
+                artist += f" ({track[title_year_field]})"
+                break
+
+        return {
+            "position": str(position),
+            "artist": artist,
+            "title": f"{title} ({extra_text})",
+            "timestamp": str(track.get("timestamp", ""))
+        }
+
+    def _format_rank_change(self, track: Track, position: int) -> str:
+        previous_year = str(self._current_year - 1)
+        if previous_year in track:
+            previous_position = int(track[previous_year])
+            diff = abs(position - previous_position)
+            if position < previous_position:
+                #return f"\xE2\x86\x91{diff}" # upwards arrow
+                #return f"\u2b06\ufe0e{diff}" # upwards arrow
+                #return f"\u21b0{diff}" # upwards arrow
+                return f"\u219f{diff}" # upwards arrow
+            if position > previous_position:
+                #return f"\xE2\x86\x93{diff}" # downwards arrow
+                #return f"\u2b07\ufe0e{diff}" # downwards arrow
+                #return f"\u21b2{diff}" # downwards arrow
+                return f"\u21a1{diff}" # downwards arrow
+
+            # Stayed the same
+            return "\u21c4" # left right arrow
+            #return "\U0001f51b" # left right arrow
+
+        for year in range(self._current_year - 2, self._first_year - 1, -1):
+            if str(year) in track and track[str(year)] != "0":
+                #if current_year - year - 1 <= 1:
+                #    extra_text = "\xE2\x9F\xB3"
+                #    extra_text *= current_year - year - 1
+                #    return extra_text
                 #else:
-                extra_text += f" {artist_pos}/{len(artist_tracks)}"
+                #return f"\u27f2{year}" # rotation
+                #return f"\xE2\x86\xBA{year}" # rotation
+                return f"\u21ba{year}" # rotation
+                #return f"\U0001f504{year}" # arrow circle
 
-            for title_year_field in ('yr', 'jaar'):
-                if title_year_field in track:
-                    artist += f" ({track[title_year_field]})"
-                    break
+        return "\u2234" # therefore sign
+        #return "\U0001f195" # new sign
 
-            cells = {
-                "position": position,
-                "artist": artist,
-                "title": f"{title} ({extra_text})"
-            }
+    @staticmethod
+    def _find_artist_chart(position: int, keys: Sequence[Key],
+                           artists: Artists) -> str | None:
+        max_tracks = 0
+        max_artist_key = None
+        max_position = 0
+        for possible_key in keys:
+            #if track["titel"] == "We All Stand Together":
+            #    print(possible_key, max_tracks, max_artist_key,
+            #          artists.get(possible_key[0]))
+            if possible_key[0] not in artists:
+                continue
+            num_tracks = len(artists[possible_key[0]])
+            track_position = artists[possible_key[0]].index(position)
+            #if title.startswith("Als Ik Je Weer Zie"):
+            #    print(possible_key, num_tracks, track_position,
+            #          max_tracks, max_position)
+            if num_tracks > max_tracks or \
+                    (num_tracks == max_tracks and
+                     track_position > max_position):
+                # Doesn't it make more sense to do track_position < max...
+                # so that we show the best position among the artists?
+                max_tracks = num_tracks
+                max_artist_key = possible_key[0]
+                max_position = artists[possible_key[0]].index(position)
 
-            #if 'timestamp' in track:
-            #    parts = track['timestamp'].split(' ')
-            #    time += f"{parts[0]}/12 {int(parts[2].split('-')[0]):02}:00"
-            #    artist += time
-            if 'timestamp' in track:
-                if isinstance(track['timestamp'], str) and last_timestamp is not None:
-                    parts = track['timestamp'].split(' ')
-                    time = f" {parts[0]}/12 {int(parts[2].split('-')[0]):02}:00"
-                    if time != last_timestamp:
-                        last_timestamp = time
-                        if add_row(rows, ['', time, ''], positions, position,
-                                   last_position, extra_lines, rows_per_page,
-                                   columns_per_page, reverse):
-                            #print('WRITE')
-                            writer.writerows(rows)
-                            rows = []
-                            extra_lines = 0
-                        else:
-                            extra_lines += 1
-                elif isinstance(track['timestamp'], int):
-                    date = datetime.fromtimestamp(track['timestamp'] / 1000)
-                    cells["timestamp"] = datetime.strftime(date, "%d.%H:%M")
-                #else:
-                #    print(track)
+        return max_artist_key
+
+    @staticmethod
+    def _format_artist_chart(position: int, max_artist_key: str | None,
+                             artists: Artists) -> str:
+        if max_artist_key in artists:
+            artist_tracks = artists[max_artist_key]
+            #print(max_artist_key, artist_tracks)
+            artist_pos = artist_tracks.index(position) + 1
+            #if len(artist_tracks) == artist_pos:
+            #    extra_text += f" {artist_pos}"
             #else:
-            #    print(track)
+            return f" {artist_pos}/{len(artist_tracks)}"
+        return ""
 
-            row = [cells.get(column, "") for column in columns]
-            #writer.writerow(row)
+    def _format_timestamp(self, output_format: str, cells: dict[str, str],
+                          positions: Positions, position: int) -> bool:
+        #if 'timestamp' in track:
+        #    parts = track['timestamp'].split(' ')
+        #    time += f"{parts[0]}/12"
+        #    time += f" {int(parts[2].split('-')[0]):02}:00"
+        #    artist += time
+        if 'timestamp' in cells:
+            if cells['timestamp'].isnumeric():
+                date = datetime.fromtimestamp(int(cells['timestamp']) / 1000)
+                cells["timestamp"] = datetime.strftime(date, "%d.%H:%M")
+                return False
+            if self._last_timestamp is not None:
+                parts = cells['timestamp'].split(' ')
+                time = f" {parts[0]}/12 {int(parts[2].split('-')[0]):02}:00"
+                cells.pop('timestamp')
+                if time != self._last_timestamp:
+                    self._last_timestamp = time
+                    if self.add_row(output_format, ['', time, ''],
+                                    positions, position):
+                        self._extra_lines = 0
+                        return True
 
-            # pylint: disable=line-too-long
+                    self._extra_lines += 1
+                    return False
+            #print(track)
+        #else:
+        #    print(track)
+        return False
 
-            # Start debug lines
+    def validate_row(self, keys: list[Key], cells: dict[str, str],
+                     tracks: Tracks, artists: Artists) -> None:
+        """
+        Validate whether a track to be output is actually proper.
+        """
+        # pylint: disable=line-too-long, unused-argument
 
-            #line = f"{position}. {artist} - {title} ({extra_text})"
-            #prv_field = "prv"
+        # Start debug lines
 
-            # SONGS THAT WERE RELEASED BEFORE THIS YEAR BUT ARE NEW
-            #first_csv_year = 2014
-            #if all(str(year) not in track for year in range(first_csv_year, current_year)) and ("jaar" not in track or track["jaar"] != str(current_year)):#and position < 1224:
-            # OLD VERSIONS OF THE FORMER
-            #if "2018" not in track and "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("yr" not in track or track["yr"] != str(current_year)): #and position > 1773:
-            #if "2018" not in track and ("2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
-            #if "2019" not in track and ("2018" in track or "2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(current_year)): #and position > 1773:
-            # MISSING YEARS
-            #if 'yr' not in track and 'jaar' not in track:
-            # UPPERCASE ARTISTS/TITLES (sometimes happens with new tracks?)
-            #if (artist.isupper() or title.isupper() or artist.islower() or title.islower()) and (title.isupper() or track["artiest"] not in ("U2", "10cc", "INXS", "KISS", "Q65", "LP", "ABBA", "MGMT", "R.E.M.", "UB40", "3JS", "BAP", "AC/DC", "S10")):
-                #pass
-            # INCONSISTENT PREVIOUS YEAR FIELDS (missing/wrong merges/etc)
-            #if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))):
-            #if max_artist_key not in data["artists"] or (len(data["artists"][max_artist_key]) == 1 and artist.count(' ') > 2):
-                #lines += 1
-                #print(line)
-                #print(track)
-                #print(keys)
-                #print(f"{line} prv={track[prv_field]} {previous_year}={track.get(previous_year)}")
+        #line = f'{cells["position"]}. {cells["artist"]} - {cells["title"]}'
+        #prv_field = "prv"
 
-            if add_row(rows, row, positions, position, last_position,
-                       extra_lines, rows_per_page, columns_per_page, reverse):
-                #print('WRITE')
-                writer.writerows(rows)
-                rows = []
-                extra_lines = 0
+        #previous_year = str(self._current_year - 1)
+        #track = tracks[keys[0]]
+        #artist = track["artiest"]
+        #title = track["titel"]
+        # SONGS THAT WERE RELEASED BEFORE THIS YEAR BUT ARE NEW
+        #first_csv_year = 2014
+        #if all(str(year) not in track for year in range(first_csv_year, self._current_year)) and ("jaar" not in track or track["jaar"] != str(self._current_year)):#and position < 1224:
+        # OLD VERSIONS OF THE FORMER
+        #if "2018" not in track and "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("yr" not in track or track["yr"] != str(self._current_year)): #and position > 1773:
+        #if "2018" not in track and ("2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(self._current_year)): #and position > 1773:
+        #if "2019" not in track and ("2018" in track or "2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(self._current_year)): #and position > 1773:
+        # MISSING YEARS
+        #if 'yr' not in track and 'jaar' not in track:
+        # UPPERCASE ARTISTS/TITLES (sometimes happens with new tracks?)
+        #if (artist.isupper() or title.isupper() or artist.islower() or title.islower()) and (title.isupper() or track["artiest"] not in ("U2", "10cc", "INXS", "KISS", "Q65", "LP", "ABBA", "MGMT", "R.E.M.", "UB40", "3JS", "BAP", "AC/DC", "S10")):
+            #pass
+        # INCONSISTENT PREVIOUS YEAR FIELDS (missing/wrong merges/etc)
+        #if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))):
+        #if max_artist_key not in artists or (len(artists[max_artist_key]) == 1 and artist.count(' ') > 2):
+            #self._lines += 1
+            #print(line)
+            #print(track)
+            #print(keys)
+            #print(f"{line} prv={track[prv_field]} {previous_year}={track.get(previous_year)}")
 
-            last_position = position #+ extra_lines
+    def add_row(self, output_format: str, row: list[str], positions: Positions,
+                position: int) -> bool:
+        """
+        Insert a row in the proper location of a page of a CSV spreadsheet if it
+        were printed in certain column counts and rows per page.
+        """
 
-        if rows:
-            writer.writerows(rows)
-
-
-    print(f'{lines} lines above indicate fixes that may need to be applied.')
-    return lines == 0
-
-def add_row(rows, row, positions, position, last_position, extra_lines,
-            rows_per_page, columns_per_page, reverse):
-    """
-    Insert a row in the proper location of a page of a CSV spreadsheet if it
-    were printed in certain column counts and rows per page.
-    """
-
-    rows_total = rows_per_page * columns_per_page
-    if reverse:
-        page_position = (len(positions) - position + 1 - extra_lines) % rows_total
-    else:
-        page_position = (position + extra_lines) % rows_total
-
-    if columns_per_page > 1 and (page_position == 0 or page_position > rows_per_page):
+        rows = self._get_int_setting(output_format, "rows_per_page", 100)
+        columns = self._get_int_setting(output_format, "columns_per_page", 2)
+        reverse = self._get_bool_setting(output_format, "reverse")
+        rows_total = rows * columns
         if reverse:
-            last_row = (len(positions) - last_position + 1) % rows_per_page
+            page_position = len(positions) - position + 1 - self._extra_lines
+            page_position %= rows_total
         else:
-            last_row = last_position % rows_per_page
-        rows[last_row].extend(row)
-    else:
-        rows.append(row)
+            page_position = (position + self._extra_lines) % rows_total
 
-    return page_position == 0
+        if columns > 1 and self._last_position is not None and \
+                (page_position == 0 or page_position > rows):
+            if reverse:
+                last_row = (len(positions) - self._last_position + 1) % rows
+            else:
+                last_row = self._last_position % rows
+            self._rows[last_row].extend(row)
+        else:
+            self._rows.append(row)
+
+        return page_position == 0

@@ -3,42 +3,100 @@ Multiple file reader.
 """
 
 from pathlib import Path
-from .csv import read_csv_file
-from .json import read_json_file, read_old_json_file
+from .base import Base
+from .csv import CSV
+from .json import JSON
 
-def read_files(fields, current_year, current_year_csv=None,
-               current_year_json=None, overviews=None):
+OldFiles = tuple[tuple[str, str, float], ...]
+
+class Years(Base):
     """
-    Read JSON and/or CSV files for the current year.
+    Read CSV and JSON files describing NPO Radio Top 2000 charts from multiple
+    different years in order to obtain track metadata and positions.
     """
 
-    data = {"artists": {}, "tracks": {}}
-    positions = {}
-    # Read current year
-    if current_year_json is not None and current_year_json != "":
-        positions = read_json_file(Path(current_year_json), data,
-                                   fields[current_year], year=None)
-    if current_year_csv is not None and current_year_csv != "":
-        positions = read_csv_file(Path(current_year_csv), data, year=None,
-                                  positions=positions, pos_field="positie",
-                                  offset=fields[current_year].get("offset", 0),
-                                  encoding=fields[current_year].get("encoding", "utf-8"))
+    @property
+    def input_format(self) -> str | None:
+        return None
 
-    if overviews is None:
-        return positions, data
+    @property
+    def years(self) -> list[float]:
+        """
+        Retrieve known years from field settings.
+        """
 
-    for (overview_csv_name, overview_json_name, year) in overviews:
-        overview_json_path = Path(overview_json_name)
-        if overview_json_path.exists() and not fields[year].get("skip"):
-            if fields[year].get("old"):
-                read_old_json_file(overview_json_path, data,
-                                   fields[year], year=str(int(year)))
+        return list(self._fields.keys())
+
+    def format_filenames(self, csv_name_format: str | None = None,
+                         json_name_format: str | None = None, *,
+                         year: float | None = None) -> tuple[str, str]:
+        """
+        Format CSV and JSON filenames for a particular year.
+        """
+
+        if year is None:
+            year = self._year
+
+        if csv_name_format is None:
+            csv_name_format = self._fields.get_str_field(year, "csv", "name",
+                                                         self.csv_name_format)
+        csv_name = csv_name_format.format(year)
+
+        if json_name_format is None:
+            json_name_format = self._fields.get_str_field(year, "json", "name",
+                                                          self.json_name_format)
+
+        json_name = json_name_format.format(year)
+
+        return csv_name, json_name
+
+    def read(self) -> None:
+        csv_name, json_name = self.format_filenames()
+        self.read_files(csv_name, json_name)
+
+    def read_files(self, current_year_csv: str | None = None,
+                   current_year_json: str | None = None,
+                   old: OldFiles | None = None) -> None:
+        """
+        Read JSON and/or CSV files for the current year as well as older years.
+        """
+
+        self.reset()
+
+        # Read current year
+        if current_year_json is not None and current_year_json != "":
+            json = JSON(self._year, fields=self._fields)
+            json.read_file(Path(current_year_json), tracks=self._tracks,
+                           artists=self._artists)
+            self._positions = json.positions
+        if current_year_csv is not None and current_year_csv != "":
+            csv = CSV(self._year, fields=self._fields)
+            csv.read_file(Path(current_year_csv), positions=self._positions,
+                          tracks=self._tracks, artists=self._artists)
+            self._positions = csv.positions
+
+        if old is not None:
+            self._read_old_files(old)
+
+    def _read_old_files(self, old: OldFiles) -> None:
+        """
+        Read files from earlier years, potentially with multiple year data
+        in them.
+        """
+
+        for (overview_csv_name, overview_json_name, year) in old:
+            overview_json_path = Path(overview_json_name)
+            skip_json = self._fields.get_bool_field(year, "json", "skip")
+            if overview_json_path.exists() and not skip_json:
+                json = JSON(year, is_current_year=False, fields=self._fields)
+                if self._fields.get_bool_field(year, "json", "old"):
+                    json.read_old_file(overview_json_path, tracks=self._tracks)
+                else:
+                    json.read_file(overview_json_path, tracks=self._tracks)
             else:
-                read_json_file(overview_json_path, data, fields[year],
-                               year=str(int(year)))
-        else:
-            read_csv_file(Path(overview_csv_name), data, year=year,
-                          pos_field=f"pos {year}",
-                          encoding=fields.get(year, {}).get("encoding", "utf-8"))
-
-    return positions, data
+                # No JSON file, so instead use CSV (very old years)
+                # These are overview CSV files with possibly multiple years
+                # The current year position is stored in a "pos XXXX" field
+                self._fields.update_year(year, {"csv": {"pos": f"pos {year}"}})
+                csv = CSV(year, is_current_year=False, fields=self._fields)
+                csv.read_file(Path(overview_csv_name), tracks=self._tracks)

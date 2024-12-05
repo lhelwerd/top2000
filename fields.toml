@@ -1,0 +1,30 @@
+# These year settings make use of old JSON files. If you download a new JSON
+# API response, then you may need to adjust settings (more toward current year).
+[[years]]
+year = 2019
+json = {artist="a", title="s", pos="pos", prv="prv", old=true, rows=["data", 0]}
+
+[[years]]
+year = 2020
+json = {artist="a", title="s", pos="pos", prv="prv", old=true, rows=["data", 0]}
+
+[[years]]
+year = 2021
+json = {old=true, rows=["positions"]}
+csv.encoding = "windows-1252"
+
+[[years]]
+year = 2022
+csv.encoding = "windows-1252"
+json.rows = ["positions"]
+
+[[years]]
+year = 2023
+json.rows = ["positions"]
+
+[[years]]
+year = 2023.5
+csv.offset = 2000
+csv.name = "De-Extra-500-2023.csv"
+json.name = "de-extra-500-van-2023-12-11.json"
+json.rows = ["positions"]

@@ -1,0 +1,40 @@
+{
+    "$id": "https://lhelwerd.github.io/top2000/schema/fixes.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Changes applied to artists and track titles to improve matching and display",
+    "$ref": "#/$defs/fixes",
+    "$defs": {
+        "fixes": {
+            "type": "object",
+            "patternProperties": {
+                "^.+$": {
+                    "type": "object",
+                    "oneOf": [
+                        {"$ref": "#/$defs/fixes_list"},
+                        {"$ref": "#/$defs/fixes_mapping"}
+                    ],
+                    "required": ["type", "items"]
+                }
+            }
+        },
+        "fixes_list": {
+            "type": "object",
+            "properties": {
+                "type": {"const": "list"},
+                "items": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            }
+        },
+        "fixes_mapping": {
+            "type": "object",
+            "properties": {
+                "type": {"const": "mapping"},
+                "items": {
+                    "type": "object"
+                }
+            }
+        }
+    }
+}

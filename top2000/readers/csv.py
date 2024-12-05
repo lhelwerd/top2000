@@ -2,27 +2,47 @@
 NPO Radio 2 Top 2000 CSV reader.
 """
 
-# pylint: disable=too-many-arguments
-
 import csv
-from .base import read_row
+from pathlib import Path
+from .base import Base, Positions, Tracks, Artists
 
-def read_csv_file(csv_path, data, year=None, positions=None, pos_field="pos",
-                  artist_field="artiest", title_field="titel", offset=0,
-                  encoding="utf-8"):
+class CSV(Base):
     """
-    Read a CSV file with track position data.
+    Read CSV file describing NPO Radio 2 Top 2000 charts from one or more years.
     """
 
-    if positions is None:
-        positions = {}
-    last_time = None
-    with csv_path.open('r', encoding=encoding) as csv_file:
-        reader = csv.DictReader(csv_file)
-        for row in reader:
-            # Python 3.6 provides OrderedDict which is slower to process
-            last_time = read_row(dict(row), data, positions, year, pos_field,
-                                 artist_field, title_field, last_time=last_time,
-                                 offset=offset)
+    @property
+    def input_format(self) -> str | None:
+        return "csv"
 
-    return positions
+    def read(self) -> None:
+        csv_name_format = self._get_str_field("name", self.csv_name_format)
+        csv_path = Path(csv_name_format.format(int(self._year)))
+        self.read_file(csv_path)
+
+    def read_file(self, csv_path: Path, positions: Positions | None = None,
+                  tracks: Tracks | None = None,
+                  artists: Artists | None = None) -> None:
+        """
+        Read a CSV file with track position data.
+        """
+
+        self.reset()
+        if positions is not None:
+            self._positions = positions
+        if tracks is not None:
+            self._tracks = tracks
+        if artists is not None:
+            self._artists = artists
+
+        encoding = self._get_str_field("encoding", "utf-8")
+        fields = {
+            "pos": self._get_str_field("pos", "positie"),
+            "artist": self._get_str_field("artist", "artiest"),
+            "title": self._get_str_field("title", "titel")
+        }
+        offset = self._get_int_field("offset", 0)
+        with csv_path.open('r', encoding=encoding) as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                self._read_row(row, fields, offset=offset)
