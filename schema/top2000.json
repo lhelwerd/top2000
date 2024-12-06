@@ -44,8 +44,8 @@
             "properties": {
                 "broadcastUnixTime": {
                     "type": "integer",
-                    "minimum": 0,
-                    "description": "Approximate UNIX timestamp when the track at the position is played during the Top 2000."
+                    "minimum": 946076400000,
+                    "description": "Approximate UNIX timestamp times 1000 (milliseconds precision) when the track at the position is played during the Top 2000."
                 },
                 "position": {
                     "type": "object",

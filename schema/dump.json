@@ -1,0 +1,104 @@
+{
+    "$id": "https://lhelwerd.github.io/top2000/schema/dump.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "JSON dump output format",
+    "$ref": "#/$defs/dump",
+    "$defs": {
+        "dump": {
+            "type": "object",
+            "properties": {
+                "tracks": {
+                    "type": "array",
+                    "items": {"$ref": "#/$defs/track"},
+                    "minItems": 2000,
+                    "maxItems": 2500,
+                    "uniqueItems": true
+                },
+                "positions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/position",
+                        "description": "Track position at the index for the current year."
+                    }
+                },
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/key"},
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "description": "Normalized key pairs for the artist and track at the index."
+                    },
+                    "minItems": 2000,
+                    "maxItems": 2500
+                },
+                "artists": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[^A-Z]+$": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/position"},
+                            "description": "Track positions for the normalized aurtist key."
+                        }
+                    },
+                    "minProperties": 1,
+                    "additionalProperties": false
+                },
+                "year": {
+                    "type": "number",
+                    "minimum": 1999,
+                    "description": "Year in which the chart was broadcast."
+                }
+            }
+        },
+        "track": {
+            "type": "object",
+            "properties": {
+                "artist": {
+                    "type": "string",
+                    "description": "Preferred writing form of the artist of the track."
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Preferred writing form of the title of the track."
+                },
+                "album_version": {
+                    "type": "boolean",
+                    "description": "Whether the album version of the track would be played."
+                },
+                "year": {
+                    "type": "integer",
+                    "minimum": 1900,
+                    "description": "Year in which the track was released."
+                },
+                "timestamp": {
+                    "type": "integer",
+                    "minimum": 946076400000,
+                    "description": "Approximate UNIX timestamp times 1000 (milliseconds precision) when the track at the position is played during the Top 2000."
+                }
+            },
+            "patternProperties": {
+                "^(1999|[2-9][0-9][0-9][0-9])$": {
+                    "$ref": "#/$defs/position",
+                    "description": "Position of the track in the earlier year."
+                }
+            }
+        },
+        "key": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+                "type": "string",
+                "pattern": "^[^A-Z]+$"
+            }
+        },
+        "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2500
+        }
+    }
+}
+

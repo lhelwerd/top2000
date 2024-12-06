@@ -20,4 +20,10 @@ timestamp = "tijd"
 [json]
 
 [json.sorted]
-
+[json.sorted.fields]
+artiest = "artist"
+titel = "title"
+album_version = "album_version"
+yr = "year"
+jaar = "year"
+timestamp = "timestamp"
