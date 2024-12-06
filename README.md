@@ -15,13 +15,19 @@ later is supported. The intention is to have few (if any) package dependencies.
 
 Necessary data files for different years were previously obtainable from the 
 [NPO Radio 2 Top 2000](https://www.nporadio2.nl/top2000) website. However, 
-downloads for older years might no longer be available there. We make use of 
-several input formats:
+downloads for older years might no longer be available there and the [terms of 
+service](https://npo.nl/overnpo/algemene-voorwaarden/algemene-voorwaarden-online) 
+of NPO might make it not acceptable to share these files nor provide automated 
+methods of obtaining them. We make use of several input formats:
 
 - We read CSV files which are based on the Excel (.xlsx) downloads from the 
   official website.
 - We read JSON files which are obtained from the API that feeds the official 
   website with the chart list.
+
+If you download fresh API responses to JSON files, you might need to adjust 
+settings in `fields.toml` in order to properly read them; see details there and 
+in the [Running](#running) section.
 
 We combine data from these input sources to improve upon detection of the same 
 track across years, normalization of artist and track names and preference of 
