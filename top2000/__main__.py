@@ -3,7 +3,7 @@ Parse lists of song tracks in the NPO Radio 2 Top 2000 from various years.
 """
 
 import sys
-from .output import CSV
+from .output.csv import CSV
 from .readers.multi import Years, OldFiles
 
 def main(argv: list[str]) -> int:
@@ -17,7 +17,7 @@ def main(argv: list[str]) -> int:
         current_year = float(argv[0]) if len(argv) > 0 else 2023
     except ValueError:
         print('Usage: python -m top2000 [year] [csv] [json]', file=sys.stderr)
-        print('       [overview_csv] [overview_json] [overview_year] ...',
+        print('       [overview_csv] [old_json] [old_year] ...',
               file=sys.stderr)
         return 0
 

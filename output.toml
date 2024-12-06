@@ -16,3 +16,8 @@ position = "nr."
 artist = "artiest"
 title = "titel"
 timestamp = "tijd"
+
+[json]
+
+[json.sorted]
+
