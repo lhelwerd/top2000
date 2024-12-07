@@ -46,8 +46,6 @@ class CSV(Format):
             writer = csv.writer(output)
             writer.writerow(header)
             for position, keys in self._sort_positions(data.positions, reverse):
-                self._check_position(position, reverse)
-
                 cells = self._format_cells(position, keys, data.tracks,
                                            data.artists)
                 if self._format_timestamp(output_format, cells, data.positions,
@@ -66,7 +64,9 @@ class CSV(Format):
                     self._rows = []
                     self._extra_lines = 0
 
-                self._last_position = position #+ self.extra_lines
+                # Check position ordering last so that add_row can access
+                # previous position still
+                self._check_position(position, reverse)
 
             if self._rows:
                 writer.writerows(self._rows)
