@@ -37,6 +37,7 @@ class JSON(Base):
             "pos": self._get_str_field("pos", "position"),
             "artist": self._get_str_field("artist", "artist"),
             "title": self._get_str_field("title", "title"),
+            "year": self._get_str_field("year", "year"),
             "prv": self._get_str_field("prv", "lastPosition")
         }
 

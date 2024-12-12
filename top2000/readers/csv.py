@@ -39,7 +39,8 @@ class CSV(Base):
         fields = {
             "pos": self._get_str_field("pos", "positie"),
             "artist": self._get_str_field("artist", "artiest"),
-            "title": self._get_str_field("title", "titel")
+            "title": self._get_str_field("title", "titel"),
+            "year": self._get_str_field("year", "jaar")
         }
         offset = self._get_int_field("offset", 0)
         with csv_path.open('r', encoding=encoding) as csv_file:

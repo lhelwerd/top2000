@@ -2,11 +2,11 @@
 # API response, then you may need to adjust settings (more toward current year).
 [[years]]
 year = 2019
-json = {artist="a", title="s", pos="pos", prv="prv", old=true, rows=["data", 0]}
+json = {artist="a", title="s", pos="pos", prv="prv", year="yr", old=true, rows=["data", 0]}
 
 [[years]]
 year = 2020
-json = {artist="a", title="s", pos="pos", prv="prv", old=true, rows=["data", 0]}
+json = {artist="a", title="s", pos="pos", prv="prv", year="yr", old=true, rows=["data", 0]}
 
 [[years]]
 year = 2021
