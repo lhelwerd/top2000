@@ -258,15 +258,17 @@ class Base(metaclass=ABCMeta):
             self._tracks[best_key][str(int(self._year))] = position
 
         self._set_position_keys(position, best_key, keys, rejected_keys)
+        return best_key, position
 
     def _check_album_version(self, row: Row, title_field: str) -> None:
         # Album version indicator
         # For older years, this is removed in the title alternatives
         title = str(row[title_field])
-        if title.lower().endswith("albumversie)"):
+        if "(" in title and ")" in title and "albumversie" in title.lower():
             row["album_version"] = True
             row[title_field] = title.replace(" (Albumversie)", "") \
-                .replace(" (albumversie)", "").replace(" Albumversie)", ")")
+                .replace(" (albumversie)", "").replace(" Albumversie)", ")") \
+                .replace(" (Albumversie ", " (")
 
     def _check_timestamp(self, row: Row, time_field: str | None) -> None:
         if time_field is not None and time_field in row:
