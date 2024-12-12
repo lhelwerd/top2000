@@ -264,11 +264,10 @@ class Base(metaclass=ABCMeta):
         # Album version indicator
         # For older years, this is removed in the title alternatives
         title = str(row[title_field])
-        if "(" in title and ")" in title and "albumversie" in title.lower():
+        new_title = Normalizer.get_instance().check_album_version(title)
+        if title != new_title:
             row["album_version"] = True
-            row[title_field] = title.replace(" (Albumversie)", "") \
-                .replace(" (albumversie)", "").replace(" Albumversie)", ")") \
-                .replace(" (Albumversie ", " (")
+            row[title_field] = new_title
 
     def _check_timestamp(self, row: Row, time_field: str | None) -> None:
         if time_field is not None and time_field in row:

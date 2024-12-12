@@ -81,6 +81,20 @@ class Normalizer:
         alternatives.append(title)
         return alternatives
 
+    def check_album_version(self, title: str) -> str:
+        """
+        Check if the title has an album version indicator and adjust the title
+        if this is the case.
+        """
+
+        if "(" in title and ")" in title and \
+            any(part in title for part in self._get_list("album_version")):
+            replaces = self._get_mapping("album_version_replaces")
+            for search, replace in replaces.items():
+                title = title.replace(search, replace)
+
+        return title
+
     def find_artist_splits(self,
                            artist: str) -> tuple[dict[str, Literal[True]], int]:
         """

@@ -209,6 +209,18 @@ Il Est Cinq Heures Paris S'\u00c9veille"""
 "Een Nacht Alleen" = "1 Nacht Alleen"
 "Oxygene IV" = "Oxyg\u00e8ne IV"
 
+[album_version]
+type = "list"
+items = ["albumversie", "Albumversie"]
+
+[album_version_replaces]
+type = "mapping"
+[album_version_replaces.items]
+" (Albumversie)" = ""
+" (albumversie)" = ""
+" Albumversie)" = ")"
+" (Albumversie" = "("
+
 [artist_no_splits]
 # No splits are made for these groups, i.e. the combining characters are seen
 # as part of the group name. Avoids some weirdness like Nick & Simon getting
