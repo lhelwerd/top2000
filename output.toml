@@ -26,3 +26,9 @@ titel = "title"
 album_version = "album_version"
 jaar = "year"
 timestamp = "timestamp"
+
+[json.sorted.wiki]
+artiest = "artist"
+titel = "title"
+year = "year"
+title_link = "title_link"

@@ -33,3 +33,12 @@ csv.offset = 2000
 csv.name = "De-Extra-500-2023.csv"
 json.name = "de-extra-500-van-2023-12-11.json"
 json.rows = ["positions"]
+
+[wiki]
+api = "https://nl.wikipedia.org/w/api.php"
+path = "/wiki/"
+page = "Lijst_van_Radio_2-Top_2000's"
+oldid = 68223098
+artist = "Artiest"
+title = "Titel"
+year = "Jaar"

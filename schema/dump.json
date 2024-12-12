@@ -59,6 +59,23 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Whether the tracks are sorted in reverse order. By default, the first track is #1, while in reverse order, #1 is the last track."
+                },
+                "artist_links": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 1,
+                        "description": "Names of articles about the artists of the track at the position which exist on the Wikipedia where data was retrieved from."
+                    },
+                    "minItems": 2000,
+                    "maxItems": 2500
+                },
+                "wiki_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "default": "https://nl.wikipedia.org/wiki/",
+                    "description": "Base URL for articles on the Wikipedia where data was retrieved from."
                 }
             }
         },
@@ -72,6 +89,19 @@
                     "type": "string",
                     "pattern": "^[^A-Z]+$",
                     "description": "Normalized key of an artist of the track who has the most tracks (or in case of ties between collaborating artists, the most tracks with a better position in the chart)."
+                },
+                "wiki": {"$ref": "#/$defs/wikitrack"}
+            }
+        },
+        "wikitrack": {
+            "type": "object",
+            "allOf": [
+                {"$ref": "#/$defs/subtrack"}
+            ],
+            "properties": {
+                "title_link": {
+                    "type": "string",
+                    "description": "Name of an article about the track on the Wikipedia where data was retrieved from."
                 }
             }
         },

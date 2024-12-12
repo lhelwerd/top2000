@@ -34,21 +34,32 @@ If you download fresh API responses to JSON files, you might need to adjust
 settings in `fields.toml` in order to properly read them; see details there and 
 in the [Running](#running) section.
 
+Another option is reading data from Wikipedia's article on Top 2000s, which 
+might be less reliable and different from the NPO data (the data could be more 
+curated in some cases or strange adjustments may sneak in; they also make their 
+own choices on name formatting).
+
 We combine data from these input sources to improve upon detection of the same 
 track across years, normalization of artist and track names and preference of 
 display of these texts between the files.
 
 ## Running
 
-In this repository, use `python -m top2000` to run the module to read the files 
-and output charts.
+In this repository, use `python -m top2000` to run the module to read the CSV 
+and JSON files and output as CSV charts. To instead use Wikipedia data, provide 
+arguments to run `python -m top2000 wiki csv` to output as CSV charts. Caching 
+is used to avoid requesting the API on later commands. Finally, it is possible 
+to include both source chart data and external data, for example by running 
+`python -m top2000 multi wiki json` to output as a JSON dump.
 
 This repository contains some settings files which may be customized in order 
 to adjust the normalization and formatting of this module. The following 
 settings files are considered:
 
 - `fields.toml`: File reading settings for different years of chart files, with 
-  subfields for JSON and CSV fields.
+  subfields for JSON and CSV fields. Wiki fields can be used to, e.g., adjust 
+  the revision ID with `oldid` field to pin the article version or remove the 
+  field to use the latest version (which is still cached).
 - `fixes.toml`: Groups of lists and mappings of character sequences to adjust 
   when finding alternative writing forms and preferred names of tracks and 
   artists, which help with combining data of charts from different years or in 

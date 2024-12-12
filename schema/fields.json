@@ -12,7 +12,8 @@
                     "items": {"$ref": "#/$defs/year"}
                 },
                 "csv": {"$ref": "#/$defs/csv"},
-                "json": {"$ref": "#/$defs/json"}
+                "json": {"$ref": "#/$defs/json"},
+                "wiki": {"$ref": "#/$defs/wiki"}
             }
         },
         "year": {
@@ -92,6 +93,47 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Whether to skip reading the JSON file."
+                }
+            }
+        },
+        "wiki": {
+            "type": "object",
+            "properties": {
+                "api": {
+                    "type": "string",
+                    "format": "uri",
+                    "default": "https://nl.wikipedia.org/w/api.php",
+                    "description": "URL to the API endpoint to use."
+                },
+                "path": {
+                    "type": "string",
+                    "format": "uri-reference",
+                    "default": "/wiki/",
+                    "description": "URL (relative to the API) to the base of the human-readable frontend of the wiki to link articles to."
+                },
+                "page": {
+                    "type": "string",
+                    "default": "Lijst_van_Radio_2-Top_2000's",
+                    "description": "Article title to retrieve the parsed HTML contents for."
+                },
+                "oldid": {
+                    "type": "integer",
+                    "description": "Revision ID to retrieve the parsed HTML contents for."
+                },
+                "artist": {
+                    "type": "string",
+                    "default": "Artiest",
+                    "description": "Name of the artist field in the table."
+                },
+                "title": {
+                    "type": "string",
+                    "default": "Titel",
+                    "description": "Name of the song title field in the table."
+                },
+                "year": {
+                    "type": "string",
+                    "default": "Jaar",
+                    "description": "Name of the year field in the table."
                 }
             }
         }
