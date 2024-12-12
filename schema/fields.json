@@ -10,7 +10,9 @@
                 "years": {
                     "type": "array",
                     "items": {"$ref": "#/$defs/year"}
-                }
+                },
+                "csv": {"$ref": "#/$defs/csv"},
+                "json": {"$ref": "#/$defs/json"}
             }
         },
         "year": {
@@ -52,42 +54,44 @@
                     "default": ["data", 0],
                     "description": "Nested path to the relevant track data in the JSON response."
                 },
-                "csv": {
-                    "type": "object",
-                    "properties": {
-                        "encoding": {
-                            "type": "string",
-                            "description": "Character set encoding to read the CSV file as."
-                        },
-                        "offset": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Count to add to the CSV positions."
-                        },
-                        "name": {
-                            "type": "string",
-                            "description": "Name format of the input CSV file."
-                        }
-                    }
+                "csv": {"$ref": "#/$defs/csv"},
+                "json": {"$ref": "#/$defs/json"}
+            }
+        },
+        "csv": {
+            "type": "object",
+            "properties": {
+                "encoding": {
+                    "type": "string",
+                    "description": "Character set encoding to read the CSV file as."
                 },
-                "json": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "description": "Name format of the input JSON file."
-                        },
-                        "old": {
-                            "type": "boolean",
-                            "default": false,
-                            "description": "Whether the JSON file should be parsed as a legacy API response."
-                        },
-                        "skip": {
-                            "type": "boolean",
-                            "default": false,
-                            "description": "Whether to skip reading the JSON file."
-                        }
-                    }
+                "offset": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Count to add to the CSV positions."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name format of the input CSV file."
+                }
+            }
+        },
+        "json": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name format of the input JSON file."
+                },
+                "old": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether the JSON file should be parsed as a legacy API response."
+                },
+                "skip": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip reading the JSON file."
                 }
             }
         }

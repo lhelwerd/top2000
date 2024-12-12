@@ -5,6 +5,7 @@ Base row-based data parser.
 from abc import ABCMeta
 import bisect
 from collections.abc import Iterator, MutableMapping
+from copy import deepcopy
 from itertools import product
 from pathlib import Path
 import tomllib
@@ -28,43 +29,50 @@ class FieldHolder(MutableMapping[float, Fields]):
 
     def __init__(self) -> None:
         with Path("fields.toml").open("rb") as fields_file:
-            fields: dict[str, list[Fields]] = \
+            self._raw: dict[str, list[Fields] | MutableMapping[str, Field]] = \
                 tomllib.load(fields_file)
-            self.fields: MutableMapping[float, Fields] = {}
-            for year in fields["years"]:
-                if isinstance(year["year"], (int, float)):
-                    self.fields[year["year"]] = year
+            self._fields: MutableMapping[float, Fields] = {}
+            if isinstance(self._raw["years"], list):
+                for year in self._raw["years"]:
+                    if isinstance(year["year"], (int, float)):
+                        self._fields[year["year"]] = deepcopy(year)
 
     def __getitem__(self, key: float) -> Fields:
-        return self.fields[key]
+        return self._fields[key]
 
     def __setitem__(self, key: float, value: Fields) -> None:
-        self.fields[key] = value
+        self._fields[key] = deepcopy(value)
 
     def __delitem__(self, key: float) -> None:
-        del self.fields[key]
+        del self._fields[key]
 
     def __iter__(self) -> Iterator[float]:
-        return iter(self.fields)
+        return iter(self._fields)
 
     def __len__(self) -> int:
-        return len(self.fields)
+        return len(self._fields)
 
-    def update_year(self, year: float, fields: Fields) -> None:
+    def update_year(self, year: float, fields: Fields | str) -> None:
         """
         Merge fields with existing fields for a year.
         """
 
-        if year not in self.fields:
-            self.fields[year] = {}
+        if year not in self._fields:
+            self._fields[year] = {}
 
-        for key, existing in self.fields[year].items():
+        if isinstance(fields, str):
+            subfields = deepcopy(self._raw.get(fields, {}))
+            if not isinstance(subfields, dict):
+                subfields = {}
+            fields = {fields: subfields}
+
+        for key, existing in self._fields[year].items():
             if isinstance(existing, dict):
                 subfield = fields.pop(key, {})
                 assert isinstance(subfield, dict), f"{key} must be a dict"
                 existing.update(subfield)
 
-        self.fields[year].update(fields)
+        self._fields[year].update(fields)
 
     def get_str_field(self, year: float, input_format: str | None, key: str,
                       default: str = "") -> str:
@@ -72,7 +80,7 @@ class FieldHolder(MutableMapping[float, Fields]):
         Get a string field for a year and input format.
         """
 
-        fields = self.fields.get(year, {})
+        fields = self._fields.get(year, {})
         if input_format is not None:
             subfield = fields.get(input_format, {})
             assert isinstance(subfield, dict), f"{input_format} must be a dict"
@@ -87,7 +95,7 @@ class FieldHolder(MutableMapping[float, Fields]):
         Get an integer field for a year and input format.
         """
 
-        fields = self.fields.get(year, {})
+        fields = self._fields.get(year, {})
         if input_format is not None:
             format_fields = fields.get(input_format, {})
             assert isinstance(format_fields, dict)
@@ -102,7 +110,7 @@ class FieldHolder(MutableMapping[float, Fields]):
         Get a boolean field for a year and input format.
         """
 
-        fields = self.fields.get(year, {})
+        fields = self._fields.get(year, {})
         if input_format is not None:
             format_fields = fields.get(input_format, {})
             assert isinstance(format_fields, dict)
@@ -117,7 +125,7 @@ class FieldHolder(MutableMapping[float, Fields]):
         Get a list field that indicates a nested object path for a year.
         """
 
-        fields = self.fields.get(year, {})
+        fields = self._fields.get(year, {})
         if input_format is not None:
             format_fields = fields.get(input_format, {})
             assert isinstance(format_fields, dict)
@@ -131,13 +139,40 @@ class Base(metaclass=ABCMeta):
     Base file reader based on field information.
     """
 
+    first_year = 1999
+
     csv_name_format = "TOP-2000-{}.csv"
     json_name_format = "top2000-{}.json"
+
+    _readers: dict[str, type['Base']] = {}
+
+    @classmethod
+    def register(cls, name: str) -> Callable[[type['Base']], type['Base']]:
+        """
+        Register an input format by its subfield name or argument name.
+        """
+
+        def decorator(subclass: type['Base']) -> type['Base']:
+            cls._readers[name] = subclass
+            return subclass
+
+        return decorator
+
+    @classmethod
+    def get_reader(cls, name: str) -> type['Base']:
+        """
+        Retrieve an input format reader class by its name.
+        """
+
+        return cls._readers[name]
 
     def __init__(self, year: float, is_current_year: bool = True,
                  fields: FieldHolder | None = None) -> None:
         if fields is None:
             fields = FieldHolder()
+            # Add "current year" fields for this format
+            if is_current_year and self.input_format is not None:
+                fields.update_year(year, self.input_format)
 
         self._fields = fields
         self._year = year
