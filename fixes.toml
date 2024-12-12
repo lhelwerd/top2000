@@ -219,7 +219,7 @@ type = "mapping"
 " (Albumversie)" = ""
 " (albumversie)" = ""
 " Albumversie)" = ")"
-" (Albumversie" = "("
+" (Albumversie " = " ("
 
 [artist_no_splits]
 # No splits are made for these groups, i.e. the combining characters are seen
