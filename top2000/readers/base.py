@@ -4,7 +4,7 @@ Base row-based data parser.
 
 from abc import ABCMeta
 import bisect
-from collections.abc import Iterator, MutableMapping
+from collections.abc import Callable, Iterator, MutableMapping, MutableSequence
 from copy import deepcopy
 from itertools import product
 from pathlib import Path
@@ -15,9 +15,15 @@ from ..normalization import Normalizer
 RowPath = list[str | int]
 Key = tuple[str, str]
 Positions = dict[int, list[Key]]
-Row = dict[str, str | int | bool]
+RowElement = str | int | bool
+Row = dict[str, RowElement]
 Tracks = dict[Key, Row]
 Artists = dict[str, list[int]]
+
+ExtraPositionData = MutableSequence[RowElement]
+ExtraPositions = MutableSequence[ExtraPositionData]
+ExtraData = RowElement | ExtraPositions
+
 Field = int | float | str | bool | RowPath
 Fields = MutableMapping[str, Field | MutableMapping[str, Field]]
 FieldMap = dict[str, str]
@@ -260,7 +266,17 @@ class Base(metaclass=ABCMeta):
 
         return self._artists
 
-    def _read_row(self, row: Row, fields: FieldMap, offset: int = 0) -> None:
+    @property
+    def extra_data(self) -> dict[str, ExtraData]:
+        """
+        Retrieve additional data parsed by this reader which would not be suited
+        for addition to the other position, tracks or artists fields.
+        """
+
+        return {}
+
+    def _read_row(self, row: Row, fields: FieldMap,
+                  offset: int = 0) -> tuple[Key | None, int | None]:
         """
         Read data extracted from a CSV row or JSON array element.
         """
@@ -269,7 +285,7 @@ class Base(metaclass=ABCMeta):
         if pos_field in row and row[pos_field] == "":
             # Date/time row, track last_time
             self._last_time = str(row[fields["title"]])
-            return
+            return None, None
 
         if self._is_current_year:
             self._check_album_version(row, fields["title"])

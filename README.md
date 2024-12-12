@@ -13,15 +13,20 @@ performs, with consideration for collaborations and individual artist charts.
 The module is written for recent Python versions, currently Python 3.11 and 
 later is supported. The intention is to have few (if any) package dependencies.
 
+### Top 2000 data
+
 Necessary data files for different years were previously obtainable from the 
 [NPO Radio 2 Top 2000](https://www.nporadio2.nl/top2000) website. However, 
-downloads for older years might no longer be available there and the [terms of 
+downloads for older years might no longer be available there (or, if they are, 
+they may not be in the format that we expect by default) and the [terms of 
 service](https://npo.nl/overnpo/algemene-voorwaarden/algemene-voorwaarden-online) 
 of NPO might make it not acceptable to share these files nor provide automated 
 methods of obtaining them. We make use of several input formats:
 
 - We read CSV files which are based on the Excel (.xlsx) downloads from the 
-  official website.
+  official website. Only the current year's CSV file and the CSV files from 
+  older years without JSON files are used; the older years are assumed to have 
+  columns named `pos <year>` in them for the chart position for a `<year>`.
 - We read JSON files which are obtained from the API that feeds the official 
   website with the chart list.
 

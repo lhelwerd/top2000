@@ -45,14 +45,37 @@
                     "minProperties": 1,
                     "additionalProperties": false
                 },
+                "first_year": {
+                    "type": "number",
+                    "minimum": 1999,
+                    "description": "Year in which the first Top 2000 chart was broadcast."
+                },
                 "year": {
                     "type": "number",
                     "minimum": 1999,
                     "description": "Year in which the chart was broadcast."
+                },
+                "reverse": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether the tracks are sorted in reverse order. By default, the first track is #1, while in reverse order, #1 is the last track."
                 }
             }
         },
         "track": {
+            "type": "object",
+            "allOf": [
+                {"$ref": "#/$defs/subtrack"}
+            ],
+            "properties": {
+                "max_artist_key": {
+                    "type": "string",
+                    "pattern": "^[^A-Z]+$",
+                    "description": "Normalized key of an artist of the track who has the most tracks (or in case of ties between collaborating artists, the most tracks with a better position in the chart)."
+                }
+            }
+        },
+        "subtrack": {
             "type": "object",
             "properties": {
                 "artist": {

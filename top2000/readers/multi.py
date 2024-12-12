@@ -7,8 +7,9 @@ from .base import Base
 from .csv import CSV
 from .json import JSON
 
-OldFiles = tuple[tuple[str, str, float], ...]
+OldFiles = tuple[tuple[float, str, str], ...]
 
+@Base.register("multi")
 class Years(Base):
     """
     Read CSV and JSON files describing NPO Radio Top 2000 charts from multiple
@@ -26,6 +27,15 @@ class Years(Base):
         """
 
         return list(self._fields.keys())
+
+    @property
+    def first_csv_year(self) -> float:
+        """
+        Retrieve the first year that has a CSV file with an overview of all
+        previous years.
+        """
+
+        return min(self.years)
 
     def format_filenames(self, csv_name_format: str | None = None,
                          json_name_format: str | None = None, *,
@@ -84,7 +94,7 @@ class Years(Base):
         in them.
         """
 
-        for (overview_csv_name, overview_json_name, year) in old:
+        for (year, overview_csv_name, overview_json_name) in old:
             overview_json_path = Path(overview_json_name)
             skip_json = self._fields.get_bool_field(year, "json", "skip")
             if overview_json_path.exists() and not skip_json:

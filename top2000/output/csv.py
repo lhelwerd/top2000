@@ -10,14 +10,11 @@ from .base import Format
 from ..readers.base import Base as ReaderBase, Key, Row as Track, Positions, \
     Tracks, Artists
 
+@Format.register("csv")
 class CSV(Format):
     """
     CSV file with multi-column layout.
     """
-
-    @property
-    def format(self) -> str:
-        return "csv"
 
     def reset(self) -> None:
         super().reset()
@@ -26,8 +23,10 @@ class CSV(Format):
         self._lines = 0
         self._extra_lines = 0
 
-    def output_file(self, data: ReaderBase, output_format: str,
+    def output_file(self, readers: list[ReaderBase], output_format: str,
                     path: Path | None = None) -> bool:
+        if not readers:
+            return False
         if path is None:
             path = Path(f"output-{output_format}.csv")
 
@@ -42,6 +41,7 @@ class CSV(Format):
         reverse = self._get_bool_setting(output_format, "reverse")
         header = list(column_names.values()) * columns
         self.reset()
+        data = readers[0]
         with path.open("w", encoding='utf-8') as output:
             writer = csv.writer(output)
             writer.writerow(header)
@@ -136,32 +136,6 @@ class CSV(Format):
 
         return "\u2234" # therefore sign
         #return "\U0001f195" # new sign
-
-    @staticmethod
-    def _find_artist_chart(position: int, keys: Sequence[Key],
-                           artists: Artists) -> str | None:
-        max_tracks = 0
-        max_artist_key = None
-        max_position = 0
-        for possible_key in keys:
-            #if possible_key[1] == "we all stand together":
-            #    print(possible_key, max_tracks, max_artist_key,
-            #          artists.get(possible_key[0]))
-            if possible_key[0] not in artists:
-                continue
-            num_tracks = len(artists[possible_key[0]])
-            track_position = artists[possible_key[0]].index(position)
-            #if possible_key[1].startswith("als ik je weer zie"):
-            #    print(possible_key, num_tracks, track_position,
-            #          max_tracks, max_position)
-            if num_tracks > max_tracks or \
-                    (num_tracks == max_tracks and
-                     track_position > max_position):
-                max_tracks = num_tracks
-                max_artist_key = possible_key[0]
-                max_position = artists[possible_key[0]].index(position)
-
-        return max_artist_key
 
     @staticmethod
     def _format_artist_chart(position: int, max_artist_key: str | None,

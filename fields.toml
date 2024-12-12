@@ -1,6 +1,11 @@
 # These year settings make use of old JSON files. If you download a new JSON
 # API response, then you may need to adjust settings (more toward current year).
 [[years]]
+# Years between this year and the first year with JSON fields are only read from
+# CSV files which need to have "pos <year>" columns.
+year = 2014
+
+[[years]]
 year = 2019
 json = {artist="a", title="s", pos="pos", prv="prv", year="yr", old=true, rows=["data", 0]}
 
