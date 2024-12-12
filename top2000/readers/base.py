@@ -240,6 +240,10 @@ class Base(metaclass=ABCMeta):
             self._check_album_version(row, fields["title"])
             self._check_timestamp(row, fields.get("timestamp"))
 
+        year_field = fields.get("year", "year")
+        if year_field in row:
+            row["jaar"] = row[year_field]
+
         position = int(row[pos_field]) + offset if pos_field in row else None
         if position is not None and not self._is_current_year:
             row[str(int(self._year))] = position

@@ -92,10 +92,8 @@ class CSV(Format):
         extra_text += self._format_artist_chart(position,
                                                 max_artist_key, artists)
 
-        for title_year_field in ('yr', 'jaar'):
-            if title_year_field in track:
-                artist += f" ({track[title_year_field]})"
-                break
+        if "jaar" in track:
+            artist += f' ({track["jaar"]})'
 
         return {
             "position": str(position),
