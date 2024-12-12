@@ -287,30 +287,23 @@ class Base(metaclass=ABCMeta):
 
         if not self._is_current_year:
             row.pop(fields.get("prv", "prv"), None)
-        if self._is_current_year and position in self._positions:
-            best_key: Key = self._positions[position][0]
-            keys = set(self._positions[position])
-            rejected_keys: set[Key] = set()
-        else:
-            best_key, keys, rejected_keys = self._find_keys(row, fields,
-                                                            artist_alternatives,
-                                                            title_alternatives)
 
-        #if "iron butterfly" in orig_artist.lower():
-        #if "Boogie Wonderland" in orig_title:
-        #    print(self._year, artist_alternatives, title_alternatives,
-        #          best_key, self._tracks[best_key])
-        old_current_year = self._is_current_year
-        self._is_current_year = True
-        best_key = self._update_row(best_key, row, best_key=best_key)[0]
-        self._is_current_year = old_current_year
-        if self._is_current_year:
-            # Only update to best combination for current year
-            self._tracks[best_key]["artiest"] = artist_alternatives[-1]
-            self._tracks[best_key]["titel"] = title_alternatives[-1]
-            #if self._tracks[best_key]["titel"].startswith("Comptine"):
-            #    print(title_alternatives)
-            #    print(self._tracks[best_key])
+        best_key, keys, rejected_keys = self._find_keys(row, fields,
+                                                        artist_alternatives,
+                                                        title_alternatives)
+
+        if self._is_current_year and position in self._positions:
+            new_row = row
+            row = self._tracks[self._positions[position][0]].copy()
+            row.update(new_row)
+            keys.update(self._positions[position])
+
+        best_key, reinstate = self._update_best_key(best_key, row,
+                                                    artist_alternatives,
+                                                    title_alternatives)
+        if reinstate:
+            keys.update(rejected_keys)
+            rejected_keys = set()
 
         keys.discard(best_key)
         return best_key, keys, rejected_keys
@@ -395,6 +388,28 @@ class Base(metaclass=ABCMeta):
         if self._is_current_year:
             return pos_field is not None and pos_field in track
         return str(int(self._year)) in track
+
+    def _update_best_key(self, best_key: Key, row: Row,
+                         artist_alternatives: list[str],
+                         title_alternatives: list[str]) -> tuple[Key, bool]:
+        #if "iron butterfly" in artist_alternatives[-1].lower():
+        #if "boogie wonderland" in title_alternatives[-1]:
+        #    print(self._year, artist_alternatives, title_alternatives,
+        #          best_key, self._tracks[best_key])
+        old_current_year = self._is_current_year
+        self._is_current_year = True
+        best_key = self._update_row(best_key, row, best_key=best_key)[0]
+        self._is_current_year = old_current_year
+        if self._is_current_year:
+            # Collision was detected, possibly update the merged row
+            # Update to best combination for current year
+            self._tracks[best_key]["artiest"] = artist_alternatives[-1]
+            self._tracks[best_key]["titel"] = title_alternatives[-1]
+            #if self._tracks[best_key]["titel"].startswith("Comptine"):
+            #    print(title_alternatives)
+            #    print(self._tracks[best_key])
+
+        return best_key, False
 
     def _set_position_keys(self, position: int | None, best_key: Key,
                            keys: set[Key], rejected_keys: set[Key]) -> None:
