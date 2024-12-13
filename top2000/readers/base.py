@@ -281,12 +281,6 @@ class Base(metaclass=ABCMeta):
         Read data extracted from a CSV row or JSON array element.
         """
 
-        pos_field = fields.get("pos", "position")
-        if pos_field in row and row[pos_field] == "":
-            # Date/time row, track last_time
-            self._last_time = str(row[fields["title"]])
-            return None, None
-
         if self._is_current_year:
             self._check_album_version(row, fields["title"])
             self._check_timestamp(row, fields.get("timestamp"))
@@ -295,9 +289,18 @@ class Base(metaclass=ABCMeta):
         if year_field in row:
             row["jaar"] = row[year_field]
 
+        pos_field = fields.get("pos", "position")
         position = int(row[pos_field]) + offset if pos_field in row else None
         if position is not None and not self._is_current_year:
             row[str(int(self._year))] = position
+
+        prv_field = fields.get("prv", "prv")
+        if not self._is_current_year:
+            row.pop(prv_field, None)
+        else:
+            prv_year = str(int(self._year) - 1)
+            if str(row.get(prv_field, "0")) != "0" and prv_year not in row:
+                row[prv_year] = row[prv_field]
 
         best_key, keys, rejected_keys = self._update_keys(position, row, fields)
         for key in keys:
@@ -335,9 +338,6 @@ class Base(metaclass=ABCMeta):
         orig_title = str(row[fields["title"]])
         artist_alternatives = normalizer.find_artist_alternatives(orig_artist)
         title_alternatives = normalizer.find_title_alternatives(orig_title)
-
-        if not self._is_current_year:
-            row.pop(fields.get("prv", "prv"), None)
 
         best_key, keys, rejected_keys = self._find_keys(row, fields,
                                                         artist_alternatives,

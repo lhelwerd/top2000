@@ -4,7 +4,7 @@ NPO Radio 2 Top 2000 CSV reader.
 
 import csv
 from pathlib import Path
-from .base import Base, Positions, Tracks, Artists
+from .base import Base, Positions, Tracks, Artists, Row, Key, FieldMap
 
 class CSV(Base):
     """
@@ -47,3 +47,15 @@ class CSV(Base):
             reader = csv.DictReader(csv_file)
             for row in reader:
                 self._read_row(row, fields, offset=offset)
+
+    def _read_row(self, row: Row, fields: FieldMap,
+                  offset: int = 0) -> tuple[Key | None, int | None]:
+        pos_field = fields.get("pos", "position")
+        if pos_field in row and row[pos_field] == "":
+            # Date/time row, track last_time
+            self._last_time = str(row[fields["title"]])
+            return None, None
+        if pos_field not in row and str(int(self._year)) in row:
+            row[pos_field] = row[str(int(self._year))]
+
+        return super()._read_row(row, fields, offset=offset)

@@ -10,7 +10,7 @@ from .readers.multi import Years, OldFiles
 
 def _parse_first_args(argv: deque[str]) \
         -> tuple[list[str], list[type[ReaderBase]], list[type[Format]], float]:
-    latest_year: float = 2023
+    latest_year: float = 2024
     readers: list[type[ReaderBase]] = []
     outputs: list[type[Format]] = []
     parsed_first = False

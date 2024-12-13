@@ -185,20 +185,22 @@ class CSV(Format):
         """
         Validate whether a track to be output is actually proper.
         """
-        # pylint: disable=line-too-long, unused-argument
+        # pylint: disable=line-too-long, unused-argument, unused-variable
 
         # Start debug lines
 
         #line = f'{cells["position"]}. {cells["artist"]} - {cells["title"]}'
         #prv_field = "prv"
+        #position = int(cells["position"])
 
         #previous_year = str(self._current_year - 1)
         #track = tracks[keys[0]]
         #artist = track["artiest"]
         #title = track["titel"]
+        #max_artist_key = self._find_artist_chart(position, keys, artists)
         # SONGS THAT WERE RELEASED BEFORE THIS YEAR BUT ARE NEW
         #first_csv_year = 2014
-        #if all(str(year) not in track for year in range(first_csv_year, self._current_year)) and ("jaar" not in track or track["jaar"] != str(self._current_year)):#and position < 1224:
+        #if all(str(year) not in track for year in range(first_csv_year, self._current_year)) and ("jaar" not in track or track["jaar"] != str(self._current_year)):# and position > 1337:
         # OLD VERSIONS OF THE FORMER
         #if "2018" not in track and "2017" not in track and "2016" not in track and "2015" not in track and "2014" not in track and ("yr" not in track or track["yr"] != str(self._current_year)): #and position > 1773:
         #if "2018" not in track and ("2017" in track or "2016" in track or "2015" in track) and ("jaar" not in track or track["jaar"] != str(self._current_year)): #and position > 1773:
@@ -209,7 +211,7 @@ class CSV(Format):
         #if (artist.isupper() or title.isupper() or artist.islower() or title.islower()) and (title.isupper() or track["artiest"] not in ("U2", "10cc", "INXS", "KISS", "Q65", "LP", "ABBA", "MGMT", "R.E.M.", "UB40", "3JS", "BAP", "AC/DC", "S10")):
             #pass
         # INCONSISTENT PREVIOUS YEAR FIELDS (missing/wrong merges/etc)
-        #if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))):
+        #if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))) and int(track.get(previous_year, 0)) <= 2000:
         #if max_artist_key not in artists or (len(artists[max_artist_key]) == 1 and artist.count(' ') > 2):
             #self._lines += 1
             #print(line)

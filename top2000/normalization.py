@@ -138,8 +138,10 @@ class Normalizer:
                 alternatives[group] = True
 
         for search, replace in self._get_mapping("artist_replaces").items():
-            artist = artist.replace(search, replace)
-            alternatives[artist] = True
+            if search in artist:
+                artist = artist.replace(search, replace)
+                alternatives[artist] = True
+                alternatives[replace] = True
 
         for alternative in self.find_alternatives(artist):
             alternatives[alternative] = True
