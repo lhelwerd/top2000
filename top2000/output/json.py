@@ -5,7 +5,7 @@ JSON dump output.
 from itertools import zip_longest
 import json
 from pathlib import Path
-from .base import Format
+from .base import Format, KeyPair
 from ..readers.base import Base as ReaderBase, Key, Row, RowElement
 
 FieldMap = dict[str, str]
@@ -37,7 +37,7 @@ class JSON(Format):
         for reader_keys in zip_longest(*(self._sort_positions(reader.positions,
                                                               reverse)
                                          for reader in readers)):
-            self._check_position(reader_keys[0][0], reverse)
+            self._check_positions(reader_keys, reverse)
             tracks.append(self._aggregate_track(readers, reader_keys,
                                                 reader_fields, numeric_fields))
             positions.append(reader_keys[0][0])
@@ -69,6 +69,18 @@ class JSON(Format):
             # Assume first reader is primary and use it twice
             readers.insert(0, readers[0])
 
+    def _check_positions(self, reader_keys: tuple[KeyPair | None, ...],
+                         reverse: bool) -> None:
+        last_position = self._last_position
+        next_position: int | None = None
+        for pair in reader_keys:
+            if pair is not None:
+                self._check_position(pair[0], reverse)
+                self._last_position = last_position
+                next_position = pair[0]
+
+        self._last_position = next_position
+
     def _build_fields(self, readers: list[ReaderBase],
                       output_format: str) -> tuple[list[FieldMap], set[str]]:
         reader_fields = [self._get_dict_setting(output_format,
@@ -87,14 +99,17 @@ class JSON(Format):
         return reader_fields, numeric_fields
 
     def _aggregate_track(self, readers: list[ReaderBase],
-                         reader_keys: tuple[tuple[int, list[Key]], ...],
+                         reader_keys: tuple[KeyPair | None, ...],
                          reader_fields: list[FieldMap],
                          numeric_fields: set[str]) \
             -> dict[str, RowElement | Row]:
         track: dict[str, RowElement | Row] = {}
         primary = True
-        for reader, (position, keys), fields in zip(readers, reader_keys,
-                                                    reader_fields):
+        for reader, pair, fields in zip(readers, reader_keys, reader_fields):
+            if pair is None:
+                continue
+
+            position, keys = pair
             subtrack = self._filter_track(reader, keys, fields,
                                           numeric_fields)
             if primary:

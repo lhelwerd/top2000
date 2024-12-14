@@ -8,6 +8,7 @@ import tomllib
 from ..readers.base import Base as ReaderBase, Key, Positions, Artists
 
 Setting = int | bool | dict[str, str]
+KeyPair = tuple[int, list[Key]]
 
 class Format:
     """
@@ -98,7 +99,7 @@ class Format:
         raise NotImplementedError("Must be implemented by subclasses")
 
     def _sort_positions(self, positions: Positions,
-                        reverse: bool = False) -> list[tuple[int, list[Key]]]:
+                        reverse: bool = False) -> list[KeyPair]:
         return sorted(positions.items(),
                       key=lambda pair: -pair[0] if reverse else pair[0])
 
