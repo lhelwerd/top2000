@@ -9,10 +9,10 @@ from .readers.base import Base as ReaderBase
 from .readers.multi import Years, OldFiles
 
 def _parse_first_args(argv: deque[str]) \
-        -> tuple[list[str], list[type[ReaderBase]], list[type[Format]], float]:
-    latest_year: float = 2024
+        -> tuple[list[str], list[type[ReaderBase]], list[type[Format]], float | None]:
     readers: list[type[ReaderBase]] = []
     outputs: list[type[Format]] = []
+    latest_year: float | None = None
     parsed_first = False
     try:
         while argv:
@@ -62,14 +62,20 @@ def main(argv: list[str]) -> int:
         return 0
 
     readers: list[ReaderBase] = []
+    current_year = ReaderBase.first_year
     for inputter in inputs:
-        reader = inputter(latest_year)
+        reader = inputter(year=latest_year)
+        if latest_year is None:
+            current_year = reader.latest_year
+        else:
+            current_year = latest_year
+
         if isinstance(reader, Years):
             current_csv, current_json = reader.format_filenames(*argv[0:2])
             old_years: set[float] = set(range(int(reader.first_csv_year),
-                                              int(latest_year)))
+                                              int(current_year)))
             old_years.update(reader.years)
-            old_years.discard(latest_year)
+            old_years.discard(current_year)
             old: OldFiles = tuple(zip((float(year) for year in argv[2::3]),
                                       argv[3::3], argv[4::3])) \
                 if len(argv) > 4 \
@@ -84,7 +90,7 @@ def main(argv: list[str]) -> int:
         readers.append(reader)
 
     for output in outputs:
-        formatter = output(ReaderBase.first_year, latest_year)
+        formatter = output(ReaderBase.first_year, current_year)
         for output_format in formatter.output_names:
             if not formatter.output_file(readers, output_format):
                 return 1

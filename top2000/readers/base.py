@@ -145,7 +145,7 @@ class Base(metaclass=ABCMeta):
     Base file reader based on field information.
     """
 
-    first_year = 1999
+    first_year: float = 1999
 
     csv_name_format = "TOP-2000-{}.csv"
     json_name_format = "top2000-{}.json"
@@ -172,16 +172,22 @@ class Base(metaclass=ABCMeta):
 
         return cls._readers[name]
 
-    def __init__(self, year: float, is_current_year: bool = True,
+    def __init__(self, year: float | None = None, is_current_year: bool = True,
                  fields: FieldHolder | None = None) -> None:
         if fields is None:
-            fields = FieldHolder()
-            # Add "current year" fields for this format
-            if is_current_year and self.input_format is not None:
-                fields.update_year(year, self.input_format)
+            self._fields = FieldHolder()
+        else:
+            self._fields = fields
 
-        self._fields = fields
-        self._year = year
+        if year is None:
+            self._year = self.latest_year
+        else:
+            self._year = year
+
+        # Add "current year" fields for this format if new fields were created
+        if fields is None and is_current_year and self.input_format is not None:
+            self._fields.update_year(self._year, self.input_format)
+
         self._is_current_year = is_current_year
         self.reset()
 
@@ -194,6 +200,31 @@ class Base(metaclass=ABCMeta):
         """
 
         raise NotImplementedError("Must be defined by subclasses")
+
+    @property
+    def years(self) -> list[float]:
+        """
+        Retrieve known years from field settings.
+        """
+
+        return list(self._fields.keys())
+
+    @property
+    def first_csv_year(self) -> float:
+        """
+        Retrieve the first year that has a CSV file with an overview of all
+        previous years.
+        """
+
+        return min(self.years)
+
+    @property
+    def latest_year(self) -> float:
+        """
+        Retrieve the latest year from field settings.
+        """
+
+        return max(self.years)
 
     def _get_str_field(self, key: str, default: str = "",
                        input_format: str | Literal[True] | None = True,

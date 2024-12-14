@@ -20,23 +20,6 @@ class Years(Base):
     def input_format(self) -> str | None:
         return None
 
-    @property
-    def years(self) -> list[float]:
-        """
-        Retrieve known years from field settings.
-        """
-
-        return list(self._fields.keys())
-
-    @property
-    def first_csv_year(self) -> float:
-        """
-        Retrieve the first year that has a CSV file with an overview of all
-        previous years.
-        """
-
-        return min(self.years)
-
     def format_filenames(self, csv_name_format: str | None = None,
                          json_name_format: str | None = None, *,
                          year: float | None = None) -> tuple[str, str]:
