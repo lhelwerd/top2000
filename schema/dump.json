@@ -63,10 +63,12 @@
                 "artist_links": {
                     "type": "array",
                     "items": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "minItems": 1,
-                        "description": "Names of articles about the artists of the track at the position which exist on the Wikipedia where data was retrieved from."
+                        "type": "object",
+                        "patternProperties": {
+                            "^.+$": {"type": "string"}
+                        },
+                        "minProperties": 1,
+                        "description": "Names of articles about a subset of the artists that collaborated on the track at the position which exist on the Wikipedia where data was retrieved from."
                     },
                     "minItems": 2000,
                     "maxItems": 2500

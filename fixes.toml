@@ -335,6 +335,7 @@ type = "mapping"
 "Dexy's Midnight Runners" = "Dexys Midnight Runners"
 "Grover Washington & Jr." = "Grover Washington, Jr."
 "Dr Dre" = "Dr. Dre"
+"Elvis" = "Elvis Presley"
 
 [artist_groups]
 # Full artists that have their tracks merged with the other group, but this
@@ -448,7 +449,7 @@ type = "mapping"
 "Elvis Vs JXL" = "Elvis Presley vs. Junkie XL"
 "Elvis vs JXL" = "Elvis Presley vs. Junkie XL"
 "Elvis vs. JXL" = "Elvis Presley vs. Junkie XL"
-"Elvis & Junkie XL" = "Elvis Presly vs. Junkie XL"
+"Elvis & Junkie XL" = "Elvis Presley vs. Junkie XL"
 "Pink" = "P!nk"
 "Pink & Nate Ruess" = "P!nk & Nate Ruess"
 "Pink & Willow Sage Hart" = "P!nk & Willow Sage Hart"

@@ -8,10 +8,10 @@ import json
 from pathlib import Path
 from urllib.parse import quote, urljoin
 from urllib.request import urlopen
-from .base import Base, Key, Row, ExtraPositionData, ExtraPositions, \
-    ExtraData, FieldMap
+from .base import Base, Key, Row, ExtraPositions, ExtraData, FieldMap
+from ..normalization import Normalizer
 
-RowLinks = dict[str, ExtraPositionData]
+RowLinks = dict[str, dict[str, str]]
 
 class WikiHTMLParser(HTMLParser):
     """
@@ -29,6 +29,7 @@ class WikiHTMLParser(HTMLParser):
         self._column = 0
         self._state: str | None = None
         self._links: list[RowLinks] = []
+        self._title: str | None = None
 
     @property
     def rows(self) -> list[Row]:
@@ -58,10 +59,7 @@ class WikiHTMLParser(HTMLParser):
 
             self._state = f"{self._state}/{tag}"
             if tag == 'a' and self._headers:
-                title = str(attributes["title"])
-                header = self._headers[self._column]
-                self._links[self._row].setdefault(header, [])
-                self._links[self._row][header].append(title)
+                self._title = str(attributes["title"])
         if tag == 'tr':
             self._rows.append({})
             self._links.append({})
@@ -91,6 +89,10 @@ class WikiHTMLParser(HTMLParser):
             row = self._rows[self._row]
             column = self._headers[self._column]
             row[column] = f"{row.get(column, "")}{data}"
+            if self._title is not None:
+                self._links[self._row].setdefault(column, {})
+                self._links[self._row][column][self._title] = data
+                self._title = None
 
 @Base.register("wiki")
 class Wiki(Base):
@@ -159,11 +161,17 @@ class Wiki(Base):
 
     def _fill_links(self, best_key: Key, position: int, fields: FieldMap,
                     links: RowLinks) -> None:
-        if fields["title"] in links and links[fields["title"]]:
-            self._tracks[best_key]["title_link"] = links[fields["title"]][0]
+        if title_links := links.get(fields["title"], {}):
+            self._tracks[best_key]["title_link"] = title_links.popitem()[0]
+
         if position != len(self._artist_links) + 1:
             raise ValueError(f"{position} != {len(self._artist_links) + 1}")
-        self._artist_links.append(links.get(fields["artist"], []))
+
+        artist_links: Row = {}
+        normalizer = Normalizer.get_instance()
+        for link, artist in links.get(fields["artist"], {}).items():
+            artist_links[link] = normalizer.find_artist_alternatives(artist)[-1]
+        self._artist_links.append(artist_links)
 
     @property
     def extra_data(self) -> dict[str, ExtraData]:

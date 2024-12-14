@@ -20,8 +20,7 @@ Row = dict[str, RowElement]
 Tracks = dict[Key, Row]
 Artists = dict[str, list[int]]
 
-ExtraPositionData = MutableSequence[RowElement]
-ExtraPositions = MutableSequence[ExtraPositionData]
+ExtraPositions = MutableSequence[Row]
 ExtraData = RowElement | ExtraPositions
 
 Field = int | float | str | bool | RowPath
