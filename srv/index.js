@@ -14,7 +14,33 @@ const formatTime = nl.format("%d %b %H:%M");
 const data = await d3.json("output-sorted.json"); // jshint ignore: line
 const firstYear = data.first_year;
 const currentYear = data.year;
+const direction = data.reverse ? 1 : -1;
 
+const setCurrent = function(d, i, nodes) {
+    const now = Date.now();
+    let next = i + direction;
+    const isCurrent = d.timestamp <= now &&
+        (!(next in data.tracks) || data.tracks[next].timestamp > now);
+    d3.select(this).classed("is-selected", isCurrent);
+    if (isCurrent) {
+        window.requestAnimationFrame(() => {
+            this.scrollIntoView({behavior: "smooth", block: "center"});
+        });
+        d3.timeout(() => {
+            if (setCurrent.bind(this)(d, i, nodes)) {
+                return;
+            }
+            while (next in data.tracks) {
+                const nextCurrent = setCurrent.bind(nodes[next]);
+                if (nextCurrent(d3.select(nodes[next]).datum(), next, nodes)) {
+                    break;
+                }
+                next += direction;
+            }
+        }, Math.max(data.tracks[next].timestamp - now, 0) + 5000);
+    }
+    return isCurrent;
+};
 const formatRankChange = (d, position) => {
     const previousYear = currentYear - 1;
     if (previousYear in d) {
@@ -71,6 +97,7 @@ table.append("thead").append("tr").selectAll("th")
 table.append("tbody").selectAll("tr")
     .data(data.tracks)
     .join("tr")
+    .each(setCurrent)
     .selectAll("td")
     .data((d, i) => Array(columns.length).fill(i))
     .join("td")
