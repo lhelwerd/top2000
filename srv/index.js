@@ -48,19 +48,19 @@ const table = d3.select("#container").append("table")
     .classed("table is-narrow is-hoverable is-striped is-fullwidth", true);
 const columns = [
     {
-        column: "nr.",
+        column: data.columns.position,
         field: (d, i) => `${i}.`
     },
     {
-        column: "artiest",
+        column: data.columns.artist,
         field: d => `${d.artist} (${d.year})`
     },
     {
-        column: "titel",
+        column: data.columns.title,
         field: (d, i) => `${d.title}${d.album_version ? " \u29be" : ""} (${formatRankChange(d, i)}${formatArtistChart(d, i)})`
     },
     {
-        column: "tijd",
+        column: data.columns.timestamp,
         field: d => formatTime(new Date(d.timestamp))
     }
 ];

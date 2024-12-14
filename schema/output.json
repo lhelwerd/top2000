@@ -7,7 +7,8 @@
         "output": {
             "type": "object",
             "properties": {
-                "csv": {"$ref": "#/$defs/csv"}
+                "csv": {"$ref": "#/$defs/csv"},
+                "json": {"$ref": "#/$defs/json"}
             }
         },
         "csv": {
@@ -33,17 +34,40 @@
                             "default": false,
                             "description": "Whether to output the lowest placed track first."
                         },
-                        "column": {
-                            "type": "object",
-                            "patternProperties": {
-                                "^[a-z_]+$": {
-                                    "type": "string",
-                                    "description": "Localized column name."
-                                }
-                            }
+                        "columns": {
+                            "$ref": "#/$defs/field_map",
+                            "description": "Localization for column names."
                         }
                     }
                 }
+            }
+        },
+        "json": {
+            "type": "object",
+            "patternProperties": {
+                "^[A-Za-z0-9_]+$": {
+                    "type": "object",
+                    "properties": {
+                        "fields": {
+                            "$ref": "#/$defs/field_map",
+                            "description": "Field name translation for primary input data into main track data."
+                        },
+                        "wiki": {
+                            "$ref": "#/$defs/field_map",
+                            "description": "Field name translation for wiki data into subtrack data."
+                        },
+                        "columns": {
+                            "$ref": "#/$defs/field_map",
+                            "description": "Localization for column names in HTML viewer."
+                        }
+                    }
+                }
+            }
+        },
+        "field_map": {
+            "type": "object",
+            "patternProperties": {
+                "^[a-z_]+$": {"type": "string"}
             }
         }
     }

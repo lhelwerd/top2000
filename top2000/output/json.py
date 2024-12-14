@@ -50,7 +50,8 @@ class JSON(Format):
             "artists": readers[0].artists,
             "first_year": self._first_year,
             "year": self._current_year,
-            "reverse": reverse
+            "reverse": reverse,
+            "columns": self._get_dict_setting(output_format, "columns")
         }
         for reader in readers:
             data.update(reader.extra_data)

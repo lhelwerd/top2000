@@ -32,3 +32,9 @@ artiest = "artist"
 titel = "title"
 year = "year"
 title_link = "title_link"
+
+[json.sorted.columns]
+position = "nr."
+artist = "artiest"
+title = "titel"
+timestamp = "tijd"
