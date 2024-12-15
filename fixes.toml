@@ -335,7 +335,6 @@ type = "mapping"
 "Dexy's Midnight Runners" = "Dexys Midnight Runners"
 "Grover Washington & Jr." = "Grover Washington, Jr."
 "Dr Dre" = "Dr. Dre"
-"Elvis" = "Elvis Presley"
 
 [artist_groups]
 # Full artists that have their tracks merged with the other group, but this
@@ -445,7 +444,7 @@ type = "mapping"
 "Motorhead" = "Mot\u00f6rhead"
 "DI-RECT" = "Di-rect"
 "Bob Marley/The Wailers" = "Bob Marley & The Wailers"
-#"Elvis": "Elvis Presley"
+"Elvis" = "Elvis Presley"
 "Elvis Vs JXL" = "Elvis Presley vs. Junkie XL"
 "Elvis vs JXL" = "Elvis Presley vs. Junkie XL"
 "Elvis vs. JXL" = "Elvis Presley vs. Junkie XL"
