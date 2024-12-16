@@ -6,7 +6,7 @@ from abc import ABCMeta
 import bisect
 from collections.abc import Callable, Iterator, MutableMapping, MutableSequence
 from copy import deepcopy
-from itertools import product
+from itertools import chain, product
 from pathlib import Path
 import tomllib
 from typing import overload, Literal
@@ -504,7 +504,7 @@ class Base(metaclass=ABCMeta):
             ]
             if self._is_current_year:
                 self._tracks[best_key]["best"] = True
-                for key in [best_key] + list(keys):
+                for key in chain([best_key], keys, rejected_keys):
                     if key[0] not in self._artists:
                         self._artists[key[0]] = []
                     #if "Mary J" in self._tracks[best_key]["artiest"]:
