@@ -20,6 +20,8 @@ timestamp = "tijd"
 [json]
 
 [json.sorted]
+relevant = true
+
 [json.sorted.fields]
 artiest = "artist"
 titel = "title"

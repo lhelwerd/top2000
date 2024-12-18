@@ -15,6 +15,7 @@ items = [
      "'",
      "The ",
      "De ",
+     "de ",
      " Experience",
      " Groep",
      " Group",
@@ -51,6 +52,8 @@ type = "mapping"
 "Musica \u00e9" = "Musica \u00c8"
 "Con Te Partiro" = "Con Te Partir\u00f2"
 "Belgie" = "Belgi\u00eb (Is Er Leven Op Pluto\u2026?)"
+"Belgi\u00eb" = "Belgi\u00eb (Is Er Leven Op Pluto\u2026?)"
+"Belgi\u00eb (Is er leven op Pluto...?)" = "Belgi\u00eb (Is Er Leven Op Pluto\u2026?)"
 "Unforgiven" = "The Unforgiven"
 "True Colors" = "True Colours"
 "Wake Me Up Before You Gogo" = "Wake Me Up Before You Go-Go"
@@ -280,7 +283,11 @@ items = [
      "Earth, Wind & Fire",
      "Crosby, Stills, Nash & Young",
      "Florence + The Machine",
-     "Emerson, Lake & Palmer"
+     "Emerson, Lake & Palmer",
+     "Suzan & Freek",
+     "Mark & Clark Band",
+     "Mike & The Mechanics",
+     "Acda en De Munnik"
 ]
 
 [artist_splits]
@@ -303,9 +310,10 @@ items = [
      "vs. "
 ]
 
-[artist_replaces]
+[artist_split_replaces]
 type = "mapping"
-[artist_replaces.items]
+[artist_split_replaces.items]
+" and " = " & "
 " en " = " & "
 " + " = " & "
 ", " = " & "
@@ -313,9 +321,13 @@ type = "mapping"
 #"/": " & "
 " \u039b " = " And " # Lambda
 " Feat. " = " ft. "
-"Jay Z" = "Jay-Z"
 " Vs " = " vs. "
 " vs " = " vs. "
+
+[artist_replaces]
+type = "mapping"
+[artist_replaces.items]
+"Jay Z" = "Jay-Z"
 "Edith" = "\u00c9dith"
 #"Charly": "Charlie"
 "BB King" = "B.B. King"
@@ -346,7 +358,7 @@ type = "mapping"
 "Jay Z" = "Jay-Z"
 "Pharrell" = "Pharrell Williams"
 "Golden Earrings" = "Golden Earring"
-"Thomas Acda, Paul de Munnik, Maan & Typhoon" = "Acda & de Munnik & Maan & Typhoon"
+"Thomas Acda, Paul de Munnik, Maan & Typhoon" = "Acda en De Munnik"# & Maan & Typhoon"
 "Delerium ft. Sarah McLachlan" = "Ti\u00ebsto" # Remix
 
 [artist_full_replaces]

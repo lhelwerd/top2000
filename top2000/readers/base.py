@@ -14,6 +14,7 @@ from ..normalization import Normalizer
 
 RowPath = list[str | int]
 Key = tuple[str, str]
+KeySet = dict[Key, Literal[True]]
 Positions = dict[int, list[Key]]
 RowElement = str | int | bool
 Row = dict[str, RowElement]
@@ -362,7 +363,7 @@ class Base(metaclass=ABCMeta):
             self._last_time = None
 
     def _update_keys(self, position: int | None, row: Row, fields: FieldMap) \
-            -> tuple[Key, set[Key], set[Key]]:
+            -> tuple[Key, KeySet, KeySet]:
         normalizer = Normalizer.get_instance()
         orig_artist = str(row[fields["artist"]])
         orig_title = str(row[fields["title"]])
@@ -377,26 +378,26 @@ class Base(metaclass=ABCMeta):
             new_row = row
             row = self._tracks[self._positions[position][0]].copy()
             row.update(new_row)
-            keys.update(self._positions[position])
+            keys.update(dict.fromkeys(self._positions[position], True))
 
         best_key, reinstate = self._update_best_key(best_key, row,
                                                     artist_alternatives,
                                                     title_alternatives)
         if reinstate:
             keys.update(rejected_keys)
-            rejected_keys = set()
+            rejected_keys = {}
 
-        keys.discard(best_key)
+        keys.pop(best_key, None)
         return best_key, keys, rejected_keys
 
     def _find_keys(self, row, fields: FieldMap, artist_alternatives: list[str],
                    title_alternatives: list[str]) \
-            -> tuple[Key, set[Key], set[Key]]:
+            -> tuple[Key, KeySet, KeySet]:
         best_key: Key | None = None
         key: Key = (artist_alternatives[-1], title_alternatives[-1])
 
-        keys: set[Key] = set()
-        rejected_keys: set[Key] = set()
+        keys: KeySet = {}
+        rejected_keys: KeySet = {}
         pos_field = fields.get("pos", "position")
         for artist, title in product(artist_alternatives, title_alternatives):
             key = (artist.lower().strip(), title.lower().strip())
@@ -407,9 +408,9 @@ class Base(metaclass=ABCMeta):
 
             best_key, valid = self._update_row(key, row, pos_field, best_key)
             if valid:
-                keys.add(key)
+                keys[key] = True
             else:
-                rejected_keys.add(key)
+                rejected_keys[key] = True
 
         if best_key is None:
             best_key = key # original artist/title combination
@@ -493,7 +494,7 @@ class Base(metaclass=ABCMeta):
         return best_key, False
 
     def _set_position_keys(self, position: int | None, best_key: Key,
-                           keys: set[Key], rejected_keys: set[Key]) -> None:
+                           keys: KeySet, rejected_keys: KeySet) -> None:
         # Now we handle row[pos_field] and finalize best keys in the data
         if position is not None:
             self._positions[position] = [best_key] + [
@@ -511,3 +512,32 @@ class Base(metaclass=ABCMeta):
                     #    print(position, key, self._artists[key[0]])
                     if position not in self._artists[key[0]]:
                         bisect.insort(self._artists[key[0]], position)
+
+    def select_relevant_keys(self, relevant_keys: dict[tuple[int, ...], Key],
+                             position: int, keys: list[Key],
+                             primary: 'Base | None' = None) -> None:
+        """
+        Update a dictionary of artist charts to artist keys with most relevant
+        keys to describe the artists.
+        """
+
+        if primary is None:
+            primary = self
+
+        normalizer = Normalizer.get_instance()
+        one: Key | None = None
+        for key in keys:
+            chart = tuple(primary.artists[key[0]])
+            #if "gotye" in key[0] or "kimbra" in key[0]:
+            #    print(key, chart, one, relevant_keys)
+            if len(chart) == 1:
+                if one is None and not normalizer.find_artist_splits(key[0])[1]:
+                    one = key
+            elif chart not in relevant_keys:
+                relevant_keys[chart] = key
+        if one is not None:
+            relevant_keys[(position,)] = one
+        elif not relevant_keys:
+            # Always have some relevant key, so take best key
+            best_key = keys[0]
+            relevant_keys[tuple(primary.artists[best_key[0]])] = best_key

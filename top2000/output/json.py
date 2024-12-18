@@ -6,7 +6,7 @@ from itertools import zip_longest
 import json
 from pathlib import Path
 from .base import Format, KeyPair
-from ..readers.base import Base as ReaderBase, Key, Row, RowElement
+from ..readers.base import Base as ReaderBase, Key, Row, RowElement, Artists
 
 FieldMap = dict[str, str]
 
@@ -24,6 +24,7 @@ class JSON(Format):
             path = Path(f"output-{output_format}.json")
 
         reverse = self._get_bool_setting(output_format, "reverse")
+        relevant = self._get_bool_setting(output_format, "relevant")
         self.reset()
 
         self._sort_readers(readers)
@@ -40,14 +41,16 @@ class JSON(Format):
             self._check_positions(reader_keys, reverse)
             tracks.append(self._aggregate_track(readers, reader_keys,
                                                 reader_fields, numeric_fields))
-            positions.append(reader_keys[0][0])
-            track_keys.append(reader_keys[0][1])
+            if reader_keys[0] is not None:
+                positions.append(reader_keys[0][0])
+
+            track_keys.append(self._select_keys(readers, reader_keys, relevant))
 
         data = {
             "tracks": tracks,
             "positions": positions,
             "keys": track_keys,
-            "artists": readers[0].artists,
+            "artists": self._select_artists(readers, track_keys, relevant),
             "first_year": self._first_year,
             "year": self._current_year,
             "reverse": reverse,
@@ -142,3 +145,34 @@ class JSON(Format):
                     track[field] = int(track[field])
 
         return track
+
+    def _select_keys(self, readers: list[ReaderBase],
+                     reader_keys: tuple[KeyPair | None, ...],
+                     relevant: bool = False) -> list[Key]:
+        if not relevant:
+            return reader_keys[0][1]
+        relevant_keys: dict[tuple[int, ...], Key] = {}
+        for reader, key_pair in zip(readers, reader_keys):
+            if key_pair is not None:
+                reader.select_relevant_keys(relevant_keys, key_pair[0],
+                                            key_pair[1], primary=readers[0])
+        #if "bob marley" in list(relevant_keys.values())[0][0]:
+        #    print(reader_keys, relevant_keys)
+        return list(relevant_keys.values())
+
+    def _select_artists(self, readers: list[ReaderBase],
+                        track_keys: list[list[Key]],
+                        relevant: bool = False) -> Artists:
+        artists: Artists = {}
+        relevant_keys: set[str] = set()
+        if relevant:
+            for track in track_keys:
+                relevant_keys.update(pair[0] for pair in track)
+        for reader in readers:
+            if not relevant:
+                artists.update(reader.artists)
+            else:
+                artists.update({artist: chart
+                                for artist, chart in reader.artists.items()
+                                if artist in relevant_keys})
+        return artists

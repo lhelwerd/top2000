@@ -3,6 +3,7 @@ Artist and song track title normalization and alternative key generation.
 """
 
 from pathlib import Path
+import re
 import tomllib
 from typing import Literal
 
@@ -29,6 +30,9 @@ class Normalizer:
                 tomllib.load(fixes_file)
 
         self._replaces = str.maketrans(self._get_mapping("replaces"))
+        artist_splits = "|".join(re.escape(split)
+                                 for split in self._get_list("artist_splits"))
+        self._artist_splits = re.compile(f"({artist_splits})")
 
     def _get_list(self, name: str) -> list[str]:
         items = self._fixes[name]["items"]
@@ -106,14 +110,28 @@ class Normalizer:
         """
 
         alternatives: dict[str, Literal[True]] = {}
-        split_count = 0
-        for split in self._get_list("artist_splits"):
-            if split in artist:
-                split_count += 1
-                parts = artist.split(split)
-                alternatives.update(dict.fromkeys(parts, True))
-                alternative = split.join(parts[::-1])
-                alternatives[alternative] = True
+        parts = self._artist_splits.split(artist)
+        split_count = len(parts[::2]) - 1
+        if split_count == 0:
+            return alternatives, split_count
+
+        keep = self._get_list("artist_no_splits")
+        for index, part in enumerate(parts[::2]):
+            two = index * 2
+            if index > 0 and f"{parts[two - 2]}{parts[two - 1]}{part}" in keep:
+                alternatives[f"{parts[two - 2]}{parts[two - 1]}{part}"] = True
+                split_count -= 1
+                continue
+            if index < split_count and \
+                f"{part}{parts[two + 1]}{parts[two + 2]}" in keep:
+                alternatives[f"{part}{parts[two + 1]}{parts[two + 2]}"] = True
+                split_count -= 1
+                continue
+            alternatives[part] = True
+            alternatives.update(dict.fromkeys(self.find_alternatives(part),
+                                              True))
+        alternative = "".join(parts[::-1])
+        alternatives[alternative] = True
 
         return alternatives, split_count
 
@@ -136,6 +154,11 @@ class Normalizer:
         for search, group in self._get_mapping("artist_groups").items():
             if search in artist:
                 alternatives[group] = True
+
+        for find, split in self._get_mapping("artist_split_replaces").items():
+            if find in artist:
+                artist = artist.replace(find, split)
+                alternatives[artist] = True
 
         for search, replace in self._get_mapping("artist_replaces").items():
             if search in artist:

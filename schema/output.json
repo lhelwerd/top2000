@@ -48,6 +48,16 @@
                 "^[A-Za-z0-9_]+$": {
                     "type": "object",
                     "properties": {
+                        "reverse": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to output the lowest placed track first."
+                        },
+                        "relevant": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to output normalization keys of artists and tracks only if they are considered relevant for unique chart display."
+                        },
                         "fields": {
                             "$ref": "#/$defs/field_map",
                             "description": "Field name translation for primary input data into main track data."

@@ -191,10 +191,31 @@ class Wiki(Base):
         self._is_current_year = old_current_year
         if self._is_current_year and not valid:
             # Collision was detected
-            best_key = (artist_alternatives[-1], title_alternatives[-1])
+            best_key = (artist_alternatives[-1].lower(),
+                        title_alternatives[-1].lower())
             self._tracks[best_key] = row
             self._tracks[best_key]["artiest"] = artist_alternatives[-1]
             self._tracks[best_key]["titel"] = title_alternatives[-1]
             return best_key, True
 
         return best_key, False
+
+    def select_relevant_keys(self, relevant_keys: dict[tuple[int, ...], Key],
+                             position: int, keys: list[Key],
+                             primary: Base | None = None) -> None:
+        if primary is None:
+            primary = self
+
+        wiki_keys: dict[tuple[int, ...], Key] = {}
+        for title in self._artist_links[position - 1].values():
+            key = (str(title).lower(), keys[0][1])
+            chart = tuple(primary.artists.get(key[0], []))
+            if chart:
+                if chart in wiki_keys:
+                    wiki_keys[(-1, hash(key[0]))] = key
+                else:
+                    wiki_keys[chart] = key
+
+        #if "het is een nacht" in keys[0][1]:
+        #    print(position, relevant_keys, wiki_keys, keys)
+        relevant_keys.update(wiki_keys)
