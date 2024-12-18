@@ -193,11 +193,12 @@ rows.on("click", function(event, d) {
                     .classed("lines", true)
                     .append("path")
                     .attr("fill", "none")
-                    .attr("stroke", (d, i) => stroke(i % cycle))
                     .attr("stroke-width", 2),
                 update => update.select("path"),
                 exit => exit.remove()
-            ).attr("d", d => line(d));
+            )
+            .attr("stroke", (d, i) => stroke(i % cycle))
+            .attr("d", d => line(d));
         const points = svg.selectAll("g.points")
             .data(positions.values(), key => key[key.length - 1])
             .join("g")
@@ -207,18 +208,29 @@ rows.on("click", function(event, d) {
             .attr("text-anchor", "middle")
             .selectAll("g")
             .data((d, i) => d3.cross(d, [i]))
-            .join("g")
-            .attr("opacity", d => typeof d[0] === "undefined" ? 0 : 1)
-            .attr("transform", (d, i) => typeof d[0] === "undefined" ? "" :
-                `translate(${x(years[i])}, ${y(d[0])})`
+            .join(
+                enter => {
+                    const point = enter.append("g")
+                        .attr("opacity",
+                            d => typeof d[0] === "undefined" ? 0 : 1)
+                        .attr("transform",
+                            (d, i) => typeof d[0] === "undefined" ? "" :
+                                `translate(${x(years[i])}, ${y(d[0])})`
+                        );
+                    point.append("path");
+                    point.append("text")
+                        .attr("dy", "0.32em");
+                    return point;
+                },
+                update => update,
+                exit => exit.remove()
             );
-        points.append("path")
+        points.select("path")
             .attr("fill", d => stroke(d[1] % cycle))
             .attr("d", (d, i) =>
                 symbols(i === years.length - 1 ? (d[1] + 1) % fill : 0)
             );
-        points.append("text")
-            .attr("dy", "0.32em")
+        points.select("text")
             .text(d => d[0]);
     };
     updateLines();
@@ -304,12 +316,6 @@ rows.on("click", function(event, d) {
                     return;
                 }
                 const deleted = positions.delete(d);
-                cell.selectAll("table tr")
-                    .filter(pos => pos === d)
-                    .classed("is-selected", !deleted)
-                    .style("background",
-                        deleted ? "" : stroke(positions.size % cycle)
-                    );
                 if (!deleted) {
                     const track = data.tracks[data.reverse ? data.tracks.length - d : d - 1];
                     const chart = [];
@@ -319,6 +325,14 @@ rows.on("click", function(event, d) {
                     chart.push(d);
                     positions.set(d, chart);
                 }
+                const positionIndexes = new Map(d3.zip([...positions.keys()],
+                    d3.range(positions.size))
+                );
+                cell.selectAll("table tr")
+                    .classed("is-selected", pos => positions.has(pos))
+                    .style("background", pos => positions.has(pos) ?
+                        stroke(positionIndexes.get(pos) % cycle) : ""
+                    );
                 updateLines();
             })
             .selectAll("td")
