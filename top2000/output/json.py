@@ -56,7 +56,7 @@ class JSON(Format):
             "reverse": reverse,
             "columns": self._get_dict_setting(output_format, "columns")
         }
-        for reader in readers:
+        for reader in set(readers):
             data.update(reader.extra_data)
         with path.open("w", encoding="utf-8") as json_file:
             json.dump(data, json_file)
@@ -70,7 +70,8 @@ class JSON(Format):
                            if reader.input_format is None)
             readers[0], readers[primary] = readers[primary], readers[0]
         except StopIteration:
-            # Assume first reader is primary and use it twice
+            # Assume first reader is primary and use it twice for aggregation
+            # into main track and subtracks
             readers.insert(0, readers[0])
 
     def _check_positions(self, reader_keys: tuple[KeyPair | None, ...],
@@ -152,10 +153,14 @@ class JSON(Format):
         if not relevant:
             return reader_keys[0][1]
         relevant_keys: dict[tuple[int, ...], Key] = {}
+        primary = True
         for reader, key_pair in zip(readers, reader_keys):
+            if reader is readers[0] and not primary:
+                continue
             if key_pair is not None:
                 reader.select_relevant_keys(relevant_keys, key_pair[0],
                                             key_pair[1], primary=readers[0])
+            primary = False
         #if "bob marley" in list(relevant_keys.values())[0][0]:
         #    print(reader_keys, relevant_keys)
         return list(relevant_keys.values())
@@ -168,7 +173,7 @@ class JSON(Format):
         if relevant:
             for track in track_keys:
                 relevant_keys.update(pair[0] for pair in track)
-        for reader in readers:
+        for reader in set(readers):
             if not relevant:
                 artists.update(reader.artists)
             else:

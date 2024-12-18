@@ -205,6 +205,9 @@ class Wiki(Base):
                              primary: Base | None = None) -> None:
         if primary is None:
             primary = self
+        if primary is self:
+            super().select_relevant_keys(relevant_keys, position, keys,
+                                         primary=primary)
 
         wiki_keys: dict[tuple[int, ...], Key] = {}
         for title in self._artist_links[position - 1].values():
