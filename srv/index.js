@@ -120,8 +120,8 @@ rows.on("click", function(event, d) {
         .classed("columns is-multiline is-centered is-vcentered", true);
 
     // Progression chart
-    const width = 640;
-    const height = 400;
+    const width = 800;
+    const height = 500;
     const marginTop = 20;
     const marginRight = 20;
     const marginBottom = 30;
@@ -166,8 +166,8 @@ rows.on("click", function(event, d) {
     const stroke = d3.scaleOrdinal(d3.schemeObservable10);
     const cycle = stroke.range().length;
     const symbolType = d3.scaleOrdinal(d3.symbolsFill);
-    const symbols = d3.symbol(symbolType);
-    const fill = symbolType.range().length;
+    const symbols = d3.symbol(symbolType, 320);
+    const fill = symbolType.range().length - 1;
     const updateLines = () => {
         const maxPosition = d3.max(positions.values(), seq => d3.max(seq));
         const front = data.positions[data.positions.length - 1];
@@ -202,17 +202,24 @@ rows.on("click", function(event, d) {
             .data(positions.values(), key => key[key.length - 1])
             .join("g")
             .classed("points", true)
-            .selectAll("path")
+            .attr("font-size", 10)
+            .attr("font-family", "sans-serif")
+            .attr("text-anchor", "middle")
+            .selectAll("g")
             .data((d, i) => d3.cross(d, [i]))
-            .join("path")
-            .attr("visibility",
-                d => typeof d[0] === "undefined" ? "hidden" : "visible"
-            )
-            .attr("fill", d => stroke(d[1] % cycle))
-            .attr("d", d => symbols(d[1] % fill))
+            .join("g")
+            .attr("opacity", d => typeof d[0] === "undefined" ? 0 : 1)
             .attr("transform", (d, i) => typeof d[0] === "undefined" ? "" :
                 `translate(${x(years[i])}, ${y(d[0])})`
             );
+        points.append("path")
+            .attr("fill", d => stroke(d[1] % cycle))
+            .attr("d", (d, i) =>
+                symbols(i === years.length - 1 ? (d[1] + 1) % fill : 0)
+            );
+        points.append("text")
+            .attr("dy", "0.32em")
+            .text(d => d[0]);
     };
     updateLines();
 
