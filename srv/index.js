@@ -117,7 +117,7 @@ rows.on("click", function(event, d) {
         .append("td")
         .attr("colspan", "4")
         .append("div")
-        .classed("columns is-multiline is-centered", true);
+        .classed("columns is-multiline is-centered is-vcentered", true);
 
     // Progression chart
     const width = 640;
@@ -216,31 +216,70 @@ rows.on("click", function(event, d) {
     };
     updateLines();
 
+    const chartColumn = cell.append("div")
+        .classed("column", true);
+    const chartCell = chartColumn.append("div");
+
     // Artist charts
-    const artists = data.artist_links ? Object.keys(data.artist_links[pos]) :
-        data.keys[pos];
+    const artists = (
+        data.artist_links ? Object.keys(data.artist_links[pos]) : []
+    ).concat(data.keys[pos]);
+    const charts = new Map();
+    let chartLength = 0;
     d3.map(artists, (artist, i) => {
-        const key = data.artist_links ?
-            data.artist_links[pos][artist].toLowerCase() : artist;
-        const column = cell.append("div")
-            .classed("column is-narrow", true);
+        const artistLink = data.artist_links && data.artist_links[pos][artist];
+        const key = artistLink ? artistLink.toLowerCase() : artist[0];
+        const chart = key in data.artists ? data.artists[key] :
+                data.artists[data.keys[pos][i][0]];
+        if (charts.has(chart.toString())) {
+            if (artistLink) {
+                const artistTitle = chartCell.select(`.chart:nth-of-type(${i})`)
+                    .select("p .artist");
+                artistTitle.append("span")
+                    .text(", ");
+                artistTitle.append("a")
+                    .attr("href", `${data.wiki_url}${artist}`)
+                    .attr("target", "_blank")
+                    .attr("title", artist)
+                    .text(artistLink);
+            }
+            return;
+        }
+        else {
+            charts.set(chart.toString(), i);
+            chartLength += chart.length;
+        }
+        const column = chartCell.append("div")
+            .classed("container column is-narrow chart", true)
+            .style("max-width", "fit-content");
         const title = column.append("p")
             .classed("has-text-centered has-text-weight-bold", true);
-        if (data.artist_links) {
-            title.append("a")
+        if (artistLink) {
+            title.append("span")
+                .classed("artist", true)
+                .append("a")
                 .attr("href", `${data.wiki_url}${artist}`)
+                .attr("title", artist)
                 .attr("target", "_blank")
-                .text(data.artist_links[pos][artist]);
+                .text(artistLink);
             title.append("span")
                 .text("\u00a0\u2014\u00a0");
             title.append("a")
                 .attr("href", `${data.wiki_url}${d.wiki.title_link}`)
+                .attr("title", d.wiki.title_link)
                 .attr("target", "_blank")
                 .text(d.wiki.title);
         }
         else {
-            title.classed("is-capitalized", true)
-                .text(`${artist} \u2014 ${d.title}`);
+            title.append("span")
+                .classed("artist", true)
+                .append("span")
+                .classed("is-capitalized", true)
+                .text(artist[0]);
+            title.append("span")
+                .text(`\u00a0\u2014\u00a0${d.title.toLowerCase() == artist[1] ?
+                    d.title : artist[1]
+                }`);
         }
         const subtable = column.append("table")
             .classed("table is-narrow is-hoverable is-striped is-bordered", true);
@@ -249,9 +288,7 @@ rows.on("click", function(event, d) {
             .join("th")
             .text(d => fields[d].column);
         subtable.append("tbody").selectAll("tr")
-            .data(key in data.artists ? data.artists[key] :
-                data.artists[data.keys[pos][i][0]]
-            )
+            .data(chart)
             .join("tr")
             .classed("is-selected", d => d === position)
             .style("background", d => d === position ? stroke(0) : "")
@@ -282,6 +319,10 @@ rows.on("click", function(event, d) {
             .join("td")
             .text((d, i) => fields[artistColumns[i]].field(data.tracks[data.reverse ? data.tracks.length - d : d - 1], d));
     });
+    if (chartLength > 12) {
+        chartColumn.classed("is-narrow", true);
+        chartCell.classed("columns is-multiline is-centered", true);
+    }
 });
 rows.selectAll("td")
     .data((d, i) => Array(columns.length).fill(i))
