@@ -137,6 +137,36 @@ const formatArtistChart = (d, position) => {
     return "";
 };
 
+const findTrack = (d) => {
+    return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
+};
+
+const stroke = d3.scaleOrdinal(d3.schemeObservable10);
+const cycle = stroke.range().length;
+const symbolType = d3.scaleOrdinal(d3.symbolsFill);
+const symbols = d3.symbol(symbolType, 336);
+const fill = symbolType.range().length - 2;
+const symbolEmoji = [
+    "\u2b24", // Circle
+    "\u2795\ufe0f", // Plus
+    "\u29eb", // Diamond
+    "\u2b1b\ufe0f", // Square
+    "\u2605", // Star
+    "\u25b2\ufe0f" // Triangle
+];
+const getChartEmoji = (d, position, positionIndexes=null) => {
+    if (positionIndexes && positionIndexes.has(d)) {
+        return symbolEmoji[(positionIndexes.get(d) % fill) + 1];
+    }
+    if (d < position) {
+        return data.reverse ? "\u2935\ufe0f" : "\u2934\ufe0f";
+    }
+    if (d > position) {
+        return data.reverse ? "\u2934\ufe0f" : "\u2935\ufe0f";
+    }
+    return symbolEmoji[1];
+};
+
 const table = container.append("table")
     .classed("table main is-narrow is-hoverable is-striped is-fullwidth", true);
 const columns = ["position", "artist", "title", "timestamp"];
@@ -238,16 +268,8 @@ rows.on("click", function(event, d) {
     svg.append("g")
         .classed("y", true)
         .attr("transform", `translate(${marginLeft},0)`);
-    const stroke = d3.scaleOrdinal(d3.schemeObservable10);
-    const cycle = stroke.range().length;
-    const symbolType = d3.scaleOrdinal(d3.symbolsFill);
-    const symbols = d3.symbol(symbolType, 320);
-    const fill = symbolType.range().length - 1;
     const updateLines = () => {
         const maxPosition = d3.max(positions.values(), seq => d3.max(seq));
-        const front = data.positions[data.positions.length - 1];
-        const end = data.positions[0];
-
         const yDomain = data.reverse ? [front, Math.max(maxPosition, end)] :
             [Math.max(maxPosition, front), end];
         y.domain(yDomain);
@@ -303,7 +325,7 @@ rows.on("click", function(event, d) {
         points.select("path")
             .attr("fill", d => stroke(d[1] % cycle))
             .attr("d", (d, i) =>
-                symbols(i === years.length - 1 ? (d[1] + 1) % fill : 0)
+                symbols(i === years.length - 1 ? (d[1] % fill) + 1 : 0)
             );
         points.select("text")
             .text(d => d[0]);
@@ -379,9 +401,9 @@ rows.on("click", function(event, d) {
         const subtable = column.append("table")
             .classed("table is-narrow is-hoverable is-striped is-bordered", true);
         subtable.append("thead").append("tr").selectAll("th")
-            .data(artistColumns)
+            .data([...artistColumns, ""])
             .join("th")
-            .text(d => fields[d].column);
+            .text(d => fields[d] ? fields[d].column : d);
         subtable.append("tbody").selectAll("tr")
             .data(chart)
             .join("tr")
@@ -393,7 +415,7 @@ rows.on("click", function(event, d) {
                 }
                 const deleted = positions.delete(d);
                 if (!deleted) {
-                    const track = data.tracks[data.reverse ? data.tracks.length - d : d - 1];
+                    const track = findTrack(d);
                     const chart = [];
                     for (let year = data.first_year; year < data.year; year++) {
                         chart.push(track[year]);
@@ -408,13 +430,25 @@ rows.on("click", function(event, d) {
                     .classed("is-selected", pos => positions.has(pos))
                     .style("background", pos => positions.has(pos) ?
                         stroke(positionIndexes.get(pos) % cycle) : ""
-                    );
+                    )
+                    .select("td:last-child")
+                    .text(pos => getChartEmoji(pos, position, positionIndexes));
                 updateLines();
             })
             .selectAll("td")
-            .data(d => Array(artistColumns.length).fill(d))
+            .data(d => Array(artistColumns.length + 1).fill(d))
             .join("td")
-            .text((d, i) => fields[artistColumns[i]].field(data.tracks[data.reverse ? data.tracks.length - d : d - 1], d));
+            .each(function(d, i) {
+                if (i === artistColumns.length) {
+                    d3.select(this)
+                        .classed("has-text-centered", true)
+                        .text(getChartEmoji(d, position));
+                }
+                else {
+                    d3.select(this)
+                        .text(fields[artistColumns[i]].field(findTrack(d), d));
+                }
+            });
     });
     if (chartLength > 12) {
         chartColumn.classed("is-narrow", true)
