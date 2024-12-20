@@ -316,10 +316,6 @@ class Base(metaclass=ABCMeta):
             self._check_album_version(row, fields["title"])
             self._check_timestamp(row, fields.get("timestamp"))
 
-        year_field = fields.get("year", "year")
-        if year_field in row:
-            row["jaar"] = row[year_field]
-
         pos_field = fields.get("pos", "position")
         position = int(row[pos_field]) + offset if pos_field in row else None
         if position is not None and not self._is_current_year:
@@ -344,6 +340,10 @@ class Base(metaclass=ABCMeta):
         #    print(self._year, best_key, keys, rejected_keys, position)
         if position is not None and not self._is_current_year:
             self._tracks[best_key][str(int(self._year))] = position
+
+        year_field = fields.get("year", "year")
+        if year_field in row:
+            self._tracks[best_key]["jaar"] = row[year_field]
 
         self._set_position_keys(position, best_key, keys, rejected_keys)
         return best_key, position
