@@ -299,7 +299,8 @@ rows.on("click", function(event, d) {
                 .classed("is-capitalized", true)
                 .text(artist[0]);
             title.append("span")
-                .text(`\u00a0\u2014\u00a0${d.title.toLowerCase() == artist[1] ?
+                .classed("is-capitalized", d.title.toLowerCase() !== artist[1])
+                .text(`\u00a0\u2014\u00a0${d.title.toLowerCase() === artist[1] ?
                     d.title : artist[1]
                 }`);
         }
