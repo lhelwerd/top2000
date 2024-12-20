@@ -327,18 +327,21 @@ class Base(metaclass=ABCMeta):
 
         prv_field = fields.get("prv", "prv")
         if not self._is_current_year:
+            if str(int(self._year)) in pos_field and self._year != self.first_csv_year:
+                for year in range(int(self.first_year), int(self._year)):
+                    row.pop(str(year), None)
             row.pop(prv_field, None)
-        else:
-            prv_year = str(int(self._year) - 1)
-            if str(row.get(prv_field, "0")) != "0" and prv_year not in row:
-                row[prv_year] = row[prv_field]
 
         best_key, keys, rejected_keys = self._update_keys(position, row, fields)
+        #if best_key == ("george michael & queen", "somebody to love (live)"):
+        #    print(self._year, keys, rejected_keys)
         for key in keys:
             if self._tracks[key].get("best") is not True:
                 self._tracks[key]["best"] = best_key[0]
                 self._tracks[key]["best_title"] = best_key[1]
 
+        #if row[fields["title"]] == "Zombie":
+        #    print(self._year, best_key, keys, rejected_keys, position)
         if position is not None and not self._is_current_year:
             self._tracks[best_key][str(int(self._year))] = position
 
@@ -373,6 +376,8 @@ class Base(metaclass=ABCMeta):
         best_key, keys, rejected_keys = self._find_keys(row, fields,
                                                         artist_alternatives,
                                                         title_alternatives)
+        #if best_key == ("george michael & queen", "somebody to love (live)"):
+        #    print(self._year, artist_alternatives, title_alternatives)
 
         if self._is_current_year and position in self._positions:
             new_row = row
@@ -435,10 +440,19 @@ class Base(metaclass=ABCMeta):
 
         new_row = row.copy()
         if key in self._tracks:
+            #if "queen" in key[0] and "somebody to love" in key[1]:
+            #    print(key, best_key, repr(self._tracks[key].get("best")),
+            #          self._tracks[key].get(pos_field),
+            #          self._tracks[key].get(str(int(self._year))),
+            #          self._check_collision(key, pos_field),
+            #          row.get(pos_field), row.get(str(int(self._year))))
             if self._check_collision(key, pos_field):
                 #print(f"Potential collision ({self._year}: {key!r} {best_key!r} {row!r}")
                 #print(self._tracks[key])
-                if pos_field in self._tracks[key]:
+
+                if pos_field in self._tracks[key] and \
+                    self._is_current_year and \
+                    self._tracks[key][pos_field] == row.get(pos_field):
                     return best_key, False
 
                 if best_key == key or (best_key is None and \

@@ -90,6 +90,7 @@ class Years(Base):
                 # No JSON file, so instead use CSV (very old years)
                 # These are overview CSV files with possibly multiple years
                 # The current year position is stored in a "pos XXXX" field
-                self._fields.update_year(year, {"csv": {"pos": f"pos {year}"}})
+                self._fields.update_year(year,
+                                         {"csv": {"pos": f"pos {int(year)}"}})
                 csv = CSV(year, is_current_year=False, fields=self._fields)
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)

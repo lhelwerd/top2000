@@ -25,6 +25,7 @@ json.rows = ["positions"]
 
 [[years]]
 year = 2023
+json.skip = true # Because Pink Floyd - Breathe is overwritten in old JSON files
 json.rows = ["positions"]
 
 [[years]]
@@ -43,7 +44,7 @@ json.rows = ["positions"]
 api = "https://nl.wikipedia.org/w/api.php"
 path = "/wiki/"
 page = "Lijst_van_Radio_2-Top_2000's"
-oldid = 68587927
+oldid = 68598999
 artist = "Artiest"
 title = "Titel"
 year = "Jaar"
