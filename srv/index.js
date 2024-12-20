@@ -107,7 +107,7 @@ const rows = table.append("tbody").selectAll("tr")
     .each(setCurrent);
 rows.on("click", function(event, d) {
     const next = d3.select(this.nextSibling);
-    if (next.classed("info")) {
+    if (!next.empty() && next.classed("info")) {
         next.remove();
         return;
     }
