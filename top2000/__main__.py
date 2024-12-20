@@ -45,6 +45,36 @@ def _parse_first_args(argv: deque[str]) \
 
     return list(argv), readers, outputs, latest_year
 
+def _parse_year_args(reader: Years, argv: list[str],
+                     current_year: float) -> tuple[str, str, OldFiles]:
+    current_year_csv, current_year_json = reader.format_filenames(*argv[0:2])
+    try:
+        if len(argv) > 4:
+            # Triples of year, CSV filename, JSON filename
+            old: OldFiles = tuple(zip((float(year) for year in argv[2::3]),
+                                      argv[3::3], argv[4::3]))
+        elif len(argv) > 2:
+            # Single year using formats from arguments or from fields
+            csv_name_format = argv[0] if "{}" in argv[0] else None
+            json_name_format = argv[1] if "{}" in argv[1] else None
+            year = float(argv[2])
+            old = (year,
+                   reader.format_filenames(csv_name_format=csv_name_format,
+                                           json_name_format=json_name_format,
+                                           year=year))
+        else:
+            old_years: set[float] = set(range(int(reader.first_csv_year),
+                                              int(current_year)))
+            old_years.update(reader.years)
+            old_years.discard(current_year)
+            old = tuple((year, *reader.format_filenames(year=year))
+                        for year in sorted(old_years, reverse=True))
+    except ValueError:
+        # One of the first arguments in triples was not a year, skip them all
+        old = tuple()
+
+    return current_year_csv, current_year_json, old
+
 def main(argv: list[str]) -> int:
     """
     Main entry point.
@@ -71,19 +101,7 @@ def main(argv: list[str]) -> int:
             current_year = latest_year
 
         if isinstance(reader, Years):
-            current_csv, current_json = reader.format_filenames(*argv[0:2])
-            old_years: set[float] = set(range(int(reader.first_csv_year),
-                                              int(current_year)))
-            old_years.update(reader.years)
-            old_years.discard(current_year)
-            old: OldFiles = tuple(zip((float(year) for year in argv[2::3]),
-                                      argv[3::3], argv[4::3])) \
-                if len(argv) > 4 \
-                else tuple((year, *reader.format_filenames(year=year))
-                           for year in sorted(old_years))
-
-            reader.read_files(current_year_csv=current_csv,
-                              current_year_json=current_json, old=old)
+            reader.read_files(*_parse_year_args(reader, argv, current_year))
         else:
             reader.read()
 
