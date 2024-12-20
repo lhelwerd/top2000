@@ -16,6 +16,71 @@ const data = await d3.json("output-sorted.json"); // jshint ignore: line
 const firstYear = data.first_year;
 const currentYear = data.year;
 const direction = data.reverse ? 1 : -1;
+const front = data.positions[data.positions.length - 1];
+const end = data.positions[0];
+
+const container = d3.select("#container");
+const pagination = container.append("div")
+    .style("position", "sticky")
+    .style("top", "0px")
+    .style("z-index", 10)
+    .append("nav")
+    .classed("pagination is-centered has-background-info-dark", true)
+    .append("ul")
+    .classed("pagination-list is-flex-wrap-nowrap", true);
+const updatePagination = (current) => {
+    const pages = d3.ticks(...d3.nice(end, front, 20), 20);
+    if (current) {
+        const currentIndex = d3.bisectRight(pages, current);
+        if (pages[currentIndex-1] !== current) {
+            pages.splice(currentIndex, 0, current);
+        }
+    }
+    pagination.selectAll("li")
+        .data(d3.map(pages, d => d3.median([d, end, front]))) // Clamp
+        .join(
+            enter => enter.append("li")
+                .append("a")
+                .classed("pagination-link", true)
+                .on("click", function(event, d) {
+                    const posCell = findPositionRow(d);
+                    if (posCell) {
+                        d3.select(this.parentNode.parentNode)
+                            .selectAll(".pagination-link")
+                            .classed("is-current", pos => d === pos);
+                        container.selectAll("table.main > tbody > tr")
+                            .classed("is-link", false);
+                        d3.select(posCell.parentNode)
+                            .classed("is-selected", false) // Color contrast
+                            .classed("is-link", true);
+                    }
+                }),
+            update => update.select("a"),
+            exit => exit.remove()
+        )
+        .classed("has-background-primary has-text-dark", d => d === current)
+        .classed("is-hidden-desktop-only",
+            (d, i) => i !== 0 && d !== current && d % 200 !== 0
+        )
+        .classed("is-hidden-touch",
+            (d, i) => i !== 0 && d !== current && d % 500 !== 0
+        )
+        .text(d => d);
+};
+const findPositionRow = (d) => {
+    const posCell = container
+        .selectAll("table.main > tbody > tr > td:first-child")
+        .select(function(pos) {
+            return d === data.positions[pos] ? this : null;
+        })
+        .node();
+    if (posCell) {
+        posCell.scrollIntoView({
+            behavior: "smooth", block: "center"
+        });
+    }
+    return posCell;
+};
 
 const setCurrent = function(d, i, nodes) {
     const now = Date.now();
@@ -24,6 +89,7 @@ const setCurrent = function(d, i, nodes) {
         (!(next in data.tracks) || data.tracks[next].timestamp > now);
     d3.select(this).classed("is-selected", isCurrent);
     if (isCurrent) {
+        updatePagination(data.positions[i]);
         window.requestAnimationFrame(() => {
             this.scrollIntoView({behavior: "smooth", block: "center"});
         });
@@ -71,8 +137,8 @@ const formatArtistChart = (d, position) => {
     return "";
 };
 
-const table = d3.select("#container").append("table")
-    .classed("table is-narrow is-hoverable is-striped is-fullwidth", true);
+const table = container.append("table")
+    .classed("table main is-narrow is-hoverable is-striped is-fullwidth", true);
 const columns = ["position", "artist", "title", "timestamp"];
 const artistColumns = ["position", "title", "year", "timestamp"];
 const fields = {
@@ -97,7 +163,13 @@ const fields = {
         field: d => formatTime(new Date(d.timestamp))
     }
 };
-table.append("thead").append("tr").selectAll("th")
+table.append("thead")
+    .style("position", "sticky")
+    .style("top", "2.5rem")
+    .style("z-index", 10)
+    .style("background-color", "inherit")
+    .append("tr")
+    .selectAll("th")
     .data(columns)
     .join("th")
     .text(d => fields[d].column);
