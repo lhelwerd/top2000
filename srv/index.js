@@ -116,6 +116,7 @@ rows.on("click", function(event, d) {
         .classed("info", true)
         .append("td")
         .attr("colspan", "4")
+        .style("padding", ".25em .5em 1.75em .5em")
         .append("div")
         .classed("columns is-multiline is-centered is-vcentered", true);
 
@@ -154,6 +155,8 @@ rows.on("click", function(event, d) {
         .tickFormat(formatYear);
     const svg = cell.append("div")
         .classed("column is-narrow", true)
+        .style("overflow", "auto")
+        .style("max-width", "100vw")
         .append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -236,7 +239,7 @@ rows.on("click", function(event, d) {
     updateLines();
 
     const chartColumn = cell.append("div")
-        .classed("column", true);
+        .classed("column is-size-7-mobile", true);
     const chartCell = chartColumn.append("div");
 
     // Artist charts
@@ -341,7 +344,8 @@ rows.on("click", function(event, d) {
             .text((d, i) => fields[artistColumns[i]].field(data.tracks[data.reverse ? data.tracks.length - d : d - 1], d));
     });
     if (chartLength > 12) {
-        chartColumn.classed("is-narrow", true);
+        chartColumn.classed("is-narrow", true)
+            .style("max-width", "100vw");
         chartCell.classed("columns is-multiline is-centered", true);
     }
 });
