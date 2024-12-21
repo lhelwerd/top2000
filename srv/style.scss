@@ -1,0 +1,32 @@
+@use "bulma";
+
+#head {
+    position: sticky;
+    top: 0px;
+    z-index: 10;
+}
+table.main {
+    & > thead {
+        position: sticky;
+        top: 2.45rem;
+        z-index: 10;
+        background-color: inherit;
+    }
+    .info {
+        & > td {
+            padding: .25em .25em 1em .5em;
+        }
+        .progression {
+            overflow: auto;
+            max-width: 100vw;
+        }
+        .artists {
+            &.is-narrow {
+                max-width: 100vw;
+            }
+            .container.chart {
+                max-width: fit-content;
+            }
+        }
+    }
+}

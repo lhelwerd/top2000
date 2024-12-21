@@ -1,7 +1,9 @@
 # Input data files
 *.csv
 *.json
+!package*.json
 !schema/*.json
+top2000-*.html
 wiki*.html
 *.odt
 *.ods
@@ -16,3 +18,7 @@ __pycache__
 *.pyc
 env/
 mypy-report/
+
+# Node.js package files
+dist/
+node_modules/

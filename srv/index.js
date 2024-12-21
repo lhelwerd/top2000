@@ -1,4 +1,7 @@
-/* jshint esversion: 8 */
+import "./style.scss";
+import * as d3 from "d3";
+import data from "./output-sorted.json";
+
 const nl = d3.timeFormatLocale({
     dateTime: "%H:%M %d-%m-%Y",
     date: "%d-%m-%Y",
@@ -12,18 +15,17 @@ const nl = d3.timeFormatLocale({
 const formatTime = nl.format("%d %b %H:%M");
 const formatYear = nl.format("'%y");
 
-const data = await d3.json("output-sorted.json"); // jshint ignore: line
 const firstYear = data.first_year;
 const currentYear = data.year;
 const direction = data.reverse ? 1 : -1;
 const front = data.positions[data.positions.length - 1];
 const end = data.positions[0];
 
-const container = d3.select("#container");
+const container = d3.select("body")
+    .append("div")
+    .attr("id", "container");
 const pagination = container.append("div")
-    .style("position", "sticky")
-    .style("top", "0px")
-    .style("z-index", 10)
+    .attr("id", "head")
     .append("nav")
     .classed("pagination is-centered has-background-info-dark", true)
     .append("ul")
@@ -198,10 +200,6 @@ const createTable = () => {
             true
         );
     table.append("thead")
-        .style("position", "sticky")
-        .style("top", "2.5rem")
-        .style("z-index", 10)
-        .style("background-color", "inherit")
         .append("tr")
         .selectAll("th")
         .data(columns)
@@ -280,9 +278,7 @@ class Info {
             .tickValues(xTicks)
             .tickFormat(formatYear);
         this.svg = this.cell.append("div")
-            .classed("column is-narrow", true)
-            .style("overflow", "auto")
-            .style("max-width", "100vw")
+            .classed("column progression is-narrow", true)
             .append("svg")
             .attr("width", width)
             .attr("height", height);
@@ -357,7 +353,7 @@ class Info {
 
     makeArtistCharts() {
         const chartColumn = this.cell.append("div")
-            .classed("column is-size-7-mobile", true);
+            .classed("column artists is-size-7-mobile", true);
         const chartCell = chartColumn.append("div");
 
         // Artist charts
@@ -371,8 +367,7 @@ class Info {
             chartLength += this.makeArtistChart(artist, i, chartCell, charts);
         });
         if (chartLength > 12) {
-            chartColumn.classed("is-narrow", true)
-                .style("max-width", "100vw");
+            chartColumn.classed("is-narrow", true);
             chartCell.classed("columns is-multiline is-centered", true);
         }
     }
@@ -400,8 +395,7 @@ class Info {
             charts.set(chart.toString(), i);
         }
         const column = chartCell.append("div")
-            .classed("container column is-narrow chart", true)
-            .style("max-width", "fit-content");
+            .classed("container column is-narrow chart", true);
         const title = column.append("p")
             .classed("has-text-centered has-text-weight-bold", true);
         if (link) {
@@ -517,7 +511,6 @@ const toggleInfoCell = (node, d=null, toggle=true, other=null) => {
         .classed("info", true)
         .append("td")
         .attr("colspan", "4")
-        .style("padding", ".25em .5em 1.75em .5em")
         .append("div")
         .classed("columns is-multiline is-centered is-vcentered", true);
 

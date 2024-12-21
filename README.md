@@ -1,17 +1,23 @@
 # NPO Radio 2 Top 2000 data reader, parser and output formatter
 
-This repository contains a Python module for reading several files related to 
+This repository contains a Python module for reading data sources related to 
 the NPO Radio 2 Top 2000 from different years. The data is parsed, normalized, 
 formatted and output for custom reporting. This includes comparisons with 
 earlier years to track increase or decrease of track chart ranking as well as 
 later comebacks of a track. We also report on per-artist charts so that we can 
 see whether an artist has more tracks in the current list and how the track 
-performs, with consideration for collaborations and individual artist charts.
+performs, with consideration for collaborations and individual artist charts. 
+Supported output formats are a CSV spreadsheet for condensed printing and JSON 
+which feeds a Web application built in Node.js for interactive browsing.
 
 ## Requirements
 
 The module is written for recent Python versions, currently Python 3.11 and 
 later is supported. The intention is to have few (if any) package dependencies.
+
+The Web application is written for recent Node.js versions, currently Node 20 
+and later is supported. The Web application makes use of Bulma and D3.js for 
+presentation and several Webpack dependencies for bundled compilation.
 
 ### Top 2000 data
 
@@ -45,6 +51,8 @@ display of these texts between the files.
 
 ## Running
 
+### Parsing
+
 In this repository, use `python -m top2000` to run the module to read the CSV 
 and JSON files and output as CSV charts. To instead use Wikipedia data, provide 
 arguments to run `python -m top2000 wiki csv` to output as CSV charts. Caching 
@@ -67,11 +75,25 @@ settings files are considered:
 - `output.toml`: Formatting settings for different output formats, such as 
   a multi-columnar CSV layout.
 
-In order to validate JSON files from APIs and TOML setting files, first install 
-`check-jsonschema` with `pip install check-jsonschema==0.30.0`, then run 
-`./validate_schema.sh` in this repository.
+### Web application
+
+First install dependencies for the package using `npm install`. Ensure you have 
+a suitable JSON dump file for the Web application, such as one generated in the 
+[parsing](#parsing) section above with `json` as one of the output formats. 
+Then use `npm start` to compile a development version of the application and 
+start a local server to hst the files. For production, use `npm run build` to 
+obtain files for hosting on a server. In order to produce a single file with 
+all assets combined which most browsers can open from local filesystems, use 
+`npm run single-file`. Then, the `dist` directory contains an `index.html` file 
+(and if not using a single-file build, the other assets) for distribution.
+
+### Validation
+
+In order to validate JSON files from APIs, JSON output and TOML setting files, 
+first install `check-jsonschema` with `pip install check-jsonschema==0.30.0`, 
+then run `./validate_schema.sh` in this repository.
 
 ## License
 
-The module is licensed under the MIT License. See the [license](LICENSE) file 
-for more information.
+The module and Web application are licensed under the MIT License. See the 
+[license](LICENSE) file for more information.
