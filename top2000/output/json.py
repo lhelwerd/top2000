@@ -59,7 +59,7 @@ class JSON(Format):
         for reader in set(readers):
             data.update(reader.extra_data)
         with path.open("w", encoding="utf-8") as json_file:
-            json.dump(data, json_file)
+            json.dump(data, json_file, separators=(',', ':'))
 
         return True
 
