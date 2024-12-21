@@ -21,6 +21,8 @@ const direction = data.reverse ? 1 : -1;
 const front = data.positions[data.positions.length - 1];
 const end = data.positions[0];
 
+let autoscroll = true;
+
 const container = d3.select("body")
     .append("div")
     .attr("id", "container");
@@ -55,6 +57,7 @@ const updatePagination = (current=null) => {
                         d3.select(posNode)
                             .classed("is-selected", false) // Color contrast
                             .classed("is-link", true);
+                        autoscroll = (d === current);
                     }
                 }),
             update => update.select("a"),
@@ -84,31 +87,50 @@ const findPositionRow = (d) => {
     return posCell.parentNode;
 };
 
-const setCurrent = function(d, i, nodes) {
+const isInView = (node) => {
+    const rect = node.getBoundingClientRect();
+    return rect.top >= 0 && rect.left >= 0 &&
+        rect.bottom <= document.documentElement.clientHeight &&
+        rect.right <= document.documentElement.clientWidth;
+};
+const setCurrent = (d, i, nodes) => {
     const now = Date.now();
-    let next = i + direction;
+    const previous = i - direction;
+    const next = i + direction;
     const isCurrent = d.timestamp <= now &&
         (!(next in data.tracks) || data.tracks[next].timestamp > now);
-    d3.select(this).classed("is-selected", isCurrent);
+    d3.select(nodes[i]).classed("is-selected", isCurrent);
     if (isCurrent) {
         updatePagination(data.positions[i]);
-        window.requestAnimationFrame(() => {
-            this.scrollIntoView({behavior: "smooth", block: "center"});
-        });
-        d3.timeout(() => {
-            if (setCurrent.bind(this)(d, i, nodes)) {
-                return;
-            }
-            while (next in data.tracks) {
-                const nextCurrent = setCurrent.bind(nodes[next]);
-                if (nextCurrent(d3.select(nodes[next]).datum(), next, nodes)) {
-                    break;
-                }
-                next += direction;
-            }
-        }, Math.max(data.tracks[next].timestamp - now, 0) + 5000);
+        if (!autoscroll && isInView(nodes[i])) {
+            // Check twice if the next is in view to reenable autoscroll
+            autoscroll = (autoscroll === null ? true : null);
+        }
+        if (autoscroll) {
+            window.requestAnimationFrame(() => {
+                nodes[i].scrollIntoView({behavior: "smooth", block: "center"});
+            });
+        }
+        setNextCurrent(next, i, nodes, now);
+    }
+    else if (!(previous in data.tracks) && d.timestamp > now) {
+        setNextCurrent(i, i, nodes, now);
     }
     return isCurrent;
+};
+const setNextCurrent = (next, i, nodes, now) => {
+    d3.timeout(() => {
+        const d = d3.select(nodes[i]).datum();
+        if (setCurrent(d, i, nodes)) {
+            return;
+        }
+        while (next in data.tracks) {
+            if (setCurrent(d3.select(nodes[next]).datum(), next, nodes)) {
+                break;
+            }
+            next += direction;
+        }
+    }, Math.max(data.tracks[next].timestamp - now, 0) + 5000);
 };
 const formatRankChange = (d, position) => {
     const previousYear = currentYear - 1;
@@ -212,6 +234,7 @@ const createTable = () => {
         .each(setCurrent);
     rows.on("click", function(event, d) {
         toggleInfoCell(this, d);
+        autoscroll = false;
     });
     rows.selectAll("td")
         .data((d, i) => Array(columns.length).fill(i))
@@ -481,6 +504,7 @@ class Info {
                             if (posNode) {
                                 // Expand info
                                 toggleInfoCell(posNode, null, false, position);
+                                autoscroll = false;
                                 event.stopPropagation();
                             }
                         })
