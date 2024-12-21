@@ -1,5 +1,6 @@
 import "./style.scss";
 import * as d3 from "d3";
+import MiniSearch from "minisearch";
 import data from "./output-sorted.json";
 
 const nl = d3.timeFormatLocale({
@@ -20,6 +21,21 @@ const currentYear = data.year;
 const direction = data.reverse ? 1 : -1;
 const front = data.positions[data.positions.length - 1];
 const end = data.positions[0];
+
+const search = new MiniSearch({
+    fields: ['position', 'artist', 'title'],
+    storeFields: [],
+    extractField: (i, fieldName) => {
+        if (fieldName === 'id') {
+            return i;
+        }
+        if (fieldName === 'position') {
+            return data.positions[i];
+        }
+        return data.tracks[i][fieldName];
+    }
+});
+search.addAllAsync(d3.range(data.positions.length));
 
 let autoscroll = true;
 
@@ -193,6 +209,7 @@ const getChartEmoji = (d, position, positionIndexes=null) => {
 
 const columns = ["position", "artist", "title", "timestamp"];
 const artistColumns = ["position", "title", "year", "timestamp"];
+const searchColumns = ["position", "artist", "title"];
 const fields = {
     position: {
         column: data.columns.position,
@@ -224,9 +241,19 @@ const createTable = () => {
     table.append("thead")
         .append("tr")
         .selectAll("th")
-        .data(columns)
+        .data([...columns, ""])
         .join("th")
-        .text(d => fields[d].column);
+        .each((d, i, nodes) => {
+            const cell = d3.select(nodes[i]);
+            if (i === columns.length) {
+                cell.append("a")
+                    .on("click", openSearchModal)
+                    .text(String.fromCodePoint(0x1f50e));
+            }
+            else {
+                cell.text(fields[d].column);
+            }
+        });
     const rows = table.append("tbody").selectAll("tr")
         .data(data.tracks)
         .join("tr")
@@ -237,11 +264,11 @@ const createTable = () => {
         autoscroll = false;
     });
     rows.selectAll("td")
-        .data((d, i) => Array(columns.length).fill(i))
+        .data((d, i) => Array(columns.length + 1).fill(i))
         .join("td")
-        .text((pos, i) => fields[columns[i]].field(data.tracks[pos],
-            data.positions[pos]
-        ));
+        .text((pos, i) => i === columns.length ? "\u25b6" :
+            fields[columns[i]].field(data.tracks[pos], data.positions[pos])
+        );
 };
 
 class Info {
@@ -523,6 +550,10 @@ const toggleInfoCell = (node, d=null, toggle=true, other=null) => {
     const next = d3.select(node.nextSibling);
     if (!next.empty() && next.classed("info")) {
         if (toggle) {
+            d3.select(node)
+                .classed("is-info", false)
+                .select("td:last-child")
+                .text("\u25b6");
             next.remove();
         }
         return;
@@ -530,11 +561,15 @@ const toggleInfoCell = (node, d=null, toggle=true, other=null) => {
     if (d === null) {
         d = d3.select(node).datum();
     }
+    d3.select(node)
+        .classed("is-info", true)
+        .select("td:last-child")
+        .text("\u25bc");
     const pos = d3.select(node.firstChild).datum();
     const cell = d3.select(node.parentNode).insert("tr", () => node.nextSibling)
         .classed("info", true)
         .append("td")
-        .attr("colspan", "4")
+        .attr("colspan", columns.length + 1)
         .append("div")
         .classed("columns is-multiline is-centered is-vcentered", true);
 
@@ -546,5 +581,68 @@ const toggleInfoCell = (node, d=null, toggle=true, other=null) => {
     info.makeArtistCharts();
 };
 
+const createSearchModal = () => {
+    const modal = d3.select("body").append("div")
+        .attr("id", "search")
+        .classed("modal", true);
+    const closeModal = () => modal.classed("is-active", false);
+    modal.append("div")
+        .classed("modal-background", true)
+        .on("click", closeModal);
+    const box = modal.append("div")
+        .classed("modal-content", true)
+        .append("div")
+        .classed("box", true);
+    box.append("input")
+        .classed("input is-large", true)
+        .attr("type", "search")
+        .on("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeModal();
+            }
+        })
+        .on("input", (event) => {
+            performSearch(modal, event.target.value);
+        });
+    box.append("table")
+        .classed("table is-fullwidth is-narrow is-hoverable is-striped", true)
+        .append("tbody")
+        .attr("id", "search-results");
+    modal.append("button")
+        .classed("modal-close is-large", true)
+        .on("click", closeModal);
+};
+const openSearchModal = () => {
+    const modal = d3.select("#search")
+        .classed("is-active", true);
+    const input = modal.select("input").node();
+    input.focus();
+    input.select();
+};
+const performSearch = (modal, text) => {
+    const docs = search.search(text);
+    modal.select("#search-results")
+        .selectAll("tr")
+        .data(docs)
+        .join("tr")
+        .classed("is-clickable", true)
+        .on("click", (event, r) => {
+            const posNode = findPositionRow(data.positions[r.id]);
+            if (posNode) {
+                // Expand info
+                toggleInfoCell(posNode, null, false);
+                autoscroll = false;
+                modal.classed("is-active", false);
+            }
+        })
+        .selectAll("td")
+        .data(r => Array(searchColumns.length).fill(r.id))
+        .join("td")
+        .text((pos, i) => fields[searchColumns[i]].field(data.tracks[pos],
+            data.positions[pos]
+        ));
+};
+
 updatePagination();
 createTable();
+createSearchModal();

@@ -17,7 +17,8 @@ later is supported. The intention is to have few (if any) package dependencies.
 
 The Web application is written for recent Node.js versions, currently Node 20 
 and later is supported. The Web application makes use of Bulma and D3.js for 
-presentation and several Webpack dependencies for bundled compilation.
+presentation, MiniSearch for search and several Webpack dependencies for 
+bundled compilation.
 
 ### Top 2000 data
 
