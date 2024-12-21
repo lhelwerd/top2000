@@ -327,9 +327,9 @@ class Info {
         const xAxis = d3.axisBottom(this.x)
             .tickValues(xTicks)
             .tickFormat(formatYear);
-        this.svg = this.cell.append("div")
-            .classed("column progression is-narrow", true)
-            .append("svg")
+        const column = this.cell.append("div")
+            .classed("column progression is-narrow", true);
+        this.svg = column.append("svg")
             .attr("width", width)
             .attr("height", height);
         this.svg.append("g")
@@ -339,6 +339,7 @@ class Info {
             .classed("y", true)
             .attr("transform", `translate(${marginLeft},0)`);
         this.updateProgressionLines();
+        column.node().scrollTo(width, 0);
     }
 
     updateProgressionLines() {
@@ -349,7 +350,10 @@ class Info {
         const yTicks = this.y.ticks(10);
         yTicks.push(yDomain[1]);
         this.svg.select("g.y")
-            .call(d3.axisLeft(this.y).tickValues(yTicks));
+            .call(d3.axisLeft(this.y)
+                .tickFormat(d3.format(".0f"))
+                .tickValues(yTicks)
+            );
 
         const line = d3.line()
             .defined(p => typeof p !== "undefined")
