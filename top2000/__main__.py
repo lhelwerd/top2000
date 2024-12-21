@@ -45,6 +45,13 @@ def _parse_first_args(argv: deque[str]) \
 
     return list(argv), readers, outputs, latest_year
 
+def _sort_year(old_year: float) -> float:
+    if int(old_year) == old_year:
+        return old_year
+    # Sort "extra" years to be earlier than the year itself, so that they are
+    # handled afterwards.
+    return old_year - 1
+
 def _parse_year_args(reader: Years, argv: list[str],
                      current_year: float) -> tuple[str, str, OldFiles]:
     current_year_csv, current_year_json = reader.format_filenames(*argv[0:2])
@@ -68,7 +75,8 @@ def _parse_year_args(reader: Years, argv: list[str],
             old_years.update(reader.years)
             old_years.discard(current_year)
             old = tuple((year, *reader.format_filenames(year=year))
-                        for year in sorted(old_years, reverse=True))
+                        for year in sorted(old_years, reverse=True,
+                                           key=_sort_year))
     except ValueError:
         # One of the first arguments in triples was not a year, skip them all
         old = tuple()
