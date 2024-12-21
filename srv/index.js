@@ -150,11 +150,11 @@ const symbols = d3.symbol(symbolType, 336);
 const fill = symbolType.range().length - 2;
 const symbolEmoji = [
     "\u2b24", // Circle
-    "\u2795\ufe0f", // Plus
+    "\u2795\ufe0e", // Plus
     "\u29eb", // Diamond
-    "\u2b1b\ufe0f", // Square
+    "\u2b1b\ufe0e", // Square
     "\u2605", // Star
-    "\u25b2\ufe0f" // Triangle
+    "\u25b2\ufe0e" // Triangle
 ];
 const getChartEmoji = (d, position, positionIndexes=null) => {
     if (positionIndexes && positionIndexes.has(d)) {
