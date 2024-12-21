@@ -28,7 +28,7 @@ const pagination = container.append("div")
     .classed("pagination is-centered has-background-info-dark", true)
     .append("ul")
     .classed("pagination-list is-flex-wrap-nowrap", true);
-const updatePagination = (current) => {
+const updatePagination = (current=null) => {
     const pages = d3.ticks(...d3.nice(end, front, 20), 20);
     if (current) {
         const currentIndex = d3.bisectRight(pages, current);
@@ -43,14 +43,14 @@ const updatePagination = (current) => {
                 .append("a")
                 .classed("pagination-link", true)
                 .on("click", function(event, d) {
-                    const posCell = findPositionRow(d);
-                    if (posCell) {
+                    const posNode = findPositionRow(d);
+                    if (posNode) {
                         d3.select(this.parentNode.parentNode)
                             .selectAll(".pagination-link")
                             .classed("is-current", pos => d === pos);
                         container.selectAll("table.main > tbody > tr")
                             .classed("is-link", false);
-                        d3.select(posCell.parentNode)
+                        d3.select(posNode)
                             .classed("is-selected", false) // Color contrast
                             .classed("is-link", true);
                     }
@@ -79,7 +79,7 @@ const findPositionRow = (d) => {
             behavior: "smooth", block: "center"
         });
     }
-    return posCell;
+    return posCell.parentNode;
 };
 
 const setCurrent = function(d, i, nodes) {
@@ -167,8 +167,6 @@ const getChartEmoji = (d, position, positionIndexes=null) => {
     return symbolEmoji[1];
 };
 
-const table = container.append("table")
-    .classed("table main is-narrow is-hoverable is-striped is-fullwidth", true);
 const columns = ["position", "artist", "title", "timestamp"];
 const artistColumns = ["position", "title", "year", "timestamp"];
 const fields = {
@@ -190,101 +188,130 @@ const fields = {
     },
     timestamp: {
         column: data.columns.timestamp,
-        field: d => formatTime(new Date(d.timestamp))
+        field: d => d.timestamp ? formatTime(new Date(d.timestamp)) : ""
     }
 };
-table.append("thead")
-    .style("position", "sticky")
-    .style("top", "2.5rem")
-    .style("z-index", 10)
-    .style("background-color", "inherit")
-    .append("tr")
-    .selectAll("th")
-    .data(columns)
-    .join("th")
-    .text(d => fields[d].column);
-const rows = table.append("tbody").selectAll("tr")
-    .data(data.tracks)
-    .join("tr")
-    .each(setCurrent);
-rows.on("click", function(event, d) {
-    const next = d3.select(this.nextSibling);
-    if (!next.empty() && next.classed("info")) {
-        next.remove();
-        return;
+
+const createTable = () => {
+    const table = container.append("table")
+        .classed("table main is-narrow is-hoverable is-striped is-fullwidth",
+            true
+        );
+    table.append("thead")
+        .style("position", "sticky")
+        .style("top", "2.5rem")
+        .style("z-index", 10)
+        .style("background-color", "inherit")
+        .append("tr")
+        .selectAll("th")
+        .data(columns)
+        .join("th")
+        .text(d => fields[d].column);
+    const rows = table.append("tbody").selectAll("tr")
+        .data(data.tracks)
+        .join("tr")
+        .classed("is-clickable", true)
+        .each(setCurrent);
+    rows.on("click", function(event, d) {
+        toggleInfoCell(this, d);
+    });
+    rows.selectAll("td")
+        .data((d, i) => Array(columns.length).fill(i))
+        .join("td")
+        .text((pos, i) => fields[columns[i]].field(data.tracks[pos],
+            data.positions[pos]
+        ));
+};
+
+class Info {
+    constructor(pos, cell, d) {
+        this.pos = pos;
+        this.cell = cell;
+        this.track = d;
+        this.setupPositions();
     }
-    const pos = d3.select(this.firstChild).datum();
-    const cell = d3.select(this.parentNode).insert("tr", () => this.nextSibling)
-        .classed("info", true)
-        .append("td")
-        .attr("colspan", "4")
-        .style("padding", ".25em .5em 1.75em .5em")
-        .append("div")
-        .classed("columns is-multiline is-centered is-vcentered", true);
 
-    // Progression chart
-    const width = 800;
-    const height = 500;
-    const marginTop = 20;
-    const marginRight = 20;
-    const marginBottom = 30;
-    const marginLeft = 40;
-    const lastDate = new Date(data.year, 0);
+    setupPositions() {
+        this.positions = new Map();
+        this.years = [];
 
-    const position = data.positions[pos];
+        const progression = [];
+        const lastDate = new Date(data.year, 0);
 
-    const years = [];
-    const positions = new Map();
-    const progression = [];
-    for (let year = data.first_year; year < data.year; year++) {
-        const date = new Date(year, 0);
-        years.push(date);
-        progression.push(d[year]);
+        for (let year = data.first_year; year < data.year; year++) {
+            const date = new Date(year, 0);
+            this.years.push(date);
+            progression.push(this.track[year]);
+        }
+        this.years.push(lastDate);
+
+        const position = data.positions[this.pos];
+        progression.push(position);
+        this.positions.set(position, progression);
     }
-    years.push(lastDate);
-    progression.push(position);
-    positions.set(position, progression);
 
-    const x = d3.scaleUtc()
-        .domain([years[0], lastDate])
-        .range([marginLeft, width - marginRight]);
-    const y = d3.scaleLinear()
-        .range([height - marginBottom, marginTop]);
-    const xTicks = x.ticks(data.year - data.first_year);
-    xTicks.push(lastDate);
-    const xAxis = d3.axisBottom(x)
-        .tickValues(xTicks)
-        .tickFormat(formatYear);
-    const svg = cell.append("div")
-        .classed("column is-narrow", true)
-        .style("overflow", "auto")
-        .style("max-width", "100vw")
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height);
-    svg.append("g")
-        .attr("transform", `translate(0,${height - marginBottom})`)
-        .call(xAxis);
-    svg.append("g")
-        .classed("y", true)
-        .attr("transform", `translate(${marginLeft},0)`);
-    const updateLines = () => {
-        const maxPosition = d3.max(positions.values(), seq => d3.max(seq));
+    addPositions(d) {
+        const track = findTrack(d);
+        const chart = [];
+        for (let year = data.first_year; year < data.year; year++) {
+            chart.push(track[year]);
+        }
+        chart.push(d);
+        this.positions.set(d, chart);
+    }
+
+    makeProgressionChart() {
+        // Progression chart
+        const width = 800;
+        const height = 500;
+        const marginTop = 20;
+        const marginRight = 20;
+        const marginBottom = 30;
+        const marginLeft = 40;
+
+        this.x = d3.scaleUtc()
+            .domain([this.years[0], this.years[this.years.length - 1]])
+            .range([marginLeft, width - marginRight]);
+        this.y = d3.scaleLinear()
+            .range([height - marginBottom, marginTop]);
+        const xTicks = this.x.ticks(data.year - data.first_year);
+        xTicks.push(this.years[this.years.length - 1]);
+        const xAxis = d3.axisBottom(this.x)
+            .tickValues(xTicks)
+            .tickFormat(formatYear);
+        this.svg = this.cell.append("div")
+            .classed("column is-narrow", true)
+            .style("overflow", "auto")
+            .style("max-width", "100vw")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        this.svg.append("g")
+            .attr("transform", `translate(0,${height - marginBottom})`)
+            .call(xAxis);
+        this.svg.append("g")
+            .classed("y", true)
+            .attr("transform", `translate(${marginLeft},0)`);
+        this.updateProgressionLines();
+    }
+
+    updateProgressionLines() {
+        const maxPosition = d3.max(this.positions.values(), seq => d3.max(seq));
         const yDomain = data.reverse ? [front, Math.max(maxPosition, end)] :
             [Math.max(maxPosition, front), end];
-        y.domain(yDomain);
-        const yTicks = y.ticks(10);
+        this.y.domain(yDomain);
+        const yTicks = this.y.ticks(10);
         yTicks.push(yDomain[1]);
-        svg.select("g.y")
-            .call(d3.axisLeft(y).tickValues(yTicks));
+        this.svg.select("g.y")
+            .call(d3.axisLeft(this.y).tickValues(yTicks));
 
         const line = d3.line()
             .defined(p => typeof p !== "undefined")
-            .x((p, i) => x(years[i]))
-            .y(p => y(p))
-            .curve(d3.curveMonotoneX);
-        svg.selectAll("g.lines")
-            .data(positions.values(), key => key[key.length - 1])
+            .x((p, i) => this.x(this.years[i]))
+            .y(p => this.y(p))
+            .curve(d3.curveBumpX);
+        this.svg.selectAll("g.lines")
+            .data(this.positions.values(), key => key[key.length - 1])
             .join(
                 enter => enter.append("g")
                     .classed("lines", true)
@@ -296,59 +323,67 @@ rows.on("click", function(event, d) {
             )
             .attr("stroke", (d, i) => stroke(i % cycle))
             .attr("d", d => line(d));
-        const points = svg.selectAll("g.points")
-            .data(positions.values(), key => key[key.length - 1])
+        const points = this.svg.selectAll("g.points")
+            .data(this.positions.values(), key => key[key.length - 1])
             .join("g")
             .classed("points", true)
             .attr("font-size", 10)
             .attr("font-family", "sans-serif")
             .attr("text-anchor", "middle")
             .selectAll("g")
-            .data((d, i) => d3.cross(d, [i]))
+            .data((d, i) => d3.cross(d3.filter(d3.map(d, (pos, j) => [pos, j]),
+                p => typeof p[0] !== "undefined"
+            ), [i], (a, b) => [...a, b]))
             .join(
                 enter => {
-                    const point = enter.append("g")
-                        .attr("opacity",
-                            d => typeof d[0] === "undefined" ? 0 : 1)
-                        .attr("transform",
-                            (d, i) => typeof d[0] === "undefined" ? "" :
-                                `translate(${x(years[i])}, ${y(d[0])})`
-                        );
+                    const point = enter.append("g").attr("transform", t =>
+                        `translate(${this.x(this.years[t[1]])},${this.y(t[0])})`
+                    );
                     point.append("path");
-                    point.append("text")
-                        .attr("dy", "0.32em");
+                    point.append("text").attr("dy", "0.32em");
                     return point;
                 },
                 update => update,
                 exit => exit.remove()
             );
         points.select("path")
-            .attr("fill", d => stroke(d[1] % cycle))
-            .attr("d", (d, i) =>
-                symbols(i === years.length - 1 ? (d[1] % fill) + 1 : 0)
+            .attr("fill", t => stroke(t[2] % cycle))
+            .attr("d", t =>
+                symbols(t[1] === this.years.length - 1 ? (t[2] % fill) + 1 : 0)
             );
         points.select("text")
-            .text(d => d[0]);
-    };
-    updateLines();
+            .text(t => t[0]);
+    }
 
-    const chartColumn = cell.append("div")
-        .classed("column is-size-7-mobile", true);
-    const chartCell = chartColumn.append("div");
+    makeArtistCharts() {
+        const chartColumn = this.cell.append("div")
+            .classed("column is-size-7-mobile", true);
+        const chartCell = chartColumn.append("div");
 
-    // Artist charts
-    const artists = (
-        data.artist_links ? Object.keys(data.artist_links[pos]) : []
-    ).concat(data.keys[pos]);
-    const charts = new Map();
-    let chartLength = 0;
-    d3.map(artists, (artist, i) => {
-        const artistLink = data.artist_links && data.artist_links[pos][artist];
-        const key = artistLink ? artistLink.toLowerCase() : artist[0];
+        // Artist charts
+        const artists = (
+            data.artist_links ? Object.keys(data.artist_links[this.pos]) : []
+        ).concat(data.keys[this.pos]);
+        const charts = new Map();
+        let chartLength = 0;
+
+        d3.map(artists, (artist, i) => {
+            chartLength += this.makeArtistChart(artist, i, chartCell, charts);
+        });
+        if (chartLength > 12) {
+            chartColumn.classed("is-narrow", true)
+                .style("max-width", "100vw");
+            chartCell.classed("columns is-multiline is-centered", true);
+        }
+    }
+
+    makeArtistChart(artist, i, chartCell, charts) {
+        const link = data.artist_links && data.artist_links[this.pos][artist];
+        const key = link ? link.toLowerCase() : artist[0];
         const chart = key in data.artists ? data.artists[key] :
-                data.artists[data.keys[pos][i][0]];
+            data.artists[data.keys[this.pos][i][0]];
         if (charts.has(chart.toString())) {
-            if (artistLink) {
+            if (link) {
                 const artistTitle = chartCell.select(`.chart:nth-of-type(${i})`)
                     .select("p .artist");
                 artistTitle.append("span")
@@ -357,34 +392,33 @@ rows.on("click", function(event, d) {
                     .attr("href", `${data.wiki_url}${artist}`)
                     .attr("target", "_blank")
                     .attr("title", artist)
-                    .text(artistLink);
+                    .text(link);
             }
-            return;
+            return 0;
         }
         else {
             charts.set(chart.toString(), i);
-            chartLength += chart.length;
         }
         const column = chartCell.append("div")
             .classed("container column is-narrow chart", true)
             .style("max-width", "fit-content");
         const title = column.append("p")
             .classed("has-text-centered has-text-weight-bold", true);
-        if (artistLink) {
+        if (link) {
             title.append("span")
                 .classed("artist", true)
                 .append("a")
                 .attr("href", `${data.wiki_url}${artist}`)
                 .attr("title", artist)
                 .attr("target", "_blank")
-                .text(artistLink);
+                .text(link);
             title.append("span")
                 .text("\u00a0\u2014\u00a0");
             title.append("a")
-                .attr("href", `${data.wiki_url}${d.wiki.title_link}`)
-                .attr("title", d.wiki.title_link)
+                .attr("href", `${data.wiki_url}${this.track.wiki.title_link}`)
+                .attr("title", this.track.wiki.title_link)
                 .attr("target", "_blank")
-                .text(d.wiki.title);
+                .text(this.track.wiki.title);
         }
         else {
             title.append("span")
@@ -393,13 +427,20 @@ rows.on("click", function(event, d) {
                 .classed("is-capitalized", true)
                 .text(artist[0]);
             title.append("span")
-                .classed("is-capitalized", d.title.toLowerCase() !== artist[1])
-                .text(`\u00a0\u2014\u00a0${d.title.toLowerCase() === artist[1] ?
-                    d.title : artist[1]
-                }`);
+                .text("\u00a0\u2014\u00a0");
+            title.append("span")
+                .classed("is-capitalized",
+                    this.track.title.toLowerCase() !== artist[1]
+                )
+                .text(this.track.title.toLowerCase() === artist[1] ?
+                    this.track.title : artist[1]
+                );
         }
+        const position = data.positions[this.pos];
         const subtable = column.append("table")
-            .classed("table is-narrow is-hoverable is-striped is-bordered", true);
+            .classed("table is-narrow is-hoverable is-striped is-bordered",
+                true
+            );
         subtable.append("thead").append("tr").selectAll("th")
             .data([...artistColumns, ""])
             .join("th")
@@ -407,58 +448,86 @@ rows.on("click", function(event, d) {
         subtable.append("tbody").selectAll("tr")
             .data(chart)
             .join("tr")
-            .classed("is-selected", d => d === position)
-            .style("background", d => d === position ? stroke(0) : "")
-            .on("click", function(event, d) {
+            .classed("is-clickable", d => d !== position)
+            .classed("is-selected", d => this.positions.has(d))
+            .style("background", d => this.positions.has(d) ?
+                stroke(d === position ? 0 : 1) : ""
+            )
+            .on("click", (event, d) => {
                 if (d === position) {
                     return;
                 }
-                const deleted = positions.delete(d);
+                const deleted = this.positions.delete(d);
                 if (!deleted) {
-                    const track = findTrack(d);
-                    const chart = [];
-                    for (let year = data.first_year; year < data.year; year++) {
-                        chart.push(track[year]);
-                    }
-                    chart.push(d);
-                    positions.set(d, chart);
+                    this.addPositions(d);
                 }
-                const positionIndexes = new Map(d3.zip([...positions.keys()],
-                    d3.range(positions.size))
+                const positionIndexes = new Map(d3.zip(
+                    [...this.positions.keys()],
+                    d3.range(this.positions.size))
                 );
-                cell.selectAll("table tr")
-                    .classed("is-selected", pos => positions.has(pos))
-                    .style("background", pos => positions.has(pos) ?
+                this.cell.selectAll("table tr")
+                    .classed("is-selected", pos => this.positions.has(pos))
+                    .style("background", pos => this.positions.has(pos) ?
                         stroke(positionIndexes.get(pos) % cycle) : ""
                     )
-                    .select("td:last-child")
+                    .select("td:last-child a")
                     .text(pos => getChartEmoji(pos, position, positionIndexes));
-                updateLines();
+                this.updateProgressionLines();
             })
             .selectAll("td")
             .data(d => Array(artistColumns.length + 1).fill(d))
             .join("td")
-            .each(function(d, i) {
+            .each((d, i, nodes) => {
+                const cell = d3.select(nodes[i]);
                 if (i === artistColumns.length) {
-                    d3.select(this)
-                        .classed("has-text-centered", true)
+                    cell.classed("has-text-centered", true)
+                        .append("a")
+                        .on("click", (event) => {
+                            const posNode = findPositionRow(d);
+                            if (posNode) {
+                                // Expand info
+                                toggleInfoCell(posNode, null, false, position);
+                                event.stopPropagation();
+                            }
+                        })
                         .text(getChartEmoji(d, position));
                 }
                 else {
-                    d3.select(this)
-                        .text(fields[artistColumns[i]].field(findTrack(d), d));
+                    cell.text(fields[artistColumns[i]].field(findTrack(d), d));
                 }
             });
-    });
-    if (chartLength > 12) {
-        chartColumn.classed("is-narrow", true)
-            .style("max-width", "100vw");
-        chartCell.classed("columns is-multiline is-centered", true);
+
+        return chart.length;
     }
-});
-rows.selectAll("td")
-    .data((d, i) => Array(columns.length).fill(i))
-    .join("td")
-    .text((pos, i) => fields[columns[i]].field(data.tracks[pos],
-        data.positions[pos]
-    ));
+}
+
+const toggleInfoCell = (node, d=null, toggle=true, other=null) => {
+    const next = d3.select(node.nextSibling);
+    if (!next.empty() && next.classed("info")) {
+        if (toggle) {
+            next.remove();
+        }
+        return;
+    }
+    if (d === null) {
+        d = d3.select(node).datum();
+    }
+    const pos = d3.select(node.firstChild).datum();
+    const cell = d3.select(node.parentNode).insert("tr", () => node.nextSibling)
+        .classed("info", true)
+        .append("td")
+        .attr("colspan", "4")
+        .style("padding", ".25em .5em 1.75em .5em")
+        .append("div")
+        .classed("columns is-multiline is-centered is-vcentered", true);
+
+    const info = new Info(pos, cell, d);
+    if (other) {
+        info.addPositions(other);
+    }
+    info.makeProgressionChart();
+    info.makeArtistCharts();
+};
+
+updatePagination();
+createTable();
