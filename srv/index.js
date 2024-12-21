@@ -194,18 +194,6 @@ const symbolEmoji = [
     "\u2605", // Star
     "\u25b2\ufe0e" // Triangle
 ];
-const getChartEmoji = (d, position, positionIndexes=null) => {
-    if (positionIndexes && positionIndexes.has(d)) {
-        return symbolEmoji[(positionIndexes.get(d) % fill) + 1];
-    }
-    if (d < position) {
-        return data.reverse ? "\u2935\ufe0f" : "\u2934\ufe0f";
-    }
-    if (d > position) {
-        return data.reverse ? "\u2934\ufe0f" : "\u2935\ufe0f";
-    }
-    return symbolEmoji[1];
-};
 
 const columns = ["position", "artist", "title", "timestamp"];
 const artistColumns = ["position", "title", "year", "timestamp"];
@@ -281,6 +269,7 @@ class Info {
 
     setupPositions() {
         this.positions = new Map();
+        this.positionIndexes = new Map();
         this.years = [];
 
         const progression = [];
@@ -296,15 +285,20 @@ class Info {
         const position = data.positions[this.pos];
         progression.push(position);
         this.positions.set(position, progression);
+        this.positionIndexes.set(position, 0);
     }
 
     addPositions(d) {
+        if (this.positions.has(d)) {
+            return;
+        }
         const track = findTrack(d);
         const chart = [];
         for (let year = data.first_year; year < data.year; year++) {
             chart.push(track[year]);
         }
         chart.push(d);
+        this.positionIndexes.set(d, this.positions.size);
         this.positions.set(d, chart);
     }
 
@@ -359,7 +353,7 @@ class Info {
             .defined(p => typeof p !== "undefined")
             .x((p, i) => this.x(this.years[i]))
             .y(p => this.y(p))
-            .curve(d3.curveBumpX);
+            .curve(d3.curveMonotoneX);
         this.svg.selectAll("g.lines")
             .data(this.positions.values(), key => key[key.length - 1])
             .join(
@@ -506,20 +500,19 @@ class Info {
                     return;
                 }
                 const deleted = this.positions.delete(d);
-                if (!deleted) {
+                if (deleted) {
+                    this.positionIndexes.delete(d);
+                }
+                else {
                     this.addPositions(d);
                 }
-                const positionIndexes = new Map(d3.zip(
-                    [...this.positions.keys()],
-                    d3.range(this.positions.size))
-                );
                 this.cell.selectAll("table tr")
                     .classed("is-selected", pos => this.positions.has(pos))
                     .style("background", pos => this.positions.has(pos) ?
-                        stroke(positionIndexes.get(pos) % cycle) : ""
+                        stroke(this.positionIndexes.get(pos) % cycle) : ""
                     )
                     .select("td:last-child a")
-                    .text(pos => getChartEmoji(pos, position, positionIndexes));
+                    .text(pos => this.getChartEmoji(pos, position));
                 this.updateProgressionLines();
             })
             .selectAll("td")
@@ -539,7 +532,7 @@ class Info {
                                 event.stopPropagation();
                             }
                         })
-                        .text(getChartEmoji(d, position));
+                        .text(this.getChartEmoji(d, position));
                 }
                 else {
                     cell.text(fields[artistColumns[i]].field(findTrack(d), d));
@@ -547,6 +540,19 @@ class Info {
             });
 
         return chart.length;
+    }
+
+    getChartEmoji(d, position) {
+        if (this.positionIndexes.has(d)) {
+            return symbolEmoji[(this.positionIndexes.get(d) % fill) + 1];
+        }
+        if (d < position) {
+            return data.reverse ? "\u2935\ufe0f" : "\u2934\ufe0f";
+        }
+        if (d > position) {
+            return data.reverse ? "\u2934\ufe0f" : "\u2935\ufe0f";
+        }
+        return symbolEmoji[1];
     }
 }
 
