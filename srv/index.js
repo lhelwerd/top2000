@@ -500,7 +500,7 @@ class Info {
         charts.set(chart.toString(), i);
         this.chartLength += chart.length;
         const column = chartCell.append("div")
-            .classed("container column is-narrow chart", true);
+            .classed("container column is-narrow artist-chart", true);
         const title = column.append("p")
             .classed("has-text-centered has-text-weight-bold", true);
         const artistTitle = title.append("span")
@@ -552,13 +552,28 @@ class Info {
 
     createArtistTable(column) {
         const subtable = column.append("table")
-            .classed("table is-narrow is-hoverable is-striped is-bordered",
+            .classed(
+                "table chart is-narrow is-hoverable is-striped is-bordered",
                 true
             );
         subtable.append("thead").append("tr").selectAll("th")
             .data([...artistColumns, ""])
             .join("th")
-            .text(d => fields[d] ? fields[d].column : d);
+            .each((d, i, nodes) => {
+                const cell = d3.select(nodes[i]);
+                if (i === artistColumns.length) {
+                    cell.append("a")
+                        .on("click", () => {
+                            subtable.select("tbody")
+                                .selectAll("tr")
+                                .each(d => this.toggleTrack(d));
+                        })
+                        .text(String.fromCodePoint(0x1f501));
+                }
+                else {
+                    cell.text(fields[d].column);
+                }
+            });
         subtable.append("tbody");
         return subtable;
     }
@@ -571,24 +586,7 @@ class Info {
             .join(enter => enter.append("tr")
                 .each(d => this.artistPositions.add(d))
                 .on("click", (event, d) => {
-                    if (d === position) {
-                        return;
-                    }
-                    const deleted = this.positions.delete(d);
-                    if (deleted) {
-                        this.positionIndexes.delete(d);
-                    }
-                    else {
-                        this.addPositions(d);
-                    }
-                    this.cell.selectAll("table tr")
-                        .classed("is-selected", pos => this.positions.has(pos))
-                        .style("background", pos => this.positions.has(pos) ?
-                            stroke(this.positionIndexes.get(pos) % cycle) : ""
-                        )
-                        .select("td:last-child a")
-                        .text(pos => this.getChartEmoji(pos, position));
-                    this.updateProgressionLines();
+                    this.toggleTrack(d);
                 })
             )
             .classed("is-clickable", d => d !== position)
@@ -620,6 +618,28 @@ class Info {
             }));
     }
 
+    toggleTrack(d) {
+        const position = data.positions[this.pos];
+        if (d === position) {
+            return;
+        }
+        const deleted = this.positions.delete(d);
+        if (deleted) {
+            this.positionIndexes.delete(d);
+        }
+        else {
+            this.addPositions(d);
+        }
+        this.cell.selectAll("table.chart > tbody > tr")
+            .classed("is-selected", pos => this.positions.has(pos))
+            .style("background", pos => this.positions.has(pos) ?
+                stroke(this.positionIndexes.get(pos) % cycle) : ""
+            )
+            .select("td:last-child > a")
+            .text(pos => this.getChartEmoji(pos, position));
+        this.updateProgressionLines();
+    }
+
     getChartEmoji(d, position) {
         if (this.positionIndexes.has(d)) {
             return symbolEmoji[(this.positionIndexes.get(d) % fill) + 1];
@@ -636,7 +656,7 @@ class Info {
     makeChartSearch(chartColumn, chartCell, charts) {
         const position = data.positions[this.pos];
         const column = chartCell.append("div")
-            .classed("container column is-narrow chart", true);
+            .classed("container column is-narrow artist-chart", true);
         const title = column.append("p")
             .classed("has-text-centered has-text-weight-bold is-hidden", true);
         title.append("span")
@@ -777,9 +797,10 @@ const createSearchBox = (container, searchOptions, handleClick) => {
         .classed("input is-large", true)
         .attr("type", "search");
     const results = box.append("table")
-        .classed("table is-fullwidth is-narrow is-hoverable is-striped", true)
-        .append("tbody")
-        .classed("search-results", true);
+        .classed("table search is-fullwidth is-narrow is-hoverable is-striped",
+            true
+        )
+        .append("tbody");
     input.on("input", (event) => {
         performSearch(results, event.target.value, searchOptions, handleClick);
     });

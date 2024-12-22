@@ -1,4 +1,6 @@
 @use "bulma";
+@use "bulma/sass/utilities/initial-variables" as iv;
+@use "bulma/sass/utilities/mixins" as mixins;
 
 #head {
     position: sticky;
@@ -11,7 +13,17 @@
         min-width: 100vw;
     }
 }
+table {
+    &.main, &.chart, &.search {
+        & > thead th:first-child, & > tbody > tr:not(.info) > td:first-child {
+            text-align: right;
+        }
+    }
+}
 table.main {
+    @include mixins.until(384px) {
+        font-size: iv.$size-7;
+    }
     & > thead {
         position: sticky;
         top: 2.46rem;
@@ -30,8 +42,11 @@ table.main {
             &.is-narrow {
                 max-width: 100vw;
             }
-            .container.chart {
+            .container.artist-chart {
                 max-width: fit-content;
+                table.chart {
+                    margin: 0 auto;
+                }
             }
         }
     }
