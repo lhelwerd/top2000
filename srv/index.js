@@ -3,6 +3,9 @@ import * as d3 from "d3";
 import MiniSearch from "minisearch";
 import data from "./output-sorted.json";
 
+const currentDisplayDelay = 10000;
+const currentUpdateDelay = 5000;
+const sep = "\u00a0\u2014\u00a0";
 const nl = d3.timeFormatLocale({
     dateTime: "%H:%M %d-%m-%Y",
     date: "%d-%m-%Y",
@@ -15,6 +18,8 @@ const nl = d3.timeFormatLocale({
 });
 const formatTime = nl.format("%d %b %H:%M");
 const formatYear = nl.format("'%y");
+const formatTimerLong = nl.utcFormat("%-j:%H:%M:%S");
+const formatTimerShort = nl.utcFormat("%H:%M:%S");
 
 const firstYear = data.first_year;
 const currentYear = data.year;
@@ -42,12 +47,17 @@ let autoscroll = true;
 const container = d3.select("body")
     .append("div")
     .attr("id", "container");
-const pagination = container.append("div")
+const nav = container.append("div")
     .attr("id", "head")
     .append("nav")
-    .classed("pagination is-centered has-background-info-dark", true)
-    .append("ul")
+    .classed("pagination is-centered is-flex-wrap-nowrap", true);
+const pagination = nav.append("ul")
     .classed("pagination-list is-flex-wrap-nowrap", true);
+const nextPage = nav.append("a")
+    .classed("pagination-next has-background-danger-dark is-hidden", true)
+    .on("click", (event, d) => {
+        findPage(d, d);
+    });
 const updatePagination = (current=null) => {
     const pages = d3.ticks(...d3.nice(end, front, 20), 20);
     if (current) {
@@ -55,30 +65,29 @@ const updatePagination = (current=null) => {
         if (pages[currentIndex-1] !== current) {
             pages.splice(currentIndex, 0, current);
         }
+        const d = findTrack(current);
+        if (autoscroll === false) {
+            nextPage.datum(current)
+                .classed("is-hidden", false)
+                .classed("track", true)
+                .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
+            d3.timeout(() => nextPage.classed("is-hidden", true)
+                .text(""), currentDisplayDelay
+            );
+        }
     }
     pagination.selectAll("li")
         .data(d3.map(pages, d => d3.median([d, end, front]))) // Clamp
         .join(
             enter => enter.append("li")
                 .append("a")
-                .classed("pagination-link", true)
-                .on("click", function(event, d) {
-                    const posNode = findPositionRow(d);
-                    if (posNode) {
-                        d3.select(this.parentNode.parentNode)
-                            .selectAll(".pagination-link")
-                            .classed("is-current", pos => d === pos);
-                        container.selectAll("table.main > tbody > tr")
-                            .classed("is-link", false);
-                        d3.select(posNode)
-                            .classed("is-selected", false) // Color contrast
-                            .classed("is-link", true);
-                        autoscroll = (d === current);
-                    }
-                }),
+                .classed("pagination-link", true),
             update => update.select("a"),
             exit => exit.remove()
         )
+        .on("click", (event, d) => {
+            findPage(d, current);
+        })
         .classed("has-background-primary has-text-dark", d => d === current)
         .classed("is-hidden-desktop-only",
             (d, i) => i !== 0 && d !== current && d % 200 !== 0
@@ -87,6 +96,19 @@ const updatePagination = (current=null) => {
             (d, i) => i !== 0 && d !== current && d % 500 !== 0
         )
         .text(d => d);
+};
+const findPage = (d, current=null) => {
+    const posNode = findPositionRow(d);
+    if (posNode) {
+        pagination.selectAll(".pagination-link")
+            .classed("is-current", pos => d === pos);
+        container.selectAll("table.main > tbody > tr")
+            .classed("is-link", false);
+        d3.select(posNode)
+            .classed("is-selected", d === current)
+            .classed("is-link", d !== current);
+        autoscroll = (d === current);
+    }
 };
 const findPositionRow = (d) => {
     const posCell = container
@@ -131,6 +153,7 @@ const setCurrent = (d, i, nodes) => {
     }
     else if (!(previous in data.tracks) && d.timestamp > now) {
         setNextCurrent(i, i, nodes, now);
+        createNextTimer(i, d.timestamp, now);
     }
     return isCurrent;
 };
@@ -146,8 +169,30 @@ const setNextCurrent = (next, i, nodes, now) => {
             }
             next += direction;
         }
-    }, Math.max(data.tracks[next].timestamp - now, 0) + 5000);
+    }, Math.max(data.tracks[next].timestamp - now, 0) + currentUpdateDelay);
 };
+const createNextTimer = (pos, timestamp, now) => {
+    let diff = timestamp - now + currentUpdateDelay;
+    const day = 24 * 60 * 60 * 1000;
+    nextPage.datum(data.positions[pos])
+        .classed("is-hidden", false)
+        .text(diff > day ? formatTimerLong(new Date(diff - day)) :
+            formatTimerShort(new Date(diff))
+        );
+    const timer = d3.interval((elapsed) => {
+        if (diff < elapsed) {
+            timer.stop();
+            nextPage.classed("is-hidden", true);
+        }
+        else {
+            nextPage.text(diff - elapsed > day ?
+                formatTimerLong(new Date(diff - elapsed - day)) :
+                formatTimerShort(new Date(diff - elapsed))
+            );
+        }
+    }, 1000);
+};
+
 const formatRankChange = (d, position) => {
     const previousYear = currentYear - 1;
     if (previousYear in d) {
