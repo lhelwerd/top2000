@@ -5,6 +5,7 @@ import data from "./output-sorted.json";
 
 const currentDisplayDelay = 10000;
 const currentUpdateDelay = 5000;
+const chartLimit = 12;
 const sep = "\u00a0\u2014\u00a0";
 const nl = d3.timeFormatLocale({
     dateTime: "%H:%M %d-%m-%Y",
@@ -27,6 +28,10 @@ const direction = data.reverse ? 1 : -1;
 const front = data.positions[data.positions.length - 1];
 const end = data.positions[0];
 
+const findTrack = (d) => {
+    return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
+};
+
 const search = new MiniSearch({
     fields: ['position', 'artist', 'title'],
     storeFields: [],
@@ -35,12 +40,17 @@ const search = new MiniSearch({
             return i;
         }
         if (fieldName === 'position') {
-            return data.positions[i];
+            return Number.isInteger(i) ? data.positions[i] : data.artists[i][0];
         }
-        return data.tracks[i][fieldName];
+        if (fieldName === 'title') {
+            return Number.isInteger(i) ? data.tracks[i].title : "";
+        }
+        return Number.isInteger(i) ? data.tracks[i][fieldName] :
+            findTrack(data.artists[i][0])[fieldName];
     }
 });
 search.addAllAsync(d3.range(data.positions.length));
+search.addAllAsync(Object.keys(data.artists));
 
 let autoscroll = true;
 
@@ -56,7 +66,7 @@ const pagination = nav.append("ul")
 const nextPage = nav.append("a")
     .classed("pagination-next has-background-danger-dark is-hidden", true)
     .on("click", (event, d) => {
-        findPage(d, d);
+        scrollPage(d, d);
     });
 const updatePagination = (current=null) => {
     const pages = d3.ticks(...d3.nice(end, front, 20), 20);
@@ -86,7 +96,7 @@ const updatePagination = (current=null) => {
             exit => exit.remove()
         )
         .on("click", (event, d) => {
-            findPage(d, current);
+            scrollPage(d, current);
         })
         .classed("has-background-primary has-text-dark", d => d === current)
         .classed("is-hidden-desktop-only",
@@ -97,8 +107,8 @@ const updatePagination = (current=null) => {
         )
         .text(d => d);
 };
-const findPage = (d, current=null) => {
-    const posNode = findPositionRow(d);
+const scrollPage = (d, current=null) => {
+    const posNode = scrolPositionRow(d);
     if (posNode) {
         pagination.selectAll(".pagination-link")
             .classed("is-current", pos => d === pos);
@@ -110,7 +120,7 @@ const findPage = (d, current=null) => {
         autoscroll = (d === current);
     }
 };
-const findPositionRow = (d) => {
+const scrollPositionRow = (d) => {
     const posCell = container
         .selectAll("table.main > tbody > tr > td:first-child")
         .select(function(pos) {
@@ -222,10 +232,6 @@ const formatArtistChart = (d, position) => {
     return "";
 };
 
-const findTrack = (d) => {
-    return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
-};
-
 const stroke = d3.scaleOrdinal(d3.schemeObservable10);
 const cycle = stroke.range().length;
 const symbolType = d3.scaleOrdinal(d3.symbolsFill);
@@ -264,6 +270,11 @@ const fields = {
         column: data.columns.timestamp,
         field: d => d.timestamp ? formatTime(new Date(d.timestamp)) : ""
     }
+};
+const artistFields = {
+    position: d => `${data.artists[d][0]}.`,
+    artist: d => findTrack(data.artists[d][0]).artist,
+    title: d => `(${data.artists[d].length}\u00d7)`
 };
 
 const createTable = () => {
@@ -309,6 +320,9 @@ class Info {
         this.pos = pos;
         this.cell = cell;
         this.track = d;
+        this.chartLength = 0;
+        this.artists = new Set();
+        this.artistPositions = new Set();
         this.setupPositions();
     }
 
@@ -450,57 +464,51 @@ class Info {
         const chartCell = chartColumn.append("div");
 
         // Artist charts
-        const artists = (
-            data.artist_links ? Object.keys(data.artist_links[this.pos]) : []
+        const artists = (data.artist_links ?
+            Object.entries(data.artist_links[this.pos]) : []
         ).concat(data.keys[this.pos]);
         const charts = new Map();
-        let chartLength = 0;
 
         d3.map(artists, (artist, i) => {
-            chartLength += this.makeArtistChart(artist, i, chartCell, charts);
+            this.makeArtistChart(artist, i, chartCell, charts);
         });
-        if (chartLength > 12) {
-            chartColumn.classed("is-narrow", true);
-            chartCell.classed("columns is-multiline is-centered", true);
-        }
+        this.checkArtistChartLength(chartColumn, chartCell);
+        this.makeChartSearch(chartColumn, chartCell, charts);
+    }
+
+    checkArtistChartLength(chartColumn, chartCell) {
+        const large = this.chartLength > chartLimit;
+        chartColumn.classed("is-narrow", large);
+        chartCell.classed("columns is-multiline is-centered", large);
     }
 
     makeArtistChart(artist, i, chartCell, charts) {
-        const link = data.artist_links && data.artist_links[this.pos][artist];
-        const key = link ? link.toLowerCase() : artist[0];
-        const chart = key in data.artists ? data.artists[key] :
-            data.artists[data.keys[this.pos][i][0]];
+        const isLink = data.artist_links &&
+            data.artist_links[this.pos][artist[0]];
+        let key = isLink ? artist[1].toLowerCase() : artist[0];
+        if (!data.artists[key]) {
+            key = data.keys[this.pos][i][0];
+        }
+        this.artists.add(key);
+        const chart = data.artists[key];
         if (charts.has(chart.toString())) {
-            if (link) {
-                const artistTitle = chartCell.select(`.chart:nth-of-type(${i})`)
-                    .select("p .artist");
-                artistTitle.append("span")
-                    .text(", ");
-                artistTitle.append("a")
-                    .attr("href", `${data.wiki_url}${artist}`)
-                    .attr("target", "_blank")
-                    .attr("title", artist)
-                    .text(link);
-            }
-            return 0;
+            const artistTitle = chartCell.select(`.chart:nth-of-type(${i})`)
+                .select("p .artist");
+            this.addArtistTitle(artistTitle, artist, isLink, true);
+            return;
         }
-        else {
-            charts.set(chart.toString(), i);
-        }
+        charts.set(chart.toString(), i);
+        this.chartLength += chart.length;
         const column = chartCell.append("div")
             .classed("container column is-narrow chart", true);
         const title = column.append("p")
             .classed("has-text-centered has-text-weight-bold", true);
-        if (link) {
-            title.append("span")
-                .classed("artist", true)
-                .append("a")
-                .attr("href", `${data.wiki_url}${artist}`)
-                .attr("title", artist)
-                .attr("target", "_blank")
-                .text(link);
-            title.append("span")
-                .text("\u00a0\u2014\u00a0");
+        const artistTitle = title.append("span")
+            .classed("artist", true);
+        this.addArtistTitle(artistTitle, artist, isLink, true);
+        title.append("span")
+            .text(sep);
+        if (this.track.wiki) {
             title.append("a")
                 .attr("href", `${data.wiki_url}${this.track.wiki.title_link}`)
                 .attr("title", this.track.wiki.title_link)
@@ -509,13 +517,6 @@ class Info {
         }
         else {
             title.append("span")
-                .classed("artist", true)
-                .append("span")
-                .classed("is-capitalized", true)
-                .text(artist[0]);
-            title.append("span")
-                .text("\u00a0\u2014\u00a0");
-            title.append("span")
                 .classed("is-capitalized",
                     this.track.title.toLowerCase() !== artist[1]
                 )
@@ -523,7 +524,33 @@ class Info {
                     this.track.title : artist[1]
                 );
         }
-        const position = data.positions[this.pos];
+        const subtable = this.createArtistTable(column);
+        this.fillArtistTable(subtable, chart);
+    }
+
+    addArtistTitle(artistTitle, artist, isLink=false, appendLinkOnly=false) {
+        if (!artistTitle.select(":first-child").empty()) {
+            if (appendLinkOnly && !isLink) {
+                return;
+            }
+            artistTitle.append("span")
+                .text(", ");
+        }
+        if (isLink) {
+            artistTitle.append("a")
+                .attr("href", `${data.wiki_url}${artist[0]}`)
+                .attr("title", artist[0])
+                .attr("target", "_blank")
+                .text(artist[1]);
+        }
+        else {
+            artistTitle.append("span")
+                .classed("is-capitalized", true)
+                .text(artist[0]);
+        }
+    }
+
+    createArtistTable(column) {
         const subtable = column.append("table")
             .classed("table is-narrow is-hoverable is-striped is-bordered",
                 true
@@ -532,44 +559,52 @@ class Info {
             .data([...artistColumns, ""])
             .join("th")
             .text(d => fields[d] ? fields[d].column : d);
-        subtable.append("tbody").selectAll("tr")
+        subtable.append("tbody");
+        return subtable;
+    }
+
+    fillArtistTable(subtable, chart) {
+        const position = data.positions[this.pos];
+        subtable.select("tbody")
+            .selectAll("tr")
             .data(chart)
-            .join("tr")
+            .join(enter => enter.append("tr")
+                .each(d => this.artistPositions.add(d))
+                .on("click", (event, d) => {
+                    if (d === position) {
+                        return;
+                    }
+                    const deleted = this.positions.delete(d);
+                    if (deleted) {
+                        this.positionIndexes.delete(d);
+                    }
+                    else {
+                        this.addPositions(d);
+                    }
+                    this.cell.selectAll("table tr")
+                        .classed("is-selected", pos => this.positions.has(pos))
+                        .style("background", pos => this.positions.has(pos) ?
+                            stroke(this.positionIndexes.get(pos) % cycle) : ""
+                        )
+                        .select("td:last-child a")
+                        .text(pos => this.getChartEmoji(pos, position));
+                    this.updateProgressionLines();
+                })
+            )
             .classed("is-clickable", d => d !== position)
             .classed("is-selected", d => this.positions.has(d))
             .style("background", d => this.positions.has(d) ?
-                stroke(d === position ? 0 : 1) : ""
+                stroke(this.positionIndexes.get(d) % cycle) : ""
             )
-            .on("click", (event, d) => {
-                if (d === position) {
-                    return;
-                }
-                const deleted = this.positions.delete(d);
-                if (deleted) {
-                    this.positionIndexes.delete(d);
-                }
-                else {
-                    this.addPositions(d);
-                }
-                this.cell.selectAll("table tr")
-                    .classed("is-selected", pos => this.positions.has(pos))
-                    .style("background", pos => this.positions.has(pos) ?
-                        stroke(this.positionIndexes.get(pos) % cycle) : ""
-                    )
-                    .select("td:last-child a")
-                    .text(pos => this.getChartEmoji(pos, position));
-                this.updateProgressionLines();
-            })
             .selectAll("td")
             .data(d => Array(artistColumns.length + 1).fill(d))
-            .join("td")
-            .each((d, i, nodes) => {
+            .join(enter => enter.append("td").each((d, i, nodes) => {
                 const cell = d3.select(nodes[i]);
                 if (i === artistColumns.length) {
                     cell.classed("has-text-centered", true)
                         .append("a")
                         .on("click", (event) => {
-                            const posNode = findPositionRow(d);
+                            const posNode = scrollPositionRow(d);
                             if (posNode) {
                                 // Expand info
                                 toggleInfoCell(posNode, null, false, position);
@@ -582,9 +617,7 @@ class Info {
                 else {
                     cell.text(fields[artistColumns[i]].field(findTrack(d), d));
                 }
-            });
-
-        return chart.length;
+            }));
     }
 
     getChartEmoji(d, position) {
@@ -598,6 +631,77 @@ class Info {
             return data.reverse ? "\u2934\ufe0f" : "\u2935\ufe0f";
         }
         return symbolEmoji[1];
+    }
+
+    makeChartSearch(chartColumn, chartCell, charts) {
+        const position = data.positions[this.pos];
+        const column = chartCell.append("div")
+            .classed("container column is-narrow chart", true);
+        const title = column.append("p")
+            .classed("has-text-centered has-text-weight-bold is-hidden", true);
+        title.append("span")
+            .text(`${String.fromCodePoint(0x1f50e)} `);
+        const artistTitle = title.append("span")
+            .classed("artist", true);
+        const subtable = this.createArtistTable(column);
+        subtable.classed("is-hidden", true);
+
+        const artists = new Map();
+        const chart = d3.map(d3.filter(this.positions.entries(),
+            p => p[0] !== position && !charts.has(p[1].toString())
+        ), p => {
+            this.artistPositions.add(p[0]);
+            const track = findTrack(p[0]);
+            if (!artists.has(track.max_artist_key)) {
+                artists.set(track.max_artist_key, track.artist);
+                this.addArtistTitle(artistTitle, [track.artist]);
+            }
+            return p[0];
+        });
+
+        const fillSearchChart = () => {
+            title.classed("is-hidden", false);
+            subtable.classed("is-hidden", false);
+            this.fillArtistTable(subtable, chart);
+            this.updateProgressionLines();
+            this.checkArtistChartLength(chartColumn, chartCell);
+        };
+        const addSearchChart = (pos, track) => {
+            this.addPositions(pos);
+            if (!artists.has(track.max_artist_key)) {
+                artists.set(track.max_artist_key, track.artist);
+                this.addArtistTitle(artistTitle, [track.artist]);
+            }
+            chart.push(pos);
+            this.chartLength += 1;
+            fillSearchChart();
+        };
+        const addArtistSearch = (artist) => {
+            this.artists.add(artist);
+            d3.map(data.artists[artist],
+                pos => addSearchChart(pos, findTrack(pos))
+            );
+        };
+
+        const filter = (r) => Number.isInteger(r.id) ?
+            !this.artistPositions.has(data.positions[r.id]) :
+            !this.artists.has(r.id);
+        const handleClick = (r, results, text) => {
+            if (Number.isInteger(r.id)) {
+                addSearchChart(data.positions[r.id], data.tracks[r.id]);
+            }
+            else {
+                addArtistSearch(r.id);
+            }
+            performSearch(results, text, {filter}, handleClick);
+        };
+
+        if (chart.length) {
+            this.chartLength += chart.length;
+            fillSearchChart();
+        }
+
+        createSearchBox(column, {filter}, handleClick);
     }
 }
 
@@ -644,28 +748,42 @@ const createSearchModal = () => {
     modal.append("div")
         .classed("modal-background", true)
         .on("click", closeModal);
-    const box = modal.append("div")
-        .classed("modal-content", true)
-        .append("div")
-        .classed("box", true);
-    box.append("input")
-        .classed("input is-large", true)
-        .attr("type", "search")
-        .on("keydown", (event) => {
-            if (event.key === "Escape") {
-                closeModal();
-            }
-        })
-        .on("input", (event) => {
-            performSearch(modal, event.target.value);
-        });
-    box.append("table")
-        .classed("table is-fullwidth is-narrow is-hoverable is-striped", true)
-        .append("tbody")
-        .attr("id", "search-results");
+    const container = modal.append("div")
+        .classed("modal-content", true);
+    const input = createSearchBox(container, {
+        filter: (r) => Number.isInteger(r.id)
+    }, (r) => {
+        const posNode = scrollPositionRow(data.positions[r.id]);
+        if (posNode) {
+            // Expand info
+            toggleInfoCell(posNode, null, false);
+            autoscroll = false;
+            modal.classed("is-active", false);
+        }
+    });
+    input.on("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeModal();
+        }
+    });
     modal.append("button")
         .classed("modal-close is-large", true)
         .on("click", closeModal);
+};
+const createSearchBox = (container, searchOptions, handleClick) => {
+    const box = container.append("div")
+        .classed("box", true);
+    const input = box.append("input")
+        .classed("input is-large", true)
+        .attr("type", "search");
+    const results = box.append("table")
+        .classed("table is-fullwidth is-narrow is-hoverable is-striped", true)
+        .append("tbody")
+        .classed("search-results", true);
+    input.on("input", (event) => {
+        performSearch(results, event.target.value, searchOptions, handleClick);
+    });
+    return input;
 };
 const openSearchModal = () => {
     const modal = d3.select("#search")
@@ -674,28 +792,23 @@ const openSearchModal = () => {
     input.focus();
     input.select();
 };
-const performSearch = (modal, text) => {
-    const docs = search.search(text);
-    modal.select("#search-results")
-        .selectAll("tr")
-        .data(docs)
-        .join("tr")
-        .classed("is-clickable", true)
-        .on("click", (event, r) => {
-            const posNode = findPositionRow(data.positions[r.id]);
-            if (posNode) {
-                // Expand info
-                toggleInfoCell(posNode, null, false);
-                autoscroll = false;
-                modal.classed("is-active", false);
-            }
+const performSearch = (results, text, searchOptions, handleClick) => {
+    const docs = search.search(text, searchOptions);
+    results.selectAll("tr")
+        .data(docs.slice(0, 10))
+        .join(enter => enter.append("tr")
+            .classed("is-clickable", true)
+        )
+        .on("click", function(event, r) {
+            handleClick(r, results, text);
         })
         .selectAll("td")
         .data(r => Array(searchColumns.length).fill(r.id))
         .join("td")
-        .text((pos, i) => fields[searchColumns[i]].field(data.tracks[pos],
-            data.positions[pos]
-        ));
+        .text((d, i) => Number.isInteger(d) ?
+            fields[searchColumns[i]].field(data.tracks[d], data.positions[d]) :
+            artistFields[searchColumns[i]](d)
+        );
 };
 
 updatePagination();
