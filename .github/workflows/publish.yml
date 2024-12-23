@@ -35,6 +35,11 @@ jobs:
         run: |
           npm install
           npm run build
+      - name: Archive Web application distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: top2000-app
+          path: dist
   publish:
     if: ${{ github.event_name == 'push' }}
     concurrency:
@@ -50,6 +55,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Collect Web application distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: top2000-app
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
