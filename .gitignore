@@ -4,6 +4,7 @@
 !package*.json
 !schema/*.json
 top2000-*.html
+top2000-app.zip
 wiki*.html
 *.odt
 *.ods
