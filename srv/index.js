@@ -246,8 +246,12 @@ const symbolEmoji = [
     "\u25b2\ufe0e" // Triangle
 ];
 
-const columns = ["position", "artist", "title", "timestamp"];
-const artistColumns = ["position", "title", "year", "timestamp"];
+const columns = ["position", "artist", "title"];
+const artistColumns = ["position", "title", "year"];
+if (data.tracks[0].timestamp) {
+    columns.push("timestamp");
+    artistColumns.push("timestamp");
+}
 const searchColumns = ["position", "artist", "title"];
 const fields = {
     position: {
