@@ -1,7 +1,7 @@
 import "./style.scss";
 import * as d3 from "d3";
 import MiniSearch from "minisearch";
-import data from "./output-sorted.json";
+import data from "../output-sorted.json";
 
 const currentDisplayDelay = 10000;
 const currentUpdateDelay = 5000;
