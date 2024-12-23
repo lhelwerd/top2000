@@ -108,7 +108,7 @@ const updatePagination = (current=null) => {
         .text(d => d);
 };
 const scrollPage = (d, current=null) => {
-    const posNode = scrolPositionRow(d);
+    const posNode = scrollPositionRow(d);
     if (posNode) {
         pagination.selectAll(".pagination-link")
             .classed("is-current", pos => d === pos);
