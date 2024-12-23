@@ -669,7 +669,7 @@ class Info {
 
         const artists = new Map();
         const chart = d3.map(d3.filter(this.positions.entries(),
-            p => p[0] !== position && !charts.has(p[1].toString())
+            p => p[0] !== position && !this.artistPositions.has(p[0])
         ), p => {
             this.artistPositions.add(p[0]);
             const track = findTrack(p[0]);
