@@ -706,7 +706,13 @@ class Info {
 
         const filter = (r) => Number.isInteger(r.id) ?
             !this.artistPositions.has(data.positions[r.id]) :
-            !this.artists.has(r.id);
+            data.artists[r.id].length > 1 && !this.artists.has(r.id);
+        const searchOptions = {
+            boost: {artist: 1.5},
+            filter: filter,
+            fuzzy: 0.2,
+            prefix: true
+        };
         const handleClick = (r, results, text) => {
             if (Number.isInteger(r.id)) {
                 addSearchChart(data.positions[r.id], data.tracks[r.id]);
@@ -714,7 +720,7 @@ class Info {
             else {
                 addArtistSearch(r.id);
             }
-            performSearch(results, text, {filter}, handleClick);
+            performSearch(results, text, searchOptions, handleClick);
         };
 
         if (chart.length) {
@@ -722,7 +728,7 @@ class Info {
             fillSearchChart();
         }
 
-        createSearchBox(column, {filter}, handleClick);
+        createSearchBox(column, searchOptions, handleClick);
     }
 }
 
@@ -772,7 +778,9 @@ const createSearchModal = () => {
     const container = modal.append("div")
         .classed("modal-content", true);
     const input = createSearchBox(container, {
-        filter: (r) => Number.isInteger(r.id)
+        filter: (r) => Number.isInteger(r.id),
+        fuzzy: 0.2,
+        prefix: true
     }, (r) => {
         const posNode = scrollPositionRow(data.positions[r.id]);
         if (posNode) {
