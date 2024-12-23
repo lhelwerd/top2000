@@ -1,5 +1,4 @@
 const path = require('path');
-const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
@@ -69,14 +68,6 @@ module.exports = {
         maxEntrypointSize: 1.75 * 1024 * 1024
     },
     plugins: [
-        new CopyWebpackPlugin({
-            patterns: [
-                {
-                    from: "output-sorted.json",
-                    to: "output-sorted.json"
-                }
-            ]
-        }),
         new HtmlWebpackPlugin({
             cache: !singleFile,
             inject: !singleFile,
