@@ -439,15 +439,16 @@ class Info {
             ), [i], (a, b) => [...a, b]))
             .join(
                 enter => {
-                    const point = enter.append("g").attr("transform", t =>
-                        `translate(${this.x(this.years[t[1]])},${this.y(t[0])})`
-                    );
+                    const point = enter.append("g");
                     point.append("path");
                     point.append("text").attr("dy", "0.32em");
                     return point;
                 },
                 update => update,
                 exit => exit.remove()
+            )
+            .attr("transform",
+                t => `translate(${this.x(this.years[t[1]])},${this.y(t[0])})`
             );
         points.select("path")
             .attr("fill", t => stroke(t[2] % cycle))
