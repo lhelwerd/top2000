@@ -64,10 +64,57 @@ let currentTimerParams = null;
 let startTimer = null;
 let startPos = null;
 
+const tabs = new Map();
+if (data.old_data_available) {
+    for (let year = data.first_year; year < data.year; year++) {
+        tabs.set(year, {
+            icon: String.fromCodePoint(0x1f519),
+            text: `${year}`,
+            classed: year < data.year - 1 ? "is-hidden-mobile" : ""
+        });
+    }
+}
+tabs.set(data.year, {
+    icon: String.fromCodePoint(0x1f534),
+    text: `${data.year}`,
+    classed: data.old_data_available ? "" : "is-hidden"
+});
+tabs.set("charts", {
+    icon: String.fromCodePoint(0x1f4ca),
+    text: "Charts"
+});
+tabs.set("credits", {
+    icon: "\u00a9\ufe0f",
+    text: "Credits"
+});
+
 const rowsSelector = "table.main > tbody > tr:not(.info)";
 const container = d3.select("body")
     .append("div")
     .attr("id", "container");
+const tabLinks = container.append("div")
+    .attr("id", "tabs")
+    .append("div")
+    .classed("tabs is-centered is-boxed", true)
+    .append("ul")
+    .selectAll("li")
+    .data(tabs.keys())
+    .join("li")
+    .attr("class", d => document.location.hash.startsWith(`#/${d}`) ? "" :
+        tabs.get(d).classed
+    )
+    .classed("is-active", d => document.location.hash === "" ? d === data.year :
+        document.location.hash.startsWith(`#/${d}`)
+    )
+    .append("a")
+    .attr("href", d => `#/${d}`);
+tabLinks.append("span")
+    .classed("icon", true)
+    .text(d => tabs.get(d).icon);
+tabLinks.append("span")
+    .classed("is-hidden-mobile", true)
+    .text(d => tabs.get(d).text);
+
 const nav = container.append("div")
     .attr("id", "head")
     .append("nav")
