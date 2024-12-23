@@ -88,7 +88,7 @@ class WikiHTMLParser(HTMLParser):
                 self._headers and data not in {"\u2014", "\u00d7"}:
             row = self._rows[self._row]
             column = self._headers[self._column]
-            row[column] = f"{row.get(column, "")}{data}"
+            row[column] = f"{row.get(column, '')}{data}"
             if self._title is not None:
                 self._links[self._row].setdefault(column, {})
                 self._links[self._row][column][self._title] = data
