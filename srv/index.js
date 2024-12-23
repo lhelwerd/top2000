@@ -76,8 +76,7 @@ if (data.old_data_available) {
 }
 tabs.set(data.year, {
     icon: String.fromCodePoint(0x1f534),
-    text: `${data.year}`,
-    classed: data.old_data_available ? "" : "is-hidden"
+    text: `${data.year}`
 });
 tabs.set("charts", {
     icon: String.fromCodePoint(0x1f4ca),
@@ -92,8 +91,13 @@ const rowsSelector = "table.main > tbody > tr:not(.info)";
 const container = d3.select("body")
     .append("div")
     .attr("id", "container");
-const tabLinks = container.append("div")
+const head = container.append("div")
+    .attr("id", "head")
+    .append("div")
+    .classed("columns is-multiline is-gapless is-centered", true);
+const tabLinks = head.append("div")
     .attr("id", "tabs")
+    .classed("column is-narrow-tablet-only is-narrow-fullhd", true)
     .append("div")
     .classed("tabs is-centered is-boxed", true)
     .append("ul")
@@ -107,16 +111,18 @@ const tabLinks = container.append("div")
         document.location.hash.startsWith(`#/${d}`)
     )
     .append("a")
-    .attr("href", d => `#/${d}`);
+    .attr("href", d => `#/${d}`)
+    .attr("title", d => tabs.get(d).text);
 tabLinks.append("span")
     .classed("icon", true)
     .text(d => tabs.get(d).icon);
 tabLinks.append("span")
-    .classed("is-hidden-mobile", true)
-    .text(d => tabs.get(d).text);
+    .classed("is-hidden-tablet-only is-hidden-fullhd-only", true)
+    .text(d => `\u00a0${tabs.get(d).text}`);
 
-const nav = container.append("div")
-    .attr("id", "head")
+const nav = head.append("div")
+    .attr("id", "pagination")
+    .classed("column is-full-mobile is-full-desktop-only is-full-widescreen-only", true)
     .append("nav")
     .classed("pagination is-centered is-flex-wrap-nowrap", true);
 const pagination = nav.append("ul")
