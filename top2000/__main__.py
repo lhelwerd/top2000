@@ -65,10 +65,10 @@ def _parse_year_args(reader: Years, argv: list[str],
             csv_name_format = argv[0] if "{}" in argv[0] else None
             json_name_format = argv[1] if "{}" in argv[1] else None
             year = float(argv[2])
-            old = (year,
-                   reader.format_filenames(csv_name_format=csv_name_format,
-                                           json_name_format=json_name_format,
-                                           year=year))
+            old = ((year,
+                    *reader.format_filenames(csv_name_format=csv_name_format,
+                                             json_name_format=json_name_format,
+                                             year=year)),)
         else:
             old_years: set[float] = set(range(int(reader.first_csv_year),
                                               int(current_year)))

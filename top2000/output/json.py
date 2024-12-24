@@ -152,7 +152,7 @@ class JSON(Format):
                      reader_keys: tuple[KeyPair | None, ...],
                      relevant: bool = False) -> list[Key]:
         if not relevant:
-            return reader_keys[0][1]
+            return reader_keys[0][1] if reader_keys[0] is not None else []
         relevant_keys: dict[tuple[int, ...], Key] = {}
         primary = True
         for reader, key_pair in zip(readers, reader_keys):
