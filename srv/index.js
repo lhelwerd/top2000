@@ -1,6 +1,7 @@
 import "./style.scss";
 import * as d3 from "d3";
 import MiniSearch from "minisearch";
+import packageInfo from "../package.json";
 import data from "../output-sorted.json";
 
 const currentDisplayDelay = 10000;
@@ -76,15 +77,18 @@ if (data.old_data_available) {
 }
 tabs.set(data.year, {
     icon: String.fromCodePoint(0x1f534),
-    text: `${data.year}`
+    text: `${data.year}`,
+    container: ".main"
 });
 tabs.set("charts", {
     icon: String.fromCodePoint(0x1f4ca),
-    text: "Charts"
+    text: "Charts",
+    container: "#charts"
 });
-tabs.set("credits", {
-    icon: "\u00a9\ufe0f",
-    text: "Credits"
+tabs.set("info", {
+    icon: "\u2139\ufe0f",
+    text: "Info",
+    container: "#info"
 });
 
 const rowsSelector = "table.main > tbody > tr:not(.info)";
@@ -95,7 +99,20 @@ const head = container.append("div")
     .attr("id", "head")
     .append("div")
     .classed("columns is-multiline is-gapless is-centered", true);
-const tabLinks = head.append("div")
+const updateActiveTab = (tab) => {
+    tab.attr("class", d => document.location.hash.startsWith(`#/${d}`) ? "" :
+        tabs.get(d).classed
+    ).classed("is-active", d => {
+        const active = document.location.hash.startsWith("#/") ?
+            document.location.hash.startsWith(`#/${d}`) : d === data.year;
+        console.log(d, active);
+        container.select(tabs.get(d).container)
+            .classed("is-hidden", !active)
+            .classed("is-overlay", active && d !== data.year);
+        return active;
+    });
+};
+const tabItems = head.append("div")
     .attr("id", "tabs")
     .classed("column is-narrow-tablet-only is-narrow-fullhd", true)
     .append("div")
@@ -104,13 +121,8 @@ const tabLinks = head.append("div")
     .selectAll("li")
     .data(tabs.keys())
     .join("li")
-    .attr("class", d => document.location.hash.startsWith(`#/${d}`) ? "" :
-        tabs.get(d).classed
-    )
-    .classed("is-active", d => document.location.hash === "" ? d === data.year :
-        document.location.hash.startsWith(`#/${d}`)
-    )
-    .append("a")
+    .call(updateActiveTab);
+const tabLinks = tabItems.append("a")
     .attr("href", d => `#/${d}`)
     .attr("title", d => tabs.get(d).text);
 tabLinks.append("span")
@@ -958,6 +970,82 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         );
 };
 
+const createCharts = () => {
+    container.append("div")
+        .attr("id", "charts")
+        .classed("container is-overlay is-hidden", true)
+        .append("div")
+        .classed("box", true)
+        .text("Coming Soon");
+};
+
+const createInfo = () => {
+    const info = container.append("div")
+        .attr("id", "info")
+        .classed("container is-overlay is-hidden", true);
+    info.append("h2")
+        .classed("title is-4", true)
+        .text("Data");
+    const credits = info.append("div")
+        .classed("box", true)
+        .selectAll("p")
+        .data(data.credits)
+        .join("p");
+    credits.append("span")
+        .text(d => `${d.publisher}.\u00a0`);
+    credits.append("a")
+        .attr("href", d => d.url)
+        .attr("target", "_blank")
+        .text(d => d.name);
+    credits.append("span")
+        .text(" (");
+    credits.append("a")
+        .attr("href", d => d.terms)
+        .attr("target", "_blank")
+        .text("Terms");
+    credits.append("span")
+        .text(")");
+
+    info.append("h2")
+        .classed("title is-4", true)
+        .text("Code");
+    const level = info.append("div")
+        .classed("box", true)
+        .append("nav")
+        .classed("level", true)
+        .selectAll("p")
+        .data([
+            {
+                text: packageInfo.description,
+                url: data.web_url
+            },
+            {
+                text: packageInfo.author.split(" <", 1)[0],
+                url: new URL(".", packageInfo.homepage)
+            },
+            {
+                text: "GitHub",
+                url: packageInfo.homepage
+            },
+            {
+                text: packageInfo.license,
+                url: new URL("#license", packageInfo.homepage)
+            }
+        ])
+        .join("p")
+        .classed("level-item", true)
+        .append("a")
+        .attr("href", d => d.url)
+        .text(d => d.text);
+};
+
 updatePagination();
 createTable();
+createCharts();
+createInfo();
 createSearchModal();
+
+tabItems.call(updateActiveTab);
+d3.select(window).on("hashchange", () => {
+    tabItems.call(updateActiveTab);
+});
