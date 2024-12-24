@@ -73,6 +73,7 @@ module.exports = {
             cache: !singleFile,
             inject: !singleFile,
             meta: {
+                "theme-color": "#002442",
                 viewport: "width=device-width, initial-scale=1, shrink-to-fit=no"
             },
             template: singleFile ? '!!pug-loader!srv/single-file.pug' : 'auto',

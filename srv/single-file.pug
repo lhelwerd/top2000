@@ -2,6 +2,8 @@ doctype html
 html
   head
     meta(charset="utf-8")
+    meta(name="viewport", content=htmlWebpackPlugin.options.meta.viewport)
+    meta(name="theme-color", content=htmlWebpackPlugin.options.meta["theme-color"])
     title #{htmlWebpackPlugin.options.title}
   body
     each cssFile in htmlWebpackPlugin.files.css
