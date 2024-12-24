@@ -5,6 +5,7 @@
   "scripts": {
     "build": "webpack",
     "dev": "NODE_ENV=development webpack",
+    "external-manifest": "EXTERNAL_MANIFEST=true SINGLE_FILE=true webpack",
     "single-file": "SINGLE_FILE=true webpack",
     "start": "NODE_ENV=development webpack serve --open",
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -4,6 +4,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const {WebpackManifestPlugin} = require('webpack-manifest-plugin');
 
 const singleFile = process.env.SINGLE_FILE === 'true';
+const external = process.env.EXTERNAL_MANIFEST === 'true';
 
 module.exports = {
     cache: {
@@ -16,7 +17,7 @@ module.exports = {
         static: './dist'
     },
     devtool: process.env.NODE_ENV === 'development' ? 'eval-source-map': false,
-    entry: './srv/index.js',
+    entry: external ? './srv/external-manifest.js' : './srv/index.js',
     mode: process.env.NODE_ENV === 'development' ? 'development' : 'production',
     module: {
         rules: [
@@ -65,7 +66,7 @@ module.exports = {
         publicPath: ""
     },
     performance: {
-        maxAssetSize: 1024 * 1024,
+        maxAssetSize: singleFile ? 1.75 * 1024 * 1024 : 1024 * 1024,
         maxEntrypointSize: 1.75 * 1024 * 1024
     },
     plugins: [
