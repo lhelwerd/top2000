@@ -6,8 +6,15 @@
     position: sticky;
     top: 0px;
     z-index: 10;
-    background-color: #002442;
     max-width: 100vw;
+    overflow: hidden;
+    background-color: #002442;
+    .pagination-previous,
+    .pagination-next,
+    .pagination-link {
+        border-color: iv.$grey;
+        color: iv.$white-ter;
+    }
     .pagination-next.track:not(.is-hidden) {
         order: 0;
         min-width: 100vw;
