@@ -49,8 +49,14 @@ const search = new MiniSearch({
             findTrack(data.artists[i][0])[fieldName];
     }
 });
-search.addAllAsync(d3.range(data.positions.length));
-search.addAllAsync(Object.keys(data.artists));
+for (const [key, value] of Object.entries(data)) {
+    if (key === "positions") {
+        search.addAllAsync(d3.range(value.length));
+    }
+    else if (key === "artists") {
+        search.addAllAsync(Object.keys(value));
+    }
+}
 
 let autoscroll = true;
 

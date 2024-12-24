@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const {WebpackManifestPlugin} = require('webpack-manifest-plugin');
 
 const singleFile = process.env.SINGLE_FILE === 'true';
 
@@ -79,6 +80,9 @@ module.exports = {
         }),
         new MiniCssExtractPlugin({
             filename: '[name].[contenthash].css'
+        }),
+        new WebpackManifestPlugin({
+            filter: (file) => file.name !== "index.html"
         })
     ]
 };
