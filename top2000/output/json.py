@@ -6,7 +6,8 @@ from itertools import zip_longest
 import json
 from pathlib import Path
 from .base import Format, KeyPair
-from ..readers.base import Base as ReaderBase, Key, Row, RowElement, Artists
+from ..readers.base import Base as ReaderBase, Key, Row, RowElement, Artists, \
+    ExtraData
 
 FieldMap = dict[str, str]
 
@@ -56,8 +57,8 @@ class JSON(Format):
             "reverse": reverse,
             "columns": self._get_dict_setting(output_format, "columns")
         }
-        for reader in set(readers):
-            data.update(reader.extra_data)
+        data.update(self._select_extra_data(readers))
+
         with path.open("w", encoding="utf-8") as json_file:
             json.dump(data, json_file, separators=(',', ':'))
 
@@ -181,3 +182,20 @@ class JSON(Format):
                                 for artist, chart in reader.artists.items()
                                 if artist in relevant_keys})
         return artists
+
+    def _select_extra_data(self,
+                           readers: list[ReaderBase]) -> dict[str, ExtraData]:
+        primary = True
+        data: dict[str, ExtraData] = {}
+        credits_data: list[Row] = []
+        for reader in readers:
+            if reader is readers[0] and not primary:
+                continue
+
+            data.update(reader.extra_data)
+            if reader.credits:
+                credits_data.append(reader.credits)
+            primary = False
+
+        data["credits"] = credits_data
+        return data

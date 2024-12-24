@@ -3,7 +3,7 @@ Multiple file reader.
 """
 
 from pathlib import Path
-from .base import Base
+from .base import Base, Row
 from .csv import CSV
 from .json import JSON
 
@@ -94,3 +94,12 @@ class Years(Base):
                                          {"csv": {"pos": f"pos {int(year)}"}})
                 csv = CSV(year, is_current_year=False, fields=self._fields)
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)
+
+    @property
+    def credits(self) -> Row:
+        return {
+            "name": "NPO Radio 2 Top 2000",
+            "publisher": "NPO",
+            "url": "https://www.nporadio2.nl/top2000",
+            "terms": "https://npo.nl/overnpo/algemene-voorwaarden/algemene-voorwaarden-online"
+        }

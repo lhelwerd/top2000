@@ -181,6 +181,20 @@ class Wiki(Base):
                                 self._get_str_field("path", "/wiki/"))
         }
 
+    @property
+    def credits(self) -> Row:
+        base = urljoin(self._get_api_url(),
+                       self._get_str_field("path", "/wiki/"))
+        page = self._get_str_field("page", "Lijst_van_Radio_2-Top_2000's")
+        oldid = self._get_int_field("oldid")
+        return {
+            "name": page.replace("_", " "),
+            "publisher": "Wikipedia",
+            "url": urljoin(base,
+                           page if oldid == 0 else f"{page}?oldid={oldid}"),
+            "terms": "https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use"
+        }
+
     def _update_best_key(self, best_key: Key, row: Row,
                          artist_alternatives: list[str],
                          title_alternatives: list[str]) -> tuple[Key, bool]:

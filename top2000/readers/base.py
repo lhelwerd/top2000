@@ -306,6 +306,15 @@ class Base(metaclass=ABCMeta):
 
         return {}
 
+    @property
+    def credits(self) -> Row:
+        """
+        Retrieve information about the source of the data, including the name
+        of the source, the publisher, source URL and terms of use.
+        """
+
+        return {}
+
     def _read_row(self, row: Row, fields: FieldMap,
                   offset: int = 0) -> tuple[Key | None, int | None]:
         """
