@@ -53,6 +53,9 @@ table.main {
                 max-width: fit-content;
                 table.chart {
                     margin: 0 auto;
+                    .is-selected {
+                        font-weight: bold;
+                    }
                 }
             }
         }

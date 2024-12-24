@@ -240,7 +240,7 @@ const formatArtistChart = (d, position) => {
     return "";
 };
 
-const stroke = d3.scaleOrdinal(d3.schemeObservable10);
+const stroke = d3.scaleOrdinal(d3.schemeTableau10);
 const cycle = stroke.range().length;
 const symbolType = d3.scaleOrdinal(d3.symbolsFill);
 const symbols = d3.symbol(symbolType, 336);
@@ -603,10 +603,7 @@ class Info {
                 })
             )
             .classed("is-clickable", d => d !== position)
-            .classed("is-selected", d => this.positions.has(d))
-            .style("background", d => this.positions.has(d) ?
-                stroke(this.positionIndexes.get(d) % cycle) : ""
-            )
+            .call(row => this.setTrackSelection(row))
             .selectAll("td")
             .data(d => Array(artistColumns.length + 1).fill(d))
             .join(enter => enter.append("td").each((d, i, nodes) => {
@@ -644,13 +641,17 @@ class Info {
             this.addPositions(d);
         }
         this.cell.selectAll("table.chart > tbody > tr")
-            .classed("is-selected", pos => this.positions.has(pos))
-            .style("background", pos => this.positions.has(pos) ?
-                stroke(this.positionIndexes.get(pos) % cycle) : ""
-            )
+            .call(row => this.setTrackSelection(row))
             .select("td:last-child > a")
             .text(pos => this.getChartEmoji(pos, position));
         this.updateProgressionLines();
+    }
+
+    setTrackSelection(row) {
+        row.classed("is-selected", pos => this.positions.has(pos))
+            .style("background", pos => this.positions.has(pos) ?
+                stroke(this.positionIndexes.get(pos) % cycle) : ""
+            );
     }
 
     getChartEmoji(d, position) {
