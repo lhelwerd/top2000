@@ -82,15 +82,13 @@ const updatePagination = (current=null) => {
             pages.splice(currentIndex, 0, current);
         }
         const d = findTrack(current);
-        if (autoscroll === false) {
-            nextPage.datum(current)
-                .classed("is-hidden", false)
-                .classed("track", true)
-                .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
-            d3.timeout(() => nextPage.classed("is-hidden", true)
-                .text(""), currentDisplayDelay
-            );
-        }
+        nextPage.datum(current)
+            .classed("is-hidden", false)
+            .classed("track", true)
+            .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
+        d3.timeout(() => nextPage.classed("is-hidden", true)
+            .text(""), currentDisplayDelay
+        );
     }
     pagination.selectAll("li")
         .data(d3.map(pages, d => d3.median([d, end, front]))) // Clamp
