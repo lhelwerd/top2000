@@ -201,10 +201,12 @@ const createNextTimer = (pos, timestamp, now) => {
             nextPage.classed("is-hidden", true);
         }
         else {
-            nextPage.text(diff - elapsed > day ?
-                formatTimerLong(new Date(diff - elapsed - day)) :
-                formatTimerShort(new Date(diff - elapsed))
-            );
+            window.requestAnimationFrame(() => {
+                nextPage.text(diff - elapsed > day ?
+                    formatTimerLong(new Date(diff - elapsed - day)) :
+                    formatTimerShort(new Date(diff - elapsed))
+                );
+            });
         }
     }, 1000);
 };
