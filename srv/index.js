@@ -4,7 +4,7 @@ import MiniSearch from "minisearch";
 import data from "../output-sorted.json";
 
 const currentDisplayDelay = 10000;
-const currentUpdateDelay = 5000;
+const currentUpdateDelay = 1000;
 const chartLimit = 12;
 const sep = "\u00a0\u2014\u00a0";
 const nl = d3.timeFormatLocale({
@@ -59,6 +59,10 @@ for (const [key, value] of Object.entries(data)) {
 }
 
 let autoscroll = true;
+let currentTimer = null;
+let currentTimerParams = null;
+let startTimer = null;
+let startPos = null;
 
 const container = d3.select("body")
     .append("div")
@@ -145,8 +149,9 @@ const isInView = (node) => {
         rect.bottom <= document.documentElement.clientHeight &&
         rect.right <= document.documentElement.clientWidth;
 };
+const getCurrentDate = () => Date.now();
 const setCurrent = (d, i, nodes) => {
-    const now = Date.now();
+    const now = getCurrentDate();
     const previous = i - direction;
     const next = i + direction;
     const isCurrent = d.timestamp <= now &&
@@ -169,10 +174,14 @@ const setCurrent = (d, i, nodes) => {
         setNextCurrent(i, i, nodes, now);
         createNextTimer(i, d.timestamp, now);
     }
+    else if (!(next in data.tracks)) {
+        currentTimer = null;
+    }
     return isCurrent;
 };
 const setNextCurrent = (next, i, nodes, now) => {
-    d3.timeout(() => {
+    currentTimerParams = [next, i];
+    currentTimer = d3.timeout(() => {
         const d = d3.select(nodes[i]).datum();
         if (setCurrent(d, i, nodes)) {
             return;
@@ -193,9 +202,11 @@ const createNextTimer = (pos, timestamp, now) => {
         .text(diff > day ? formatTimerLong(new Date(diff - day)) :
             formatTimerShort(new Date(diff))
         );
-    const timer = d3.interval((elapsed) => {
+    startPos = pos;
+    startTimer = d3.interval((elapsed) => {
         if (diff < elapsed) {
-            timer.stop();
+            startTimer.stop();
+            startPos = null;
             nextPage.classed("is-hidden", true);
         }
         else {
@@ -208,6 +219,27 @@ const createNextTimer = (pos, timestamp, now) => {
         }
     }, 1000);
 };
+d3.select(document).on("visibilitychange", () => {
+    if (!document.hidden && currentTimer !== null) {
+        const timerParams = currentTimerParams.slice();
+        d3.timerFlush();
+        if (currentTimer !== null && timerParams[0] === currentTimerParams[0] &&
+            timerParams[1] === currentTimerParams[1]
+        ) {
+            currentTimer.stop();
+            setNextCurrent(...currentTimerParams,
+                container.selectAll("table.main > tbody > tr").nodes(),
+                getCurrentDate()
+            );
+        }
+        if (startTimer !== null && startPos !== null) {
+            startTimer.stop();
+            createNextTimer(startPos, data.tracks[startPos].timestamp,
+                getCurrentDate()
+            );
+        }
+    }
+});
 
 const formatRankChange = (d, position) => {
     const previousYear = currentYear - 1;
