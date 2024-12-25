@@ -153,6 +153,7 @@ const updatePagination = (current=null) => {
         }
         const d = findTrack(current);
         nextPage.datum(current)
+            .attr("href", d => `#/${data.year}/${d}`)
             .classed("is-hidden", false)
             .classed("track", true)
             .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
@@ -169,6 +170,7 @@ const updatePagination = (current=null) => {
             update => update.select("a"),
             exit => exit.remove()
         )
+        .attr("href", d => `#/${data.year}/${d}`)
         .on("click", (event, d) => {
             scrollPage(d, current);
         })
@@ -263,6 +265,7 @@ const createNextTimer = (pos, timestamp, now) => {
     let diff = timestamp - now + currentUpdateDelay;
     const day = 24 * 60 * 60 * 1000;
     nextPage.datum(data.positions[pos])
+        .attr("href", d => `#/${data.year}/${d}`)
         .classed("is-hidden", false)
         .text(diff > day ? formatTimerLong(new Date(diff - day)) :
             formatTimerShort(new Date(diff))
@@ -711,6 +714,7 @@ class Info {
                 if (i === artistColumns.length) {
                     cell.classed("has-text-centered", true)
                         .append("a")
+                        .attr("href", `#/${data.year}/${d}`)
                         .on("click", (event) => {
                             const posNode = scrollPositionRow(d);
                             if (posNode) {
@@ -975,6 +979,9 @@ const createCharts = () => {
         .attr("id", "charts")
         .classed("container is-overlay is-hidden", true)
         .append("div")
+        .attr("id", "current")
+        .classed("section", true)
+        .append("div")
         .classed("box", true)
         .text("Coming Soon");
 };
@@ -983,10 +990,13 @@ const createInfo = () => {
     const info = container.append("div")
         .attr("id", "info")
         .classed("container is-overlay is-hidden", true);
-    info.append("h2")
+    const dataSources = info.append("section")
+        .attr("id", "data")
+        .classed("section", true);
+    dataSources.append("h2")
         .classed("title is-4", true)
         .text("Data");
-    const credits = info.append("div")
+    const credits = dataSources.append("div")
         .classed("box", true)
         .selectAll("p")
         .data(data.credits)
@@ -1006,13 +1016,18 @@ const createInfo = () => {
     credits.append("span")
         .text(")");
 
-    info.append("h2")
+    const code = info.append("div")
+        .attr("id", "code")
+        .classed("section", true);
+    code.append("h2")
         .classed("title is-4", true)
         .text("Code");
-    const level = info.append("div")
+    code.append("div")
         .classed("box", true)
         .append("nav")
         .classed("level", true)
+        .append("div")
+        .classed("level-left", true)
         .selectAll("p")
         .data([
             {
@@ -1048,4 +1063,8 @@ createSearchModal();
 tabItems.call(updateActiveTab);
 d3.select(window).on("hashchange", () => {
     tabItems.call(updateActiveTab);
+    if (document.location.hash.startsWith(`#/${data.year}/`)) {
+        const d = Number(document.location.hash.slice(`#/${data.year}/`.length));
+        scrollPositionRow(d);
+    }
 });

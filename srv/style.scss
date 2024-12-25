@@ -20,6 +20,7 @@ $ultrahd: 1744px;
 @forward "bulma/sass/helpers";
 @forward "bulma/sass/layout/container";
 @forward "bulma/sass/layout/level";
+@forward "bulma/sass/layout/section";
 @forward "bulma/sass/themes";
 
 .column {
@@ -148,4 +149,7 @@ table.main {
             min-height: 26.86rem;
         }
     }
+}
+.level .level-left .level-item:not(:last-child)::after {
+    content: "\00a0\00a0\00b7";
 }
