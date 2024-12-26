@@ -77,6 +77,8 @@ table.main {
 }
 #search {
     .modal-content {
-        min-height: 26.5rem;
+        .box {
+            min-height: 26.86rem;
+        }
     }
 }
