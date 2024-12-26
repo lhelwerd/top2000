@@ -221,11 +221,9 @@ const createNextTimer = (pos, timestamp, now) => {
 };
 d3.select(document).on("visibilitychange", () => {
     if (!document.hidden && currentTimer !== null) {
-        const timerParams = currentTimerParams.slice();
+        const previousTimer = currentTimer;
         d3.timerFlush();
-        if (currentTimer !== null && timerParams[0] === currentTimerParams[0] &&
-            timerParams[1] === currentTimerParams[1]
-        ) {
+        if (currentTimer !== null && currentTimer === previousTimer) {
             currentTimer.stop();
             setNextCurrent(...currentTimerParams,
                 container.selectAll("table.main > tbody > tr").nodes(),
