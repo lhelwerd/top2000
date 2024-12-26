@@ -64,6 +64,7 @@ let currentTimerParams = null;
 let startTimer = null;
 let startPos = null;
 
+const rowsSelector = "table.main > tbody > tr:not(.info)";
 const container = d3.select("body")
     .append("div")
     .attr("id", "container");
@@ -120,7 +121,7 @@ const scrollPage = (d, current=null) => {
     if (posNode) {
         pagination.selectAll(".pagination-link")
             .classed("is-current", pos => d === pos);
-        container.selectAll("table.main > tbody > tr")
+        container.selectAll(rowsSelector)
             .classed("is-link", false);
         d3.select(posNode)
             .classed("is-selected", d === current)
@@ -129,8 +130,7 @@ const scrollPage = (d, current=null) => {
     }
 };
 const scrollPositionRow = (d) => {
-    const posCell = container
-        .selectAll("table.main > tbody > tr > td:first-child")
+    const posCell = container.selectAll(`${rowsSelector} > td:first-child`)
         .select(function(pos) {
             return d === data.positions[pos] ? this : null;
         })
@@ -226,8 +226,7 @@ d3.select(document).on("visibilitychange", () => {
         if (currentTimer !== null && currentTimer === previousTimer) {
             currentTimer.stop();
             setNextCurrent(...currentTimerParams,
-                container.selectAll("table.main > tbody > tr").nodes(),
-                getCurrentDate()
+                container.selectAll(rowsSelector).nodes(), getCurrentDate()
             );
         }
         if (startTimer !== null && startPos !== null) {
