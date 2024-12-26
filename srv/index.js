@@ -516,7 +516,7 @@ class Info {
             this.makeArtistChart(artist, i, chartCell, charts);
         });
         this.checkArtistChartLength(chartColumn, chartCell);
-        this.makeChartSearch(chartColumn, chartCell, charts);
+        this.makeChartSearch(chartColumn, chartCell);
     }
 
     checkArtistChartLength(chartColumn, chartCell) {
@@ -535,7 +535,9 @@ class Info {
         this.artists.add(key);
         const chart = data.artists[key];
         if (charts.has(chart.toString())) {
-            const artistTitle = chartCell.select(`.chart:nth-of-type(${i})`)
+            const j = charts.get(chart.toString()) + 1;
+            const artistTitle = chartCell
+                .select(`.artist-chart:nth-of-type(${j})`)
                 .select("p .artist");
             this.addArtistTitle(artistTitle, artist, isLink, true);
             return;
@@ -697,7 +699,7 @@ class Info {
         return symbolEmoji[1];
     }
 
-    makeChartSearch(chartColumn, chartCell, charts) {
+    makeChartSearch(chartColumn, chartCell) {
         const position = data.positions[this.pos];
         const column = chartCell.append("div")
             .classed("container column is-narrow artist-chart", true);
