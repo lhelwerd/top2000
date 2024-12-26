@@ -17,7 +17,7 @@ const nl = d3.timeFormatLocale({
     months: ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"],
     shortMonths: ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
 });
-const formatTime = nl.format("%d %b %H:%M");
+const formatTime = nl.format("%d-%m %H:%M");
 const formatYear = nl.format("'%y");
 const formatTimerLong = nl.utcFormat("%-j:%H:%M:%S");
 const formatTimerShort = nl.utcFormat("%H:%M:%S");
