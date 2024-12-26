@@ -856,9 +856,14 @@ const createSearchModal = () => {
 const createSearchBox = (container, searchOptions, handleClick) => {
     const box = container.append("div")
         .classed("box", true);
-    const input = box.append("input")
+    const control = box.append("p")
+        .classed("control has-icons-left", true);
+    const input = control.append("input")
         .classed("input is-large", true)
         .attr("type", "search");
+    control.append("span")
+        .classed("icon is-left", true)
+        .text(String.fromCodePoint(0x1f50e));
     const results = box.append("table")
         .classed("table search is-fullwidth is-narrow is-hoverable is-striped",
             true
