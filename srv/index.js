@@ -267,6 +267,9 @@ const formatArtistChart = (d, position, keys) => {
     }
     return "";
 };
+const getWikiUrl = (page) => {
+    return `${data.wiki_url}${encodeURIComponent(page.replaceAll(" ", "_"))}`;
+};
 
 const stroke = d3.scaleOrdinal(d3.schemeTableau10);
 const cycle = stroke.range().length;
@@ -555,7 +558,7 @@ class Info {
             .text(sep);
         if (this.track.wiki) {
             title.append("a")
-                .attr("href", `${data.wiki_url}${this.track.wiki.title_link}`)
+                .attr("href", getWikiUrl(this.track.wiki.title_link))
                 .attr("title", this.track.wiki.title_link)
                 .attr("target", "_blank")
                 .text(this.track.wiki.title);
@@ -583,7 +586,7 @@ class Info {
         }
         if (isLink) {
             artistTitle.append("a")
-                .attr("href", `${data.wiki_url}${artist[0]}`)
+                .attr("href", getWikiUrl(artist[0]))
                 .attr("title", artist[0])
                 .attr("target", "_blank")
                 .text(artist[1]);
