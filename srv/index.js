@@ -261,9 +261,10 @@ const formatRankChange = (d, position) => {
     }
     return "\u2234";
 };
-const formatArtistChart = (d, position) => {
-    if (d.max_artist_key in data.artists) {
-        const artistTracks = data.artists[d.max_artist_key];
+const formatArtistChart = (d, position, keys) => {
+    const artistTracks = data.artists[d.max_artist_key] ?
+        data.artists[d.max_artist_key] : data.artists[keys[0][0]];
+    if (artistTracks) {
         const artistPos = artistTracks.indexOf(position) + 1;
         return ` ${artistPos}/${artistTracks.length}`;
     }
@@ -302,7 +303,7 @@ const fields = {
     },
     title: {
         column: data.columns.title,
-        field: (d, i) => `${d.title}${d.album_version ? " \u29be" : ""} (${formatRankChange(d, i)}${formatArtistChart(d, i)})`
+        field: (d, i, keys) => `${d.title}${d.album_version ? " \u29be" : ""} (${formatRankChange(d, i)}${formatArtistChart(d, i, keys)})`
     },
     year: {
         column: data.columns.year,
@@ -353,7 +354,9 @@ const createTable = () => {
         .data((d, i) => Array(columns.length + 1).fill(i))
         .join("td")
         .text((pos, i) => i === columns.length ? "\u25b6" :
-            fields[columns[i]].field(data.tracks[pos], data.positions[pos])
+            fields[columns[i]].field(data.tracks[pos], data.positions[pos],
+                data.keys[pos]
+            )
         );
 };
 
@@ -570,7 +573,7 @@ class Info {
                 );
         }
         const subtable = this.createArtistTable(column);
-        this.fillArtistTable(subtable, chart);
+        this.fillArtistTable(subtable, chart, key);
     }
 
     addArtistTitle(artistTitle, artist, isLink=false, appendLinkOnly=false) {
@@ -623,7 +626,7 @@ class Info {
         return subtable;
     }
 
-    fillArtistTable(subtable, chart) {
+    fillArtistTable(subtable, chart, keys) {
         const position = data.positions[this.pos];
         subtable.select("tbody")
             .selectAll("tr")
@@ -655,7 +658,9 @@ class Info {
                         .text(this.getChartEmoji(d, position));
                 }
                 else {
-                    cell.text(fields[artistColumns[i]].field(findTrack(d), d));
+                    cell.text(fields[artistColumns[i]].field(findTrack(d), d,
+                        typeof keys === "string" ? [[keys, ""]] : keys[i]
+                    ));
                 }
             }));
     }
@@ -713,14 +718,21 @@ class Info {
         subtable.classed("is-hidden", true);
 
         const artists = new Map();
+        const keys = [];
         const chart = d3.map(d3.filter(this.positions.entries(),
             p => p[0] !== position && !this.artistPositions.has(p[0])
         ), p => {
             this.artistPositions.add(p[0]);
             const track = findTrack(p[0]);
-            if (!artists.has(track.max_artist_key)) {
-                artists.set(track.max_artist_key, track.artist);
-                this.addArtistTitle(artistTitle, [track.artist]);
+            if (track.max_artist_key) {
+                if (!artists.has(track.max_artist_key)) {
+                    artists.set(track.max_artist_key, track.artist);
+                    this.addArtistTitle(artistTitle, [track.artist]);
+                }
+                keys.push([[track_max_artist_key, track.title.lower()]]);
+            }
+            else {
+                keys.push([]);
             }
             return p[0];
         });
@@ -728,7 +740,7 @@ class Info {
         const fillSearchChart = () => {
             title.classed("is-hidden", false);
             subtable.classed("is-hidden", false);
-            this.fillArtistTable(subtable, chart);
+            this.fillArtistTable(subtable, chart, keys);
             this.updateProgressionLines();
             this.checkArtistChartLength(chartColumn, chartCell);
         };
@@ -881,7 +893,9 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         .data(r => Array(searchColumns.length).fill(r.id))
         .join("td")
         .text((d, i) => Number.isInteger(d) ?
-            fields[searchColumns[i]].field(data.tracks[d], data.positions[d]) :
+            fields[searchColumns[i]].field(data.tracks[d], data.positions[d],
+                data.keys[d]
+            ) :
             artistFields[searchColumns[i]](d)
         );
 };
