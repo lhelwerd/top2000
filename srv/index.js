@@ -547,7 +547,7 @@ class Info {
         const column = chartCell.append("div")
             .classed("container column is-narrow artist-chart", true);
         const title = column.append("p")
-            .classed("has-text-centered has-text-weight-bold", true);
+            .classed("is-size-5 has-text-centered has-text-weight-bold", true);
         const artistTitle = title.append("span")
             .classed("artist", true);
         this.addArtistTitle(artistTitle, artist, isLink, true);
@@ -710,7 +710,7 @@ class Info {
         title.append("span")
             .text(`${String.fromCodePoint(0x1f50e)} `);
         const artistTitle = title.append("span")
-            .classed("artist", true);
+            .classed("artist is-size-5", true);
         const subtable = this.createArtistTable(column);
         subtable.classed("is-hidden", true);
 
