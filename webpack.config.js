@@ -81,7 +81,8 @@ module.exports = {
             title: 'Top 2000'
         }),
         new MiniCssExtractPlugin({
-            filename: '[name].[contenthash].css'
+            filename: process.env.NODE_ENV === 'development' ? '[name].css' :
+                '[name].[contenthash].css'
         }),
         new WebpackManifestPlugin({
             filter: (file) => file.name !== "index.html"
