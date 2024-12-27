@@ -150,6 +150,10 @@ table.main {
         }
     }
 }
-.level .level-left .level-item:not(:last-child)::after {
-    content: "\00a0\00a0\00b7";
+@include mixins.tablet {
+    .level {
+        .level-item:not(:last-child)::after {
+            content: "\00a0\00a0\00b7";
+        }
+    }
 }
