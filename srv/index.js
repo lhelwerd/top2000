@@ -206,8 +206,9 @@ const scrollPositionRow = (d) => {
         posCell.scrollIntoView({
             behavior: "smooth", block: "center"
         });
+        return posCell.parentNode;
     }
-    return posCell.parentNode;
+    return null;
 };
 
 const isInView = (node) => {
@@ -1063,8 +1064,11 @@ createSearchModal();
 tabItems.call(updateActiveTab);
 d3.select(window).on("hashchange", () => {
     tabItems.call(updateActiveTab);
-    if (document.location.hash.startsWith(`#/${data.year}/`)) {
-        const d = Number(document.location.hash.slice(`#/${data.year}/`.length));
+    const prefix = `#/${data.year}`;
+    if (document.location.hash.startsWith(prefix)) {
+        const d = Number(document.location.hash.startsWith(`${prefix}/`) ?
+            document.location.hash.slice(`${prefix}/`.length) : nextPage.datum()
+        );
         scrollPositionRow(d);
     }
 });
