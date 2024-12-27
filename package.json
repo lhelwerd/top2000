@@ -14,12 +14,14 @@
   "files": [
     "dist/*.html",
     "dist/*.js",
+    "doc/*.md",
     "srv/*.scss",
     "srv/*.js",
     "webpack.config.js"
   ],
   "directories": {
     "dist": "dist",
+    "doc": "doc",
     "lib": "srv"
   },
   "repository": {
@@ -34,7 +36,9 @@
   "homepage": "https://github.com/lhelwerd/top2000#readme",
   "devDependencies": {
     "css-loader": "^7.1.2",
+    "html-loader": "^5.1.0",
     "html-webpack-plugin": "^5.6.3",
+    "markdown-loader": "^8.0.0",
     "mini-css-extract-plugin": "^2.9.2",
     "pug-loader": "^2.4.0",
     "sass": "^1.83.0",

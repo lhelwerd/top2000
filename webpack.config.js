@@ -26,6 +26,13 @@ module.exports = {
                 type: 'json'
             },
             {
+                test: /\.md$/i,
+                use: [
+                    "html-loader",
+                    "markdown-loader"
+                ]
+            },
+            {
                 test: /\.s[ac]ss$/i,
                 use: [
                     // Extracts to separate minified CSS file
