@@ -30,7 +30,7 @@
             min-width: 200vw;
             display: inline-block;
             padding-left: 100%;
-            animation: marquee 10s linear forwards;
+            animation: marquee 10s linear infinite;
         }
     }
 }
