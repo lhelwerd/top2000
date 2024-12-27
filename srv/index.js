@@ -71,6 +71,7 @@ if (data.old_data_available) {
         tabs.set(year, {
             icon: String.fromCodePoint(0x1f519),
             text: `${year}`,
+            container: ".main",
             classed: year < data.year - 1 ? "is-hidden-mobile" : ""
         });
     }
@@ -99,18 +100,77 @@ const head = container.append("div")
     .attr("id", "head")
     .append("div")
     .classed("columns is-multiline is-gapless is-centered", true);
+
+const scrollPage = (d, current=null) => {
+    const posNode = scrollPositionRow(d);
+    if (posNode) {
+        pagination.selectAll(".pagination-link")
+            .classed("is-current", pos => d === pos);
+        container.selectAll(rowsSelector)
+            .classed("is-link", false);
+        d3.select(posNode)
+            .classed("is-selected", d === current)
+            .classed("is-link", d !== current);
+        autoscroll = (d === current);
+    }
+};
+const scrollPositionRow = (d) => {
+    const posCell = container.selectAll(`${rowsSelector} > td:first-child`)
+        .select(function(pos) {
+            return d === data.positions[pos] ? this : null;
+        })
+        .node();
+    if (posCell) {
+        posCell.scrollIntoView({
+            behavior: "smooth", block: "center"
+        });
+        return posCell.parentNode;
+    }
+    return null;
+};
+const fixAnchorScroll = (content, hash, selector=null) => {
+    if (selector === null) {
+        if (content.empty()) {
+            return false;
+        }
+        const prefix = `#/${data.year}`;
+        if (hash.startsWith(prefix)) {
+            scrollPositionRow(Number(hash.startsWith(`${prefix}/`) ?
+                hash.slice(`${prefix}/`.length) : nextPage.datum()
+            ));
+        }
+        else if (hash.startsWith("#/")) {
+            content.node().scrollIntoView(true);
+        }
+        return true;
+    }
+    const element = content.select(selector);
+    if (!element.empty()) {
+        const stickyHeight = head.node().scrollHeight +
+            container.select("table.main > thead").node().scrollHeight;
+        document.documentElement.scrollBy(0, -stickyHeight);
+        return true;
+    }
+    return false;
+};
 const updateActiveTab = (tab) => {
-    tab.attr("class", d => document.location.hash.startsWith(`#/${d}`) ? "" :
-        tabs.get(d).classed
-    ).classed("is-active", d => {
-        const active = document.location.hash.startsWith("#/") ?
-            document.location.hash.startsWith(`#/${d}`) : d === data.year;
-        console.log(d, active);
-        container.select(tabs.get(d).container)
-            .classed("is-hidden", !active)
-            .classed("is-overlay", active && d !== data.year);
-        return active;
-    });
+    const hash = document.location.hash;
+    tab.attr("class", d => hash.startsWith(`#/${d}`) ? "" : tabs.get(d).classed)
+        .classed("is-active", d => {
+            const content = container.select(tabs.get(d).container);
+            const active = hash.startsWith("#/") ? // Tab datum
+                hash.startsWith(`#/${d}`) :
+                /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
+                fixAnchorScroll(content, hash, hash) :
+                d === data.year; // Fallback: current year list
+            content.classed("is-hidden", !active)
+                .classed("is-overlay", active && d !== data.year);
+            return active;
+        })
+        .each(d => {
+            const content = container.select(tabs.get(d).container);
+            fixAnchorScroll(content, document.location.hash);
+        });
 };
 const tabItems = head.append("div")
     .attr("id", "tabs")
@@ -182,33 +242,6 @@ const updatePagination = (current=null) => {
             (d, i) => i !== 0 && d !== current && d % 500 !== 0
         )
         .text(d => d);
-};
-const scrollPage = (d, current=null) => {
-    const posNode = scrollPositionRow(d);
-    if (posNode) {
-        pagination.selectAll(".pagination-link")
-            .classed("is-current", pos => d === pos);
-        container.selectAll(rowsSelector)
-            .classed("is-link", false);
-        d3.select(posNode)
-            .classed("is-selected", d === current)
-            .classed("is-link", d !== current);
-        autoscroll = (d === current);
-    }
-};
-const scrollPositionRow = (d) => {
-    const posCell = container.selectAll(`${rowsSelector} > td:first-child`)
-        .select(function(pos) {
-            return d === data.positions[pos] ? this : null;
-        })
-        .node();
-    if (posCell) {
-        posCell.scrollIntoView({
-            behavior: "smooth", block: "center"
-        });
-        return posCell.parentNode;
-    }
-    return null;
 };
 
 const isInView = (node) => {
@@ -1062,13 +1095,4 @@ createInfo();
 createSearchModal();
 
 tabItems.call(updateActiveTab);
-d3.select(window).on("hashchange", () => {
-    tabItems.call(updateActiveTab);
-    const prefix = `#/${data.year}`;
-    if (document.location.hash.startsWith(prefix)) {
-        const d = Number(document.location.hash.startsWith(`${prefix}/`) ?
-            document.location.hash.slice(`${prefix}/`.length) : nextPage.datum()
-        );
-        scrollPositionRow(d);
-    }
-});
+d3.select(window).on("hashchange", () => tabItems.call(updateActiveTab));
