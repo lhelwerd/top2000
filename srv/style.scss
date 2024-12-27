@@ -1,6 +1,65 @@
-@use "bulma";
+$mini: 384px;
+$fullhd: 1648px;
+$ultrahd: 1744px;
+@forward "bulma/sass/utilities" with ($fullhd: $fullhd);
 @use "bulma/sass/utilities/initial-variables" as iv;
 @use "bulma/sass/utilities/mixins" as mixins;
+@forward "bulma/sass/base";
+@forward "bulma/sass/components/modal";
+@forward "bulma/sass/components/pagination";
+@forward "bulma/sass/components/tabs" with ($tabs-link-padding: 0.5em);
+@forward "bulma/sass/elements/block";
+@forward "bulma/sass/elements/box";
+@forward "bulma/sass/elements/content";
+@forward "bulma/sass/elements/icon";
+@forward "bulma/sass/elements/table";
+@forward "bulma/sass/elements/title";
+@forward "bulma/sass/form/input-textarea";
+@forward "bulma/sass/form/tools";
+@forward "bulma/sass/grid/columns";
+@forward "bulma/sass/helpers";
+@forward "bulma/sass/layout/container";
+@forward "bulma/sass/layout/level";
+@forward "bulma/sass/layout/section";
+@forward "bulma/sass/themes";
+
+.column {
+    @include mixins.tablet-only {
+        &.is-narrow-tablet-only {
+            flex: none;
+            width: unset;
+        }
+        &.is-full-tablet-only {
+            flex: none;
+            width: 100%;
+        }
+    }
+    @include mixins.desktop-only {
+        &.is-narrow-desktop-only {
+            flex: none;
+            width: unset;
+        }
+        &.is-full-desktop-only {
+            flex: none;
+            width: 100%;
+        }
+    }
+    @include mixins.widescreen-only {
+        &.is-narrow-widescreen-only {
+            flex: none;
+            width: unset;
+        }
+        &.is-full-widescreen-only {
+            flex: none;
+            width: 100%;
+        }
+    }
+}
+@include mixins.between($fullhd, $ultrahd) {
+    .is-hidden-fullhd-only {
+        display: none !important;
+    }
+}
 
 @keyframes marquee {
     0%   { transform: translate(0, 0); }
@@ -14,6 +73,19 @@
     max-width: 100vw;
     overflow: hidden;
     background-color: #002442;
+    .tabs {
+        ul {
+            @include mixins.mobile {
+                justify-content: center;
+            }
+            @include mixins.between(iv.$desktop, $fullhd) {
+                justify-content: center;
+            }
+        }
+        a .icon:first-child {
+            margin-inline-end: 0;
+        }
+    }
     .pagination-previous,
     .pagination-next,
     .pagination-link {
@@ -22,10 +94,10 @@
     }
     .pagination-next.track:not(.is-hidden) {
         order: 0;
-        min-width: 100vw;
-    }
-    @include mixins.mobile {
-        .pagination-next.track:not(.is-hidden) {
+        min-width: 100%;
+        width: 0;
+        overflow: hidden;
+        @include mixins.mobile {
             flex-shrink: 0;
             min-width: 200vw;
             display: inline-block;
@@ -42,14 +114,20 @@ table {
     }
 }
 table.main {
-    @include mixins.until(384px) {
+    @include mixins.until($mini) {
         font-size: iv.$size-7;
     }
     & > thead {
         position: sticky;
-        top: 2.46rem;
+        top: 4.92rem;
         z-index: 10;
         background-color: inherit;
+        @include mixins.tablet-only {
+            top: 2.45rem;
+        }
+        @include mixins.fullhd {
+            top: 2.46rem;
+        }
     }
     .info {
         & > td {
@@ -79,6 +157,13 @@ table.main {
     .modal-content {
         .box {
             min-height: 26.86rem;
+        }
+    }
+}
+@include mixins.tablet {
+    .level {
+        .level-item:not(:last-child)::after {
+            content: "\00a0\00a0\00b7";
         }
     }
 }

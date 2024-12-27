@@ -26,6 +26,13 @@ module.exports = {
                 type: 'json'
             },
             {
+                test: /\.md$/i,
+                use: [
+                    "html-loader",
+                    "markdown-loader"
+                ]
+            },
+            {
                 test: /\.s[ac]ss$/i,
                 use: [
                     // Extracts to separate minified CSS file
@@ -33,7 +40,14 @@ module.exports = {
                     // Translates CSS into CommonJS
                     "css-loader",
                     // Compiles Sass to CSS
-                    "sass-loader"
+                    {
+                        loader: "sass-loader",
+                        options: {
+                            sassOptions: {
+                                quietDeps: true
+                            }
+                        }
+                    }
                 ]
             }
         ]

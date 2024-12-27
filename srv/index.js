@@ -1,7 +1,9 @@
 import "./style.scss";
 import * as d3 from "d3";
 import MiniSearch from "minisearch";
+import packageInfo from "../package.json";
 import data from "../output-sorted.json";
+import doc from "../doc/app.nl.md";
 
 const currentDisplayDelay = 10000;
 const currentUpdateDelay = 1000;
@@ -64,58 +66,42 @@ let currentTimerParams = null;
 let startTimer = null;
 let startPos = null;
 
+const tabs = new Map();
+if (data.old_data_available) {
+    for (let year = data.first_year; year < data.year; year++) {
+        tabs.set(year, {
+            icon: String.fromCodePoint(0x1f519),
+            text: `${year}`,
+            container: ".main",
+            classed: year < data.year - 1 ? "is-hidden-mobile" : ""
+        });
+    }
+}
+tabs.set(data.year, {
+    icon: String.fromCodePoint(0x1f534),
+    text: `${data.year}`,
+    container: ".main"
+});
+tabs.set("charts", {
+    icon: String.fromCodePoint(0x1f4ca),
+    text: "Charts",
+    container: "#charts"
+});
+tabs.set("info", {
+    icon: "\u2139\ufe0f",
+    text: "Info",
+    container: "#info"
+});
+
 const rowsSelector = "table.main > tbody > tr:not(.info)";
 const container = d3.select("body")
     .append("div")
     .attr("id", "container");
-const nav = container.append("div")
+const head = container.append("div")
     .attr("id", "head")
-    .append("nav")
-    .classed("pagination is-centered is-flex-wrap-nowrap", true);
-const pagination = nav.append("ul")
-    .classed("pagination-list is-flex-wrap-nowrap", true);
-const nextPage = nav.append("a")
-    .classed("pagination-next has-background-danger-dark is-hidden", true)
-    .on("click", (event, d) => {
-        scrollPage(d, d);
-    });
-const updatePagination = (current=null) => {
-    const pages = d3.ticks(...d3.nice(end, front, 20), 20);
-    if (current) {
-        const currentIndex = d3.bisectRight(pages, current);
-        if (pages[currentIndex-1] !== current) {
-            pages.splice(currentIndex, 0, current);
-        }
-        const d = findTrack(current);
-        nextPage.datum(current)
-            .classed("is-hidden", false)
-            .classed("track", true)
-            .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
-        d3.timeout(() => nextPage.classed("is-hidden", true)
-            .text(""), currentDisplayDelay
-        );
-    }
-    pagination.selectAll("li")
-        .data(d3.map(pages, d => d3.median([d, end, front]))) // Clamp
-        .join(
-            enter => enter.append("li")
-                .append("a")
-                .classed("pagination-link", true),
-            update => update.select("a"),
-            exit => exit.remove()
-        )
-        .on("click", (event, d) => {
-            scrollPage(d, current);
-        })
-        .classed("has-background-primary has-text-dark", d => d === current)
-        .classed("is-hidden-desktop-only",
-            (d, i) => i !== 0 && d !== current && d % 200 !== 0
-        )
-        .classed("is-hidden-touch",
-            (d, i) => i !== 0 && d !== current && d % 500 !== 0
-        )
-        .text(d => d);
-};
+    .append("div")
+    .classed("columns is-multiline is-gapless is-centered", true);
+
 const scrollPage = (d, current=null) => {
     const posNode = scrollPositionRow(d);
     if (posNode) {
@@ -139,8 +125,124 @@ const scrollPositionRow = (d) => {
         posCell.scrollIntoView({
             behavior: "smooth", block: "center"
         });
+        return posCell.parentNode;
     }
-    return posCell.parentNode;
+    return null;
+};
+const fixAnchorScroll = (content, hash, selector=null) => {
+    if (selector === null) {
+        if (content.empty()) {
+            return false;
+        }
+        const prefix = `#/${data.year}`;
+        if (hash.startsWith(prefix)) {
+            scrollPositionRow(Number(hash.startsWith(`${prefix}/`) ?
+                hash.slice(`${prefix}/`.length) : nextPage.datum()
+            ));
+        }
+        else if (hash.startsWith("#/")) {
+            content.node().scrollIntoView(true);
+        }
+        return true;
+    }
+    const element = content.select(selector);
+    if (!element.empty()) {
+        const stickyHeight = head.node().scrollHeight +
+            container.select("table.main > thead").node().scrollHeight;
+        document.documentElement.scrollBy(0, -stickyHeight);
+        return true;
+    }
+    return false;
+};
+const updateActiveTab = (tab) => {
+    const hash = document.location.hash;
+    tab.attr("class", d => hash.startsWith(`#/${d}`) ? "" : tabs.get(d).classed)
+        .classed("is-active", d => {
+            const content = container.select(tabs.get(d).container);
+            const active = hash.startsWith("#/") ? // Tab datum
+                hash.startsWith(`#/${d}`) :
+                /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
+                fixAnchorScroll(content, hash, hash) :
+                d === data.year; // Fallback: current year list
+            content.classed("is-hidden", !active)
+                .classed("is-overlay", active && d !== data.year);
+            return active;
+        })
+        .each(d => {
+            const content = container.select(tabs.get(d).container);
+            fixAnchorScroll(content, document.location.hash);
+        });
+};
+const tabItems = head.append("div")
+    .attr("id", "tabs")
+    .classed("column is-narrow-tablet-only is-narrow-fullhd", true)
+    .append("div")
+    .classed("tabs is-boxed", true)
+    .append("ul")
+    .selectAll("li")
+    .data(tabs.keys())
+    .join("li")
+    .call(updateActiveTab);
+const tabLinks = tabItems.append("a")
+    .attr("href", d => `#/${d}`)
+    .attr("title", d => tabs.get(d).text);
+tabLinks.append("span")
+    .classed("icon", true)
+    .text(d => tabs.get(d).icon);
+tabLinks.append("span")
+    .classed("is-hidden-tablet-only is-hidden-fullhd-only", true)
+    .text(d => `\u00a0${tabs.get(d).text}`);
+
+const nav = head.append("div")
+    .attr("id", "pagination")
+    .classed("column is-full-mobile is-full-desktop-only is-full-widescreen-only", true)
+    .append("nav")
+    .classed("pagination is-centered is-flex-wrap-nowrap", true);
+const pagination = nav.append("ul")
+    .classed("pagination-list is-flex-wrap-nowrap", true);
+const nextPage = nav.append("a")
+    .classed("pagination-next has-background-danger-dark is-hidden", true)
+    .on("click", (event, d) => {
+        scrollPage(d, d);
+    });
+const updatePagination = (current=null) => {
+    const pages = d3.ticks(...d3.nice(end, front, 20), 20);
+    if (current) {
+        const currentIndex = d3.bisectRight(pages, current);
+        if (pages[currentIndex-1] !== current) {
+            pages.splice(currentIndex, 0, current);
+        }
+        const d = findTrack(current);
+        nextPage.datum(current)
+            .attr("href", d => `#/${data.year}/${d}`)
+            .classed("is-hidden", false)
+            .classed("track", true)
+            .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
+        d3.timeout(() => nextPage.classed("is-hidden", true)
+            .text(""), currentDisplayDelay
+        );
+    }
+    pagination.selectAll("li")
+        .data(d3.map(pages, d => d3.median([d, end, front]))) // Clamp
+        .join(
+            enter => enter.append("li")
+                .append("a")
+                .classed("pagination-link", true),
+            update => update.select("a"),
+            exit => exit.remove()
+        )
+        .attr("href", d => `#/${data.year}/${d}`)
+        .on("click", (event, d) => {
+            scrollPage(d, current);
+        })
+        .classed("has-background-primary has-text-dark", d => d === current)
+        .classed("is-hidden-desktop-only",
+            (d, i) => i !== 0 && d !== current && d % 200 !== 0
+        )
+        .classed("is-hidden-touch",
+            (d, i) => i !== 0 && d !== current && d % 500 !== 0
+        )
+        .text(d => d);
 };
 
 const isInView = (node) => {
@@ -198,6 +300,7 @@ const createNextTimer = (pos, timestamp, now) => {
     let diff = timestamp - now + currentUpdateDelay;
     const day = 24 * 60 * 60 * 1000;
     nextPage.datum(data.positions[pos])
+        .attr("href", d => `#/${data.year}/${d}`)
         .classed("is-hidden", false)
         .text(diff > day ? formatTimerLong(new Date(diff - day)) :
             formatTimerShort(new Date(diff))
@@ -646,6 +749,7 @@ class Info {
                 if (i === artistColumns.length) {
                     cell.classed("has-text-centered", true)
                         .append("a")
+                        .attr("href", `#/${data.year}/${d}`)
                         .on("click", (event) => {
                             const posNode = scrollPositionRow(d);
                             if (posNode) {
@@ -905,6 +1009,117 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         );
 };
 
+const createCharts = () => {
+    container.append("div")
+        .attr("id", "charts")
+        .classed("container is-overlay is-hidden", true)
+        .append("div")
+        .attr("id", "current")
+        .classed("section", true)
+        .append("div")
+        .classed("box", true)
+        .text("Coming Soon");
+};
+
+const createInfo = () => {
+    const info = container.append("div")
+        .attr("id", "info")
+        .classed("container is-overlay is-hidden", true);
+    info.append("div")
+        .attr("id", "doc")
+        .classed("content section", true)
+        .html(doc);
+
+    const credits = info.append("div")
+        .attr("id", "credits")
+        .classed("section", true);
+    credits.append("h1")
+        .classed("title is-3", true)
+        .text("Credits");
+
+    const dataSources = credits.append("section")
+        .attr("id", "data")
+        .classed("section", true);
+    dataSources.append("h2")
+        .classed("title is-4", true)
+        .text(`${String.fromCodePoint(0x1f4c4)} Data`);
+    const dataCredits = dataSources.append("div")
+        .classed("box", true)
+        .selectAll("p")
+        .data(data.credits)
+        .join("p");
+    dataCredits.append("span")
+        .text(d => `${d.publisher}.\u00a0`);
+    dataCredits.append("a")
+        .attr("href", d => d.url)
+        .attr("target", "_blank")
+        .text(d => d.name);
+    dataCredits.append("span")
+        .text(" (");
+    dataCredits.append("a")
+        .attr("href", d => d.terms)
+        .attr("target", "_blank")
+        .text("Terms");
+    dataCredits.append("span")
+        .text(")");
+
+    const code = credits.append("div")
+        .attr("id", "code")
+        .classed("section", true);
+    code.append("h2")
+        .classed("title is-4", true)
+        .text(`${String.fromCodePoint(0x1f4bb)} Code`);
+    code.append("div")
+        .classed("box", true)
+        .append("nav")
+        .classed("level", true)
+        .append("div")
+        .classed("level-left", true)
+        .selectAll("p")
+        .data([
+            {
+                icon: `${String.fromCodePoint(0x1f5a5)}\ufe0f`,
+                text: packageInfo.description,
+                url: data.web_url
+            },
+            {
+                icon: `${String.fromCodePoint(0x1f9d1)}\u200d${String.fromCodePoint(0x1f4bb)}`,
+                text: packageInfo.author.split(" <", 1)[0],
+                url: new URL(".", packageInfo.homepage)
+            },
+            {
+                icon: String.fromCodePoint(0x1f47e),
+                text: "GitHub",
+                url: packageInfo.homepage
+            },
+            {
+                icon: String.fromCodePoint(0x1fab2),
+                text: "Bugs",
+                url: packageInfo.bugs.url
+            },
+            {
+                icon: `\u2696\ufe0f`,
+                text: packageInfo.license,
+                url: new URL("#license", packageInfo.homepage)
+            }
+        ])
+        .join(enter => {
+            const item = enter.append("p")
+                .classed("level-item has-text-centered", true)
+                .append("a")
+                .attr("href", d => d.url);
+            item.append("p")
+                .text(d => d.icon);
+            item.append("p")
+                .text(d => d.text);
+        });
+};
+
 updatePagination();
 createTable();
+createCharts();
+createInfo();
 createSearchModal();
+
+tabItems.call(updateActiveTab);
+d3.select(window).on("hashchange", () => tabItems.call(updateActiveTab));
