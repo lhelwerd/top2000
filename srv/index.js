@@ -776,7 +776,13 @@ class Info {
         }
         const deleted = this.positions.delete(d);
         if (deleted) {
+            const index = this.positionIndexes.get(d);
             this.positionIndexes.delete(d);
+            this.positionIndexes.forEach((value, key) => {
+                if (value > index) {
+                    this.positionIndexes.set(key, value - 1);
+                }
+            });
         }
         else {
             this.addPositions(d);
