@@ -14,7 +14,12 @@ module.exports = {
         type: 'filesystem'
     },
     devServer: {
-        static: './dist'
+        static: './dist',
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization"
+        }
     },
     devtool: process.env.NODE_ENV === 'development' ? 'eval-source-map': false,
     entry: external ? './srv/external-manifest.js' : './srv/index.js',
@@ -63,6 +68,7 @@ module.exports = {
                     chunks: 'all',
                     filename: '[name].[contenthash].js',
                     name: 'data',
+                    test: /output-sorted\.json/,
                     type: 'json'
                 },
                 vendor: {
