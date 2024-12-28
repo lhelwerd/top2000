@@ -33,6 +33,12 @@ const end = data.positions[0];
 const findTrack = (d) => {
     return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
 };
+const formatTrack = (position, d=null) => {
+    if (d === null) {
+        d = findTrack(position);
+    }
+    return `${position}. ${d.artist} (${d.year})${sep}${d.title}`;
+};
 
 const search = new MiniSearch({
     fields: ['position', 'artist', 'title'],
@@ -221,7 +227,7 @@ const updatePagination = (current=null) => {
             .attr("href", d => `#/${data.year}/${d}`)
             .classed("is-hidden", false)
             .classed("track", true)
-            .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
+            .text(formatTrack(current, d));
         d3.timeout(() => nextPage.classed("is-hidden", true)
             .text(""), currentDisplayDelay
         );
@@ -1019,16 +1025,190 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         );
 };
 
+const chartSources = [
+    {
+        name: "Artiesten met meeste nummers",
+        type: "bar",
+        source: () => d3.sort(Object.keys(data.artists),
+            d => -data.artists[d].length
+        ),
+        min: x => 0,
+        max: x => d3.max(Object.values(data.artists), chart => chart.length),
+        y: d => data.artists[d].length,
+        x: d => {
+            const track = findTrack(data.artists[d][0]);
+            if (track.artist.toLowerCase() === d) {
+                return track.artist;
+            }
+            return d;
+        }
+    },
+    {
+        name: "Hoogste binnenkomers",
+        type: "bar",
+        source: () => {
+            const positions = d3.filter(data.positions,
+                (pos, i) => d3.every(d3.range(data.first_year, currentYear),
+                    year => !(year in data.tracks[i])
+                )
+            );
+            return data.reverse ? d3.reverse(positions) : positions;
+        },
+        min: x => front,
+        max: x => x.domain()[0],
+        y: d => d,
+        x: d => formatTrack(d)
+    },
+    {
+        name: "Sterkste stijgers",
+        type: "bar",
+        source: () => d3.sort(d3.zip(data.tracks, data.positions),
+            p => p[1] - p[0][currentYear - 1]
+        ),
+        min: x => 0,
+        max: x => x.domain()[0][0][currentYear - 1] - x.domain()[0][1],
+        y: p => p[0][currentYear - 1] - p[1],
+        x: p => formatTrack(p[1], p[0])
+    },
+    {
+        name: "Sterkste dalers",
+        type: "bar",
+        source: () => d3.sort(d3.zip(data.tracks, data.positions),
+            p => p[0][currentYear - 1] - p[1]
+        ),
+        min: x => 0,
+        max: x => x.domain()[0][1] - x.domain()[0][0][currentYear - 1],
+        y: p => p[1] - p[0][currentYear - 1],
+        x: p => formatTrack(p[1], p[0])
+    },
+    {
+        name: "Langst geleden terugkerende nummers",
+        type: "bar",
+        source: () => d3.sort(d3.map(d3.zip(data.tracks, data.positions), p => {
+            for (let year = currentYear - 1; year >= data.first_year; year--) {
+                if (year in p[0]) {
+                    return [...p, year - currentYear];
+                }
+            }
+            return [...p, 0];
+        }), t => t[2]),
+        min: x => currentYear,
+        max: x => data.first_year,
+        y: t => currentYear + t[2],
+        x: t => formatTrack(t[1], t[0])
+    },
+    {
+        name: "Oudste nummers",
+        type: "bar",
+        source: () => d3.sort(d3.zip(data.tracks, data.positions),
+            p => p[0].year
+        ),
+        min: x => currentYear,
+        max: x => x.domain()[0][0].year,
+        y: p => p[0].year,
+        x: p => formatTrack(p[1], p[0])
+    }
+    /*{
+        name: "Nummers per decennium",
+        type: "hist",
+        source: data => d3.map(data.tracks, track => track.year),
+        bin: 10
+    }*/
+];
+const createChart = (column, chart) => {
+    // Stats chart
+    const width = 800;
+    const height = 500;
+    const marginTop = 20;
+    const marginRight = 20;
+    const marginBottom = 30;
+    const marginLeft = 40;
+    const barWidth = 30;
+
+    const x = d3.scaleOrdinal()
+        .domain(chart.source().slice(0, 10))
+        .range(d3.range(marginLeft + barWidth / 2,
+            width - marginRight - barWidth / 2, (width - barWidth) / 10
+        ));
+    const yMin = chart.min(x);
+    const y = d3.scaleLinear()
+        .domain([yMin, chart.max(x)])
+        .range([height - marginBottom, marginTop]);
+    const min = y(yMin);
+
+    column.html("");
+    const svg = column.append("svg")
+        .attr("width", width)
+        .attr("height", height);
+    svg.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .call(d3.axisBottom(x).tickFormat(chart.x));
+    svg.append("g")
+        .attr("transform", `translate(${marginLeft},0)`)
+        .call(d3.axisLeft(y));
+    const bar = svg.selectAll("g.bars")
+        .data(x.domain())
+        .join("g")
+        .classed("bars", true)
+        .attr("font-family", "sans-serif")
+        .attr("text-anchor", "middle");
+    bar.append("path")
+        .attr("fill", (d, i) => stroke(i % cycle))
+        .attr("d", d => {
+            const path = d3.path();
+            path.rect(x(d) - barWidth / 2, min, barWidth, y(chart.y(d)) - min);
+            return path.toString();
+        });
+    bar.append("text")
+        .attr("x", d => x(d))
+        .attr("y", d => y(chart.y(d)) + 10)
+        .attr("dy", "0.32em")
+        .text(d => chart.y(d));
+};
 const createCharts = () => {
-    container.append("div")
+    const columns = container.append("div")
         .attr("id", "charts")
         .classed("container is-overlay is-hidden", true)
         .append("div")
         .attr("id", "current")
         .classed("section", true)
         .append("div")
-        .classed("box", true)
-        .text("Coming Soon");
+        .classed("columns is-multiline", true);
+    const dropdownColumn = columns.append("div")
+        .classed("column is-narrow", true);
+    const chartColumn = columns.append("div")
+        .classed("column", true);
+    createChart(chartColumn, chartSources[0]);
+
+    const dropdown = dropdownColumn.append("div")
+        .classed("dropdown is-hoverable is-right", true);
+    dropdown.append("div")
+        .classed("dropdown-trigger", true)
+        .append("button")
+        .classed("button", true)
+        .attr("aria-haspopup", true)
+        .attr("aria-controls", "chart-dropdown")
+        .on("click", () => {
+            dropdown.classed("is-active", !dropdown.classed("is-active"));
+        })
+        .text("Charts\u2007\u25be");
+    const items = dropdown.append("div")
+        .classed("dropdown-menu", true)
+        .attr("id", "chart-dropdown")
+        .attr("role", "menu")
+        .append("div")
+        .classed("dropdown-content", true)
+        .selectAll("a")
+        .data(chartSources)
+        .join("a")
+        .classed("dropdown-item", true)
+        .classed("is-active", (d, i) => i === 0)
+        .on("click", function(event, chart) {
+            items.classed("is-active", d => d === chart);
+            dropdown.classed("is-active", false);
+            createChart(chartColumn, chart);
+        })
+        .text(d => d.name);
 };
 
 const createInfo = () => {
