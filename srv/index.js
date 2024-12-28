@@ -129,6 +129,11 @@ const scrollPositionRow = (d) => {
     }
     return null;
 };
+const fixStickyScroll = () => {
+    const stickyHeight = head.node().scrollHeight +
+        container.select("table.main > thead").node().scrollHeight;
+    document.documentElement.scrollBy(0, -stickyHeight);
+};
 const fixAnchorScroll = (content, hash, selector=null) => {
     if (selector === null) {
         if (content.empty()) {
@@ -142,14 +147,13 @@ const fixAnchorScroll = (content, hash, selector=null) => {
         }
         else if (hash.startsWith("#/")) {
             content.node().scrollIntoView(true);
+            fixStickyScroll();
         }
         return true;
     }
     const element = content.select(selector);
     if (!element.empty()) {
-        const stickyHeight = head.node().scrollHeight +
-            container.select("table.main > thead").node().scrollHeight;
-        document.documentElement.scrollBy(0, -stickyHeight);
+        fixStickyScroll();
         return true;
     }
     return false;
