@@ -1046,6 +1046,7 @@ const chartSources = [
     {
         name: "Hoogste binnenkomers",
         type: "bar",
+        swap: true,
         source: () => {
             const positions = d3.filter(data.positions,
                 (pos, i) => d3.every(d3.range(data.first_year, currentYear),
@@ -1062,44 +1063,50 @@ const chartSources = [
     {
         name: "Sterkste stijgers",
         type: "bar",
+        swap: true,
         source: () => d3.sort(d3.zip(data.tracks, data.positions),
             p => p[1] - p[0][currentYear - 1]
         ),
         min: x => 0,
         max: x => x.domain()[0][0][currentYear - 1] - x.domain()[0][1],
         y: p => p[0][currentYear - 1] - p[1],
-        x: p => formatTrack(p[1], p[0])
+        x: p => formatTrack(p[1], p[0]),
+        format: y => `\u25b2${y}`
     },
     {
         name: "Sterkste dalers",
         type: "bar",
+        swap: true,
         source: () => d3.sort(d3.zip(data.tracks, data.positions),
             p => p[0][currentYear - 1] - p[1]
         ),
         min: x => 0,
         max: x => x.domain()[0][1] - x.domain()[0][0][currentYear - 1],
         y: p => p[1] - p[0][currentYear - 1],
-        x: p => formatTrack(p[1], p[0])
+        x: p => formatTrack(p[1], p[0]),
+        format: y => `\u25bc${y}`
     },
     {
-        name: "Langst geleden terugkerende nummers",
+        name: "Terugkerende nummers",
         type: "bar",
+        swap: true,
         source: () => d3.sort(d3.map(d3.zip(data.tracks, data.positions), p => {
             for (let year = currentYear - 1; year >= data.first_year; year--) {
-                if (year in p[0]) {
+                if (year in p[0] && p[0][year] <= Math.max(front, end)) {
                     return [...p, year - currentYear];
                 }
             }
             return [...p, 0];
         }), t => t[2]),
         min: x => currentYear,
-        max: x => data.first_year,
+        max: x => currentYear + x.domain()[0][2],
         y: t => currentYear + t[2],
         x: t => formatTrack(t[1], t[0])
     },
     {
         name: "Oudste nummers",
         type: "bar",
+        swap: true,
         source: () => d3.sort(d3.zip(data.tracks, data.positions),
             p => p[0].year
         ),
@@ -1125,15 +1132,24 @@ const createChart = (column, chart) => {
     const marginLeft = 40;
     const barWidth = 30;
 
+    const textSize = chart.swap ? -25 : 10;
+
+    const hExtent = [marginLeft, width - marginRight];
+    const vExtent = [height - marginBottom, marginTop];
     const x = d3.scaleOrdinal()
         .domain(chart.source().slice(0, 10))
-        .range(d3.range(marginLeft + barWidth / 2,
-            width - marginRight - barWidth / 2, (width - barWidth) / 10
-        ));
+        .range(chart.swap ?
+            d3.range(vExtent[1] + barWidth / 2, vExtent[0] + barWidth / 2,
+                (height - barWidth) / 10
+            ) :
+            d3.range(hExtent[0] + barWidth / 2, hExtent[1] - barWidth / 2,
+                (width - barWidth) / 10
+            )
+        );
     const yMin = chart.min(x);
     const y = d3.scaleLinear()
         .domain([yMin, chart.max(x)])
-        .range([height - marginBottom, marginTop]);
+        .range(chart.swap ? hExtent : vExtent);
     const min = y(yMin);
 
     column.html("");
@@ -1145,28 +1161,51 @@ const createChart = (column, chart) => {
         .attr("height", height);
     svg.append("g")
         .attr("transform", `translate(0,${height - marginBottom})`)
-        .call(d3.axisBottom(x).tickFormat(chart.x));
+        .call(d3.axisBottom(chart.swap ? y : x)
+            .tickFormat(chart.swap ? null : chart.x));
     svg.append("g")
         .attr("transform", `translate(${marginLeft},0)`)
-        .call(d3.axisLeft(y));
+        .call(d3.axisLeft(chart.swap ? x : y)
+            .tickFormat((d, i) => Number.isInteger(d) ? d : i + 1));
     const bar = svg.selectAll("g.bars")
         .data(x.domain())
         .join("g")
         .classed("bars", true)
         .attr("font-family", "sans-serif")
         .attr("text-anchor", "middle");
+    const makeRect = (x, y) => {
+        const path = d3.path();
+        const offset = x - barWidth / 2;
+        const size = y - min;
+        if (chart.swap) {
+            path.rect(min, offset, size, barWidth);
+        }
+        else {
+            path.rect(offset, min, barWidth, size);
+        }
+        return path.toString();
+    };
     bar.append("path")
         .attr("fill", (d, i) => stroke(i % cycle))
-        .attr("d", d => {
-            const path = d3.path();
-            path.rect(x(d) - barWidth / 2, min, barWidth, y(chart.y(d)) - min);
-            return path.toString();
-        });
+        .attr("d", d => makeRect(x(d), y(chart.y(d))));
     bar.append("text")
-        .attr("x", d => x(d))
-        .attr("y", d => y(chart.y(d)) + 10)
+        .attr(chart.swap ? "y" : "x", d => x(d))
+        .attr(chart.swap ? "x" : "y", d => y(chart.y(d)) + textSize)
         .attr("dy", "0.32em")
-        .text(d => chart.y(d));
+        .text(d => chart.format ? chart.format(chart.y(d)) : chart.y(d));
+    bar.append("text")
+        .attr(chart.swap ? "y" : "x", d => x(d))
+        .attr(chart.swap ? "x" : "y", d => (y(chart.y(d)) + min) / 2)
+        .attr("dy", "0.32em")
+        .attr("font-size", 10)
+        .attr("transform", d => chart.swap ? null :
+            `rotate(90 ${x(d)} ${(y(chart.y(d)) + min) / 2})`
+        )
+        .attr("clip-path", d => chart.swap ?
+            `path('${makeRect(x(d), y(chart.y(d)) + 2 * textSize)}') view-box` :
+            null
+        )
+        .text(d => chart.x(d));
 };
 const createCharts = () => {
     const columns = container.append("div")
