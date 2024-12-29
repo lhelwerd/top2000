@@ -29,6 +29,7 @@ const currentYear = data.year;
 const direction = data.reverse ? 1 : -1;
 const front = data.positions[data.positions.length - 1];
 const end = data.positions[0];
+const start = data.reverse ? end : front;
 
 const findTrack = (d) => {
     return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
@@ -1092,7 +1093,24 @@ const chartSources = [
         type: "bar",
         swap: true,
         source: () => d3.sort(d3.zip(data.positions, data.tracks),
-            p => p[0] - p[1][currentYear - 1]
+            p => p[1][currentYear - 1] <= start ?
+                p[0] - p[1][currentYear - 1] : 0
+        ),
+        min: x => 0,
+        max: x => x.domain()[0][1][currentYear - 1] - x.domain()[0][0],
+        y: p => p[1][currentYear - 1] - p[0],
+        x: p => formatTrack(...p),
+        yFormat: y => `\u25b2${y}`
+    },
+    {
+        id: "extra500",
+        name: "Doorbraak uit De Extra 500",
+        type: "bar",
+        swap: true,
+        enabled: () => d3.some(data.tracks, d => d[currentYear - 1] > start),
+        source: () => d3.sort(d3.zip(data.positions, data.tracks),
+            p => p[1][currentYear - 1] > start ?
+                p[0] - p[1][currentYear - 1] : 0
         ),
         min: x => 0,
         max: x => x.domain()[0][1][currentYear - 1] - x.domain()[0][0],
@@ -1121,7 +1139,7 @@ const chartSources = [
         swap: true,
         source: () => d3.sort(d3.map(d3.zip(data.positions, data.tracks), p => {
             for (let year = currentYear - 1; year >= data.first_year; year--) {
-                if (year in p[1] && p[1][year] <= Math.max(front, end)) {
+                if (year in p[1] && p[1][year] <= start) {
                     return [...p, year - currentYear];
                 }
             }
