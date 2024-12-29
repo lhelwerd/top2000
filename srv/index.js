@@ -1134,10 +1134,10 @@ const createChart = (column, chart) => {
 
     const textSize = chart.swap ? -25 : 10;
 
+    let source = chart.source;
     if (chart.type === "hist") {
-        const source = chart.source;
-        chart.source = () => {
-            const values = source();
+        source = () => {
+            const values = chart.source();
             return d3.bin().thresholds(
                 d3.range(...d3.nice(...d3.extent(values), chart.bin), chart.bin)
             )(values);
@@ -1151,7 +1151,7 @@ const createChart = (column, chart) => {
     const hExtent = [marginLeft, width - marginRight];
     const vExtent = [height - marginBottom, marginTop];
     const x = d3.scaleOrdinal()
-        .domain(chart.source().slice(0, 10))
+        .domain(source().slice(0, 10))
         .range(chart.swap ?
             d3.range(vExtent[1] + barWidth / 2, vExtent[0] + barWidth / 2,
                 (height - barWidth) / 10
