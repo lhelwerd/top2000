@@ -33,6 +33,12 @@ const end = data.positions[0];
 const findTrack = (d) => {
     return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
 };
+const formatTrack = (position, d=null) => {
+    if (d === null) {
+        d = findTrack(position);
+    }
+    return `${position}. ${d.artist} (${d.year})${sep}${d.title}`;
+};
 
 const search = new MiniSearch({
     fields: ['position', 'artist', 'title'],
@@ -221,7 +227,7 @@ const updatePagination = (current=null) => {
             .attr("href", d => `#/${data.year}/${d}`)
             .classed("is-hidden", false)
             .classed("track", true)
-            .text(`${current}. ${d.artist} (${d.year})${sep}${d.title}`);
+            .text(formatTrack(current, d));
         d3.timeout(() => nextPage.classed("is-hidden", true)
             .text(""), currentDisplayDelay
         );
@@ -1019,16 +1025,253 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         );
 };
 
+const chartSources = [
+    {
+        name: "Artiesten met meeste nummers",
+        type: "bar",
+        source: () => d3.sort(Object.keys(data.artists),
+            d => -data.artists[d].length
+        ),
+        min: x => 0,
+        max: x => d3.max(Object.values(data.artists), chart => chart.length),
+        y: d => data.artists[d].length,
+        x: d => {
+            const track = findTrack(data.artists[d][0]);
+            if (track.artist.toLowerCase() === d) {
+                return track.artist;
+            }
+            return d;
+        }
+    },
+    {
+        name: "Hoogste binnenkomers",
+        type: "bar",
+        swap: true,
+        source: () => {
+            const positions = d3.filter(data.positions,
+                (pos, i) => d3.every(d3.range(data.first_year, currentYear),
+                    year => !(year in data.tracks[i])
+                )
+            );
+            return data.reverse ? d3.reverse(positions) : positions;
+        },
+        min: x => front,
+        max: x => x.domain()[0],
+        y: d => d,
+        x: d => formatTrack(d)
+    },
+    {
+        name: "Sterkste stijgers",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(d3.zip(data.tracks, data.positions),
+            p => p[1] - p[0][currentYear - 1]
+        ),
+        min: x => 0,
+        max: x => x.domain()[0][0][currentYear - 1] - x.domain()[0][1],
+        y: p => p[0][currentYear - 1] - p[1],
+        x: p => formatTrack(p[1], p[0]),
+        format: y => `\u25b2${y}`
+    },
+    {
+        name: "Sterkste dalers",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(d3.zip(data.tracks, data.positions),
+            p => p[0][currentYear - 1] - p[1]
+        ),
+        min: x => 0,
+        max: x => x.domain()[0][1] - x.domain()[0][0][currentYear - 1],
+        y: p => p[1] - p[0][currentYear - 1],
+        x: p => formatTrack(p[1], p[0]),
+        format: y => `\u25bc${y}`
+    },
+    {
+        name: "Terugkerende nummers",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(d3.map(d3.zip(data.tracks, data.positions), p => {
+            for (let year = currentYear - 1; year >= data.first_year; year--) {
+                if (year in p[0] && p[0][year] <= Math.max(front, end)) {
+                    return [...p, year - currentYear];
+                }
+            }
+            return [...p, 0];
+        }), t => t[2]),
+        min: x => currentYear,
+        max: x => currentYear + x.domain()[0][2],
+        y: t => currentYear + t[2],
+        x: t => formatTrack(t[1], t[0])
+    },
+    {
+        name: "Oudste nummers",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(d3.zip(data.tracks, data.positions),
+            p => p[0].year
+        ),
+        min: x => currentYear,
+        max: x => x.domain()[0][0].year,
+        y: p => p[0].year,
+        x: p => formatTrack(p[1], p[0])
+    },
+    {
+        name: "Nummers per decennium",
+        type: "hist",
+        source: () => d3.map(data.tracks, track => track.year),
+        bin: 10,
+    }
+];
+const createChart = (column, chart) => {
+    // Stats chart
+    const width = 800;
+    const height = 500;
+    const marginTop = 20;
+    const marginRight = 20;
+    const marginBottom = 30;
+    const marginLeft = 40;
+    const barWidth = 30;
+
+    const textSize = chart.swap ? -25 : 10;
+
+    if (chart.type === "hist") {
+        const source = chart.source;
+        chart.source = () => {
+            const values = source();
+            return d3.bin().thresholds(
+                d3.range(...d3.nice(...d3.extent(values), chart.bin), chart.bin)
+            )(values);
+        };
+        chart.min = x => 0;
+        chart.max = x => d3.max(x.domain(), bin => bin.length);
+        chart.y = bin => bin.length;
+        chart.x = bin => `${bin.x0}\u2014${bin.x1}`;
+    }
+
+    const hExtent = [marginLeft, width - marginRight];
+    const vExtent = [height - marginBottom, marginTop];
+    const x = d3.scaleOrdinal()
+        .domain(chart.source().slice(0, 10))
+        .range(chart.swap ?
+            d3.range(vExtent[1] + barWidth / 2, vExtent[0] + barWidth / 2,
+                (height - barWidth) / 10
+            ) :
+            d3.range(hExtent[0] + barWidth / 2, hExtent[1] - barWidth / 2,
+                (width - barWidth) / 10
+            )
+        );
+    const yMin = chart.min(x);
+    const y = d3.scaleLinear()
+        .domain([yMin, chart.max(x)])
+        .range(chart.swap ? hExtent : vExtent);
+    const min = y(yMin);
+
+    column.html("");
+    column.append("h1")
+        .classed("title is-4 has-text-centered", true)
+        .text(chart.name);
+    const svg = column.append("svg")
+        .attr("width", width)
+        .attr("height", height);
+    svg.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .call(d3.axisBottom(chart.swap ? y : x)
+            .tickFormat(chart.swap ? null : chart.x));
+    svg.append("g")
+        .attr("transform", `translate(${marginLeft},0)`)
+        .call(d3.axisLeft(chart.swap ? x : y)
+            .tickFormat((d, i) => Number.isInteger(d) ? d : i + 1));
+    const bar = svg.selectAll("g.bars")
+        .data(x.domain())
+        .join("g")
+        .classed("bars", true)
+        .attr("font-family", "sans-serif")
+        .attr("text-anchor", "middle");
+    const makeRect = (x, y) => {
+        const path = d3.path();
+        const offset = x - barWidth / 2;
+        const size = y - min;
+        if (chart.swap) {
+            path.rect(min, offset, size, barWidth);
+        }
+        else {
+            path.rect(offset, min, barWidth, size);
+        }
+        return path.toString();
+    };
+    bar.append("path")
+        .attr("fill", (d, i) => stroke(i % cycle))
+        .attr("d", d => makeRect(x(d), y(chart.y(d))));
+    bar.append("text")
+        .attr(chart.swap ? "y" : "x", d => x(d))
+        .attr(chart.swap ? "x" : "y", d => y(chart.y(d)) + textSize)
+        .attr("dy", "0.32em")
+        .text(d => chart.format ? chart.format(chart.y(d)) : chart.y(d));
+    bar.append("g")
+        .attr("clip-path", d =>
+            `path('${makeRect(x(d), y(chart.y(d)) + 2 * textSize)}') view-box`
+        )
+        .append("text")
+        .attr(chart.swap ? "y" : "x", d => x(d))
+        .attr(chart.swap ? "x" : "y", d => (y(chart.y(d)) + min) / 2)
+        .attr("dy", "0.32em")
+        .attr("font-size", 10)
+        .attr("transform", d => chart.swap ? null :
+            `rotate(90 ${x(d)} ${(y(chart.y(d)) + min) / 2})`
+        )
+        .text(d => chart.x(d));
+};
 const createCharts = () => {
-    container.append("div")
+    const columns = container.append("div")
         .attr("id", "charts")
         .classed("container is-overlay is-hidden", true)
         .append("div")
         .attr("id", "current")
         .classed("section", true)
         .append("div")
-        .classed("box", true)
-        .text("Coming Soon");
+        .classed("columns is-multiline is-centered", true);
+    const dropdownColumn = columns.append("div")
+        .classed("column is-narrow", true);
+    const chartColumn = columns.append("div")
+        .classed("column is-narrow chart", true);
+    createChart(chartColumn, chartSources[0]);
+
+    const dropdown = dropdownColumn.append("div")
+        .classed("dropdown is-hoverable-widescreen is-right-widescreen", true);
+    const button = dropdown.append("div")
+        .classed("dropdown-trigger", true)
+        .append("button")
+        .classed("button", true)
+        .attr("aria-haspopup", true)
+        .attr("aria-controls", "chart-dropdown");
+    button.append("span")
+        .text("Charts");
+    const buttonIcon = button.append("span")
+        .classed("icon", true)
+        .text("\u25b8");
+    button.on("click", () => {
+        const active = dropdown.classed("is-active");
+        buttonIcon.text(active ? "\u25b8" : "\u25be");
+        dropdown.classed("is-active", !active);
+    });
+    const items = dropdown.append("div")
+        .classed("dropdown-menu", true)
+        .attr("id", "chart-dropdown")
+        .attr("role", "menu")
+        .append("div")
+        .classed("dropdown-content", true)
+        .selectAll("a")
+        .data(chartSources)
+        .join("a")
+        .classed("dropdown-item", true)
+        .classed("is-active", (d, i) => i === 0)
+        .on("click", function(event, chart) {
+            items.classed("is-active", d => d === chart);
+            dropdown.classed("is-active", false);
+            buttonIcon.text("\u25b8");
+            createChart(chartColumn, chart);
+        })
+        .text(d => d.name);
 };
 
 const createInfo = () => {

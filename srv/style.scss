@@ -5,11 +5,13 @@ $ultrahd: 1744px;
 @use "bulma/sass/utilities/initial-variables" as iv;
 @use "bulma/sass/utilities/mixins" as mixins;
 @forward "bulma/sass/base";
+@forward "bulma/sass/components/dropdown";
 @forward "bulma/sass/components/modal";
 @forward "bulma/sass/components/pagination";
 @forward "bulma/sass/components/tabs" with ($tabs-link-padding: 0.5em);
 @forward "bulma/sass/elements/block";
 @forward "bulma/sass/elements/box";
+@forward "bulma/sass/elements/button";
 @forward "bulma/sass/elements/content";
 @forward "bulma/sass/elements/icon";
 @forward "bulma/sass/elements/table";
@@ -58,6 +60,21 @@ $ultrahd: 1744px;
 @include mixins.between($fullhd, $ultrahd) {
     .is-hidden-fullhd-only {
         display: none !important;
+    }
+}
+.dropdown {
+    @include mixins.widescreen {
+        &.is-hoverable-widescreen:hover {
+            .dropdown-menu {
+                display: block;
+            }
+        }
+        &.is-right-widescreen {
+            .dropdown-menu {
+                left: auto;
+                right: 0;
+            }
+        }
     }
 }
 
@@ -152,6 +169,11 @@ table.main {
             }
         }
     }
+}
+#charts {
+   .chart {
+       overflow: auto;
+   }
 }
 #search {
     .modal-content {
