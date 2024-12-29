@@ -153,7 +153,7 @@ const fixStickyScroll = () => {
 };
 const fixAnchorScroll = (content, d, hash, selector=null) => {
     if (selector === null) {
-        if (content.empty()) {
+        if (content.empty() || content.classed("is-hidden")) {
             return false;
         }
         if (hash.startsWith(`#/${d}`) && tabs.get(d).scroll) {
