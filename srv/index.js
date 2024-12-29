@@ -1077,7 +1077,8 @@ const chartSources = [
         source: () => {
             const positions = d3.filter(data.positions,
                 (pos, i) => d3.every(d3.range(data.first_year, currentYear),
-                    year => !(year in data.tracks[i])
+                    year => !(year in data.tracks[i]) ||
+                        data.tracks[i][year] > start
                 )
             );
             return data.reverse ? d3.reverse(positions) : positions;
@@ -1159,6 +1160,22 @@ const chartSources = [
         source: () => d3.sort(d3.zip(data.positions, data.tracks),
             p => p[1].year
         ),
+        min: x => currentYear,
+        max: x => x.domain()[0][1].year,
+        y: p => p[1].year,
+        x: p => formatTrack(...p),
+        yFormat: y => y
+    },
+    {
+        id: "old_new",
+        name: "Oudste binnenkomers",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(d3.filter(d3.zip(data.positions, data.tracks),
+            p => d3.every(d3.range(data.first_year, currentYear),
+                year => !(year in p[1]) || p[1][year] > start
+            )
+        ), p => p[1].year),
         min: x => currentYear,
         max: x => x.domain()[0][1].year,
         y: p => p[1].year,
