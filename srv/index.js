@@ -1114,13 +1114,13 @@ const chartSources = [
         max: x => x.domain()[0][0].year,
         y: p => p[0].year,
         x: p => formatTrack(p[1], p[0])
-    }
-    /*{
+    },
+    {
         name: "Nummers per decennium",
         type: "hist",
-        source: data => d3.map(data.tracks, track => track.year),
-        bin: 10
-    }*/
+        source: () => d3.map(data.tracks, track => track.year),
+        bin: 10,
+    }
 ];
 const createChart = (column, chart) => {
     // Stats chart
@@ -1133,6 +1133,20 @@ const createChart = (column, chart) => {
     const barWidth = 30;
 
     const textSize = chart.swap ? -25 : 10;
+
+    if (chart.type === "hist") {
+        const source = chart.source;
+        chart.source = () => {
+            const values = source();
+            return d3.bin().thresholds(
+                d3.range(...d3.nice(...d3.extent(values), chart.bin), chart.bin)
+            )(values);
+        };
+        chart.min = x => 0;
+        chart.max = x => d3.max(x.domain(), bin => bin.length);
+        chart.y = bin => bin.length;
+        chart.x = bin => `${bin.x0}\u2014${bin.x1}`;
+    }
 
     const hExtent = [marginLeft, width - marginRight];
     const vExtent = [height - marginBottom, marginTop];
@@ -1193,17 +1207,17 @@ const createChart = (column, chart) => {
         .attr(chart.swap ? "x" : "y", d => y(chart.y(d)) + textSize)
         .attr("dy", "0.32em")
         .text(d => chart.format ? chart.format(chart.y(d)) : chart.y(d));
-    bar.append("text")
+    bar.append("g")
+        .attr("clip-path", d =>
+            `path('${makeRect(x(d), y(chart.y(d)) + 2 * textSize)}') view-box`
+        )
+        .append("text")
         .attr(chart.swap ? "y" : "x", d => x(d))
         .attr(chart.swap ? "x" : "y", d => (y(chart.y(d)) + min) / 2)
         .attr("dy", "0.32em")
         .attr("font-size", 10)
         .attr("transform", d => chart.swap ? null :
             `rotate(90 ${x(d)} ${(y(chart.y(d)) + min) / 2})`
-        )
-        .attr("clip-path", d => chart.swap ?
-            `path('${makeRect(x(d), y(chart.y(d)) + 2 * textSize)}') view-box` :
-            null
         )
         .text(d => chart.x(d));
 };
