@@ -1033,6 +1033,22 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         );
 };
 
+const getTitleLength = (d) => d.title.replaceAll(/ *\([^)]+\) */g, "").length;
+const getTrackTime = (i) => {
+    const next = i + direction;
+    if (!(next in data.tracks)) {
+        return new Date(currentYear + 1, 0) - data.tracks[i].timestamp;
+    }
+    const nextDate = new Date(data.tracks[next].timestamp);
+    let diff = 0;
+    if (nextDate.getHours() != new Date(data.tracks[i].timestamp).getHours()) {
+        diff += (nextDate.getMinutes() * 60 + nextDate.getSeconds()) * 1000;
+        if (nextDate.getHours() == 0 || nextDate.getHours() >= 6) {
+            diff *= 2;
+        }
+    }
+    return data.tracks[next].timestamp - data.tracks[i].timestamp - diff;
+};
 const chartSources = [
     {
         id: "max_artist",
@@ -1075,37 +1091,37 @@ const chartSources = [
         name: "Sterkste stijgers",
         type: "bar",
         swap: true,
-        source: () => d3.sort(d3.zip(data.tracks, data.positions),
-            p => p[1] - p[0][currentYear - 1]
+        source: () => d3.sort(d3.zip(data.positions, data.tracks),
+            p => p[0] - p[1][currentYear - 1]
         ),
         min: x => 0,
-        max: x => x.domain()[0][0][currentYear - 1] - x.domain()[0][1],
-        y: p => p[0][currentYear - 1] - p[1],
-        x: p => formatTrack(p[1], p[0]),
-        format: y => `\u25b2${y}`
+        max: x => x.domain()[0][1][currentYear - 1] - x.domain()[0][0],
+        y: p => p[1][currentYear - 1] - p[0],
+        x: p => formatTrack(...p),
+        yFormat: y => `\u25b2${y}`
     },
     {
         id: "fall",
         name: "Sterkste dalers",
         type: "bar",
         swap: true,
-        source: () => d3.sort(d3.zip(data.tracks, data.positions),
-            p => p[0][currentYear - 1] - p[1]
+        source: () => d3.sort(d3.zip(data.positions, data.tracks),
+            p => p[1][currentYear - 1] - p[0]
         ),
         min: x => 0,
-        max: x => x.domain()[0][1] - x.domain()[0][0][currentYear - 1],
-        y: p => p[1] - p[0][currentYear - 1],
-        x: p => formatTrack(p[1], p[0]),
-        format: y => `\u25bc${y}`
+        max: x => x.domain()[0][0] - x.domain()[0][1][currentYear - 1],
+        y: p => p[0] - p[1][currentYear - 1],
+        x: p => formatTrack(...p),
+        yFormat: y => `\u25bc${y}`
     },
     {
         id: "return",
         name: "Terugkerende nummers",
         type: "bar",
         swap: true,
-        source: () => d3.sort(d3.map(d3.zip(data.tracks, data.positions), p => {
+        source: () => d3.sort(d3.map(d3.zip(data.positions, data.tracks), p => {
             for (let year = currentYear - 1; year >= data.first_year; year--) {
-                if (year in p[0] && p[0][year] <= Math.max(front, end)) {
+                if (year in p[1] && p[1][year] <= Math.max(front, end)) {
                     return [...p, year - currentYear];
                 }
             }
@@ -1114,20 +1130,51 @@ const chartSources = [
         min: x => currentYear,
         max: x => currentYear + x.domain()[0][2],
         y: t => currentYear + t[2],
-        x: t => formatTrack(t[1], t[0])
+        x: t => formatTrack(t[0], t[1]),
+        yFormat: y => y
     },
     {
         id: "old",
         name: "Oudste nummers",
         type: "bar",
         swap: true,
-        source: () => d3.sort(d3.zip(data.tracks, data.positions),
-            p => p[0].year
+        source: () => d3.sort(d3.zip(data.positions, data.tracks),
+            p => p[1].year
         ),
         min: x => currentYear,
-        max: x => x.domain()[0][0].year,
-        y: p => p[0].year,
-        x: p => formatTrack(p[1], p[0])
+        max: x => x.domain()[0][1].year,
+        y: p => p[1].year,
+        x: p => formatTrack(...p),
+        yFormat: y => y
+    },
+    {
+        id: "long_title",
+        name: "Langste titels",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(d3.zip(data.positions, data.tracks),
+            p => -getTitleLength(p[1])
+        ),
+        min: x => 0,
+        max: x => getTitleLength(x.domain()[0][1]),
+        y: p => getTitleLength(p[1]),
+        x: p => formatTrack(...p)
+    },
+    {
+        id: "long_track",
+        name: "Langste nummers",
+        type: "bar",
+        enabled: () => data.tracks[0].timestamp,
+        swap: true,
+        source: () => d3.sort(d3.range(data.positions.length),
+            i => -getTrackTime(i)
+        ),
+        min: x => 0,
+        max: x => getTrackTime(x.domain()[0]),
+        y: i => getTrackTime(i),
+        x: i => formatTrack(data.positions[i], data.tracks[i]),
+        yFormat: nl.utcFormat("%M:%S"),
+        xFormat: (d, i) => i + 1
     },
     {
         id: "decade",
@@ -1191,11 +1238,13 @@ const createChart = (column, chart) => {
     svg.append("g")
         .attr("transform", `translate(0,${height - marginBottom})`)
         .call(d3.axisBottom(chart.swap ? y : x)
-            .tickFormat(chart.swap ? null : chart.x));
+            .tickFormat(chart.swap ? chart.yFormat : chart.x));
     svg.append("g")
         .attr("transform", `translate(${marginLeft},0)`)
         .call(d3.axisLeft(chart.swap ? x : y)
-            .tickFormat((d, i) => Number.isInteger(d) ? d : i + 1));
+            .tickFormat((d, i) => chart.xFormat ? chart.xFormat(d, i) :
+                Number.isInteger(d) ? d : i + 1
+            ));
     const bar = svg.selectAll("g.bars")
         .data(x.domain())
         .join("g")
@@ -1221,7 +1270,7 @@ const createChart = (column, chart) => {
         .attr(chart.swap ? "y" : "x", d => x(d))
         .attr(chart.swap ? "x" : "y", d => y(chart.y(d)) + textSize)
         .attr("dy", "0.32em")
-        .text(d => chart.format ? chart.format(chart.y(d)) : chart.y(d));
+        .text(d => chart.yFormat ? chart.yFormat(chart.y(d)) : chart.y(d));
     bar.append("g")
         .attr("clip-path", d =>
             `path('${makeRect(x(d), y(chart.y(d)) + 2 * textSize)}') view-box`
@@ -1275,7 +1324,9 @@ const createCharts = () => {
         .append("div")
         .classed("dropdown-content", true)
         .selectAll("a")
-        .data(chartSources)
+        .data(d3.filter(chartSources,
+            chart => chart.enabled ? chart.enabled(): true
+        ))
         .join("a")
         .attr("href", d => `#/charts/${d.id}`)
         .classed("dropdown-item", true)
