@@ -1278,6 +1278,7 @@ const createChart = (column, chart) => {
         .append("text")
         .attr(chart.swap ? "y" : "x", d => x(d))
         .attr(chart.swap ? "x" : "y", d => (y(chart.y(d)) + min) / 2)
+        .attr("dx", textSize)
         .attr("dy", "0.32em")
         .attr("font-size", 10)
         .attr("transform", d => chart.swap ? null :
