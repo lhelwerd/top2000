@@ -1137,6 +1137,9 @@ const createChart = (column, chart) => {
     const min = y(yMin);
 
     column.html("");
+    column.append("h1")
+        .classed("title is-4 has-text-centered", true)
+        .text(chart.name);
     const svg = column.append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -1173,25 +1176,31 @@ const createCharts = () => {
         .attr("id", "current")
         .classed("section", true)
         .append("div")
-        .classed("columns is-multiline", true);
+        .classed("columns is-multiline is-centered", true);
     const dropdownColumn = columns.append("div")
         .classed("column is-narrow", true);
     const chartColumn = columns.append("div")
-        .classed("column", true);
+        .classed("column is-narrow chart", true);
     createChart(chartColumn, chartSources[0]);
 
     const dropdown = dropdownColumn.append("div")
-        .classed("dropdown is-hoverable is-right", true);
-    dropdown.append("div")
+        .classed("dropdown is-hoverable-widescreen is-right-widescreen", true);
+    const button = dropdown.append("div")
         .classed("dropdown-trigger", true)
         .append("button")
         .classed("button", true)
         .attr("aria-haspopup", true)
-        .attr("aria-controls", "chart-dropdown")
-        .on("click", () => {
-            dropdown.classed("is-active", !dropdown.classed("is-active"));
-        })
-        .text("Charts\u2007\u25be");
+        .attr("aria-controls", "chart-dropdown");
+    button.append("span")
+        .text("Charts");
+    const buttonIcon = button.append("span")
+        .classed("icon", true)
+        .text("\u25b8");
+    button.on("click", () => {
+        const active = dropdown.classed("is-active");
+        buttonIcon.text(active ? "\u25b8" : "\u25be");
+        dropdown.classed("is-active", !active);
+    });
     const items = dropdown.append("div")
         .classed("dropdown-menu", true)
         .attr("id", "chart-dropdown")
@@ -1206,6 +1215,7 @@ const createCharts = () => {
         .on("click", function(event, chart) {
             items.classed("is-active", d => d === chart);
             dropdown.classed("is-active", false);
+            buttonIcon.text("\u25b8");
             createChart(chartColumn, chart);
         })
         .text(d => d.name);

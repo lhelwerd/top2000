@@ -62,6 +62,21 @@ $ultrahd: 1744px;
         display: none !important;
     }
 }
+.dropdown {
+    @include mixins.widescreen {
+        &.is-hoverable-widescreen:hover {
+            .dropdown-menu {
+                display: block;
+            }
+        }
+        &.is-right-widescreen {
+            .dropdown-menu {
+                left: auto;
+                right: 0;
+            }
+        }
+    }
+}
 
 @keyframes marquee {
     0%   { transform: translate(0, 0); }
@@ -154,6 +169,11 @@ table.main {
             }
         }
     }
+}
+#charts {
+   .chart {
+       overflow: auto;
+   }
 }
 #search {
     .modal-content {
