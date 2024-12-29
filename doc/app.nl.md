@@ -116,4 +116,12 @@ verschillen tussen de twee manieren:
 
 ## Statistieken
 
-Volgt binnenkort.
+Via de tab met grafieken van statistieken zijn enkele samenvattende rapporten 
+te vinden over bepaalde trends binnen de lijst, zoals artiesten met de meeste 
+nummers of een uiteenzetting van nummers per tijdsperiode. Met behulp van het 
+keuzemenu kan een andere grafiek worden gekozen.
+
+In de staafdiagrammen zijn verschillende informatiepunten te zien, afhankelijk 
+van de grafiek. Totaal aantallen, extrema of andere punten staan aan het eind 
+van elke staaf beschreven. Artiesten, nummers of andere onderscheidende 
+factoren staan ook op de staaf.
