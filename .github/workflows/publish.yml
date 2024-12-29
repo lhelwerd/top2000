@@ -26,6 +26,10 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - name: Collect data
         run: python -m top2000 wiki json
+      - name: Validate schema
+        run: |
+          pip install check-jsonschema==0.30.0
+          ./validate_schema.sh
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -39,7 +43,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: top2000-app
-          path: dist
+          path: |
+            dist
+            schema
   publish:
     if: ${{ github.event_name == 'push' }}
     concurrency:
