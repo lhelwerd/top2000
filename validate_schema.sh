@@ -24,3 +24,9 @@ if ls output-*.json 1>/dev/null 2>&1; then
 	echo "Validating JSON output format dumps: output-*.json"
 	check-jsonschema --schemafile schema/dump.json output-*.json
 fi
+
+echo "Validating package.json"
+check-jsonschema --schemafile https://json.schemastore.org/package.json package.json
+
+echo "Validating .jshintrc"
+check-jsonschema --schemafile https://json.schemastore.org/jshintrc.json .jshintrc
