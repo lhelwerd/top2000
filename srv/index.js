@@ -1431,8 +1431,11 @@ const createInfo = () => {
             },
             {
                 icon: `${String.fromCodePoint(0x1f9d1)}\u200d${String.fromCodePoint(0x1f4bb)}`,
-                text: packageInfo.author.split(" <", 1)[0],
-                url: new URL(".", packageInfo.homepage)
+                text: (typeof packageInfo.author === "string" ?
+                    packageInfo.author : packageInfo.author.name
+                ).split(" <", 1)[0],
+                url: typeof packageInfo.author === "string" ?
+                    new URL(".", packageInfo.homepage) : packageInfo.author.url
             },
             {
                 icon: String.fromCodePoint(0x1f47e),
