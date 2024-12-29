@@ -43,9 +43,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: top2000-app
-          path: |
-            dist
-            schema
+          path: dist
   publish:
     if: ${{ github.event_name == 'push' }}
     concurrency:

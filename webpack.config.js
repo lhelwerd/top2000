@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const {WebpackManifestPlugin} = require('webpack-manifest-plugin');
@@ -90,6 +91,13 @@ module.exports = {
         maxEntrypointSize: 1.75 * 1024 * 1024
     },
     plugins: [
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: "schema/*.json"
+                }
+            ]
+        }),
         new HtmlWebpackPlugin({
             cache: !singleFile,
             inject: !singleFile,
