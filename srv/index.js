@@ -72,33 +72,6 @@ let currentTimerParams = null;
 let startTimer = null;
 let startPos = null;
 
-const tabs = new Map();
-if (data.old_data_available) {
-    for (let year = data.first_year; year < data.year; year++) {
-        tabs.set(year, {
-            icon: String.fromCodePoint(0x1f519),
-            text: `${year}`,
-            container: ".main",
-            classed: year < data.year - 1 ? "is-hidden-mobile" : ""
-        });
-    }
-}
-tabs.set(data.year, {
-    icon: String.fromCodePoint(0x1f534),
-    text: `${data.year}`,
-    container: ".main"
-});
-tabs.set("charts", {
-    icon: String.fromCodePoint(0x1f4ca),
-    text: "Charts",
-    container: "#charts"
-});
-tabs.set("info", {
-    icon: "\u2139\ufe0f",
-    text: "Info",
-    container: "#info"
-});
-
 const rowsSelector = "table.main > tbody > tr:not(.info)";
 const container = d3.select("body")
     .append("div")
@@ -135,21 +108,56 @@ const scrollPositionRow = (d) => {
     }
     return null;
 };
+const scrollYearHash = (d, hash) => {
+    scrollPositionRow(Number(hash.startsWith(`#/${d}/`) ?
+        hash.slice(`#/${d}/`.length) : nextPage.datum()
+    ));
+};
+
+const tabs = new Map();
+if (data.old_data_available) {
+    for (let year = data.first_year; year < data.year; year++) {
+        tabs.set(year, {
+            icon: String.fromCodePoint(0x1f519),
+            text: `${year}`,
+            container: ".main",
+            scroll: scrollYearHash,
+            classed: year < data.year - 1 ? "is-hidden-mobile" : ""
+        });
+    }
+}
+tabs.set(data.year, {
+    icon: String.fromCodePoint(0x1f534),
+    text: `${data.year}`,
+    container: ".main",
+    scroll: scrollYearHash
+});
+tabs.set("charts", {
+    icon: String.fromCodePoint(0x1f4ca),
+    text: "Charts",
+    container: "#charts",
+    scroll: (d, hash) => selectChart(hash.startsWith(`#/${d}/`) ?
+        hash.slice(`#/${d}/`.length) : chartSources[0].id
+    )
+});
+tabs.set("info", {
+    icon: "\u2139\ufe0f",
+    text: "Info",
+    container: "#info"
+});
+
 const fixStickyScroll = () => {
     const stickyHeight = head.node().scrollHeight +
         container.select("table.main > thead").node().scrollHeight;
     document.documentElement.scrollBy(0, -stickyHeight);
 };
-const fixAnchorScroll = (content, hash, selector=null) => {
+const fixAnchorScroll = (content, d, hash, selector=null) => {
     if (selector === null) {
         if (content.empty()) {
             return false;
         }
-        const prefix = `#/${data.year}`;
-        if (hash.startsWith(prefix)) {
-            scrollPositionRow(Number(hash.startsWith(`${prefix}/`) ?
-                hash.slice(`${prefix}/`.length) : nextPage.datum()
-            ));
+        if (hash.startsWith(`#/${d}`) && tabs.get(d).scroll) {
+            tabs.get(d).scroll(d, hash);
         }
         else if (hash.startsWith("#/")) {
             content.node().scrollIntoView(true);
@@ -172,7 +180,7 @@ const updateActiveTab = (tab) => {
             const active = hash.startsWith("#/") ? // Tab datum
                 hash.startsWith(`#/${d}`) :
                 /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
-                fixAnchorScroll(content, hash, hash) :
+                fixAnchorScroll(content, d, hash, hash) :
                 d === data.year; // Fallback: current year list
             content.classed("is-hidden", !active)
                 .classed("is-overlay", active && d !== data.year);
@@ -180,7 +188,7 @@ const updateActiveTab = (tab) => {
         })
         .each(d => {
             const content = container.select(tabs.get(d).container);
-            fixAnchorScroll(content, document.location.hash);
+            fixAnchorScroll(content, d, document.location.hash);
         });
 };
 const tabItems = head.append("div")
@@ -1027,6 +1035,7 @@ const performSearch = (results, text, searchOptions, handleClick) => {
 
 const chartSources = [
     {
+        id: "max_artist",
         name: "Artiesten met meeste nummers",
         type: "bar",
         source: () => d3.sort(Object.keys(data.artists),
@@ -1044,6 +1053,7 @@ const chartSources = [
         }
     },
     {
+        id: "new",
         name: "Hoogste binnenkomers",
         type: "bar",
         swap: true,
@@ -1061,6 +1071,7 @@ const chartSources = [
         x: d => formatTrack(d)
     },
     {
+        id: "rise",
         name: "Sterkste stijgers",
         type: "bar",
         swap: true,
@@ -1074,6 +1085,7 @@ const chartSources = [
         format: y => `\u25b2${y}`
     },
     {
+        id: "fall",
         name: "Sterkste dalers",
         type: "bar",
         swap: true,
@@ -1087,6 +1099,7 @@ const chartSources = [
         format: y => `\u25bc${y}`
     },
     {
+        id: "return",
         name: "Terugkerende nummers",
         type: "bar",
         swap: true,
@@ -1104,6 +1117,7 @@ const chartSources = [
         x: t => formatTrack(t[1], t[0])
     },
     {
+        id: "old",
         name: "Oudste nummers",
         type: "bar",
         swap: true,
@@ -1116,6 +1130,7 @@ const chartSources = [
         x: p => formatTrack(p[1], p[0])
     },
     {
+        id: "decade",
         name: "Nummers per decennium",
         type: "hist",
         source: () => d3.map(data.tracks, track => track.year),
@@ -1234,7 +1249,6 @@ const createCharts = () => {
         .classed("column is-narrow", true);
     const chartColumn = columns.append("div")
         .classed("column is-narrow chart", true);
-    createChart(chartColumn, chartSources[0]);
 
     const dropdown = dropdownColumn.append("div")
         .classed("dropdown is-hoverable-widescreen is-right-widescreen", true);
@@ -1263,15 +1277,25 @@ const createCharts = () => {
         .selectAll("a")
         .data(chartSources)
         .join("a")
+        .attr("href", d => `#/charts/${d.id}`)
         .classed("dropdown-item", true)
         .classed("is-active", (d, i) => i === 0)
         .on("click", function(event, chart) {
-            items.classed("is-active", d => d === chart);
             dropdown.classed("is-active", false);
             buttonIcon.text("\u25b8");
-            createChart(chartColumn, chart);
         })
         .text(d => d.name);
+};
+const selectChart = (id) => {
+    const columns = container.select("#charts .columns");
+    columns.select("#chart-dropdown")
+        .selectAll(".dropdown-item")
+        .classed("is-active", d => {
+            if (d.id === id) {
+                createChart(columns.select(".column.chart"), d);
+            }
+            return d.id === id;
+        });
 };
 
 const createInfo = () => {
