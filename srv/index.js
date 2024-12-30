@@ -1236,6 +1236,25 @@ const chartSources = [
         xFormat: bin => bin.x0
     },
     {
+        id: "start",
+        name: "Nummers per binnenkomst",
+        type: "hist",
+        source: () => d3.map(data.tracks, track => {
+            let startYear = currentYear;
+            for (let year = data.first_year; year < currentYear; year++) {
+                if (year in track && track[year] <= start) {
+                    startYear = year;
+                    break;
+                }
+            }
+            return startYear;
+        }),
+        binCount: currentYear - data.first_year + 1,
+        yScale: d3.scaleLog,
+        min: x => 1,
+        x: bin => bin.x0
+    },
+    {
         id: "decade",
         name: "Nummers per decennium",
         type: "hist",
@@ -1265,8 +1284,8 @@ const createChart = (column, chart) => {
                 )
             )(values);
         };
-        chart.min = x => 0;
-        chart.max = x => d3.max(x.domain(), bin => bin.length);
+        chart.min = chart.min || (x => 0);
+        chart.max = chart.max || (x => d3.max(x.domain(), bin => bin.length));
         chart.y = chart.y || (bin => bin.length);
         chart.x = chart.x || (bin => `${bin.x0}\u2014${bin.x1}`);
         chart.count = chart.count || chart.binCount;
@@ -1279,14 +1298,14 @@ const createChart = (column, chart) => {
         .domain(source().slice(0, count))
         .range(chart.swap ?
             d3.range(vExtent[1] + barWidth / 2, vExtent[0] + barWidth / 2,
-                (height - marginLeft - marginRight) / count
+                (height - marginTop - marginBottom) / count
             ) :
-            d3.range(hExtent[0] + barWidth / 2, hExtent[1] - barWidth / 2,
+            d3.range(hExtent[0] + barWidth / 2, hExtent[1] + barWidth / 2,
                 (width - marginLeft - marginRight) / count
             )
         );
     const yMin = chart.min(x);
-    const y = d3.scaleLinear()
+    const y = (chart.yScale || d3.scaleLinear)()
         .domain([yMin, chart.max(x)])
         .range(chart.swap ? hExtent : vExtent);
     const min = y(yMin);
