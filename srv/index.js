@@ -1067,7 +1067,8 @@ const chartSources = [
                 return track.artist;
             }
             return d;
-        }
+        },
+        yFormat: y => y
     },
     {
         id: "new",
@@ -1086,7 +1087,8 @@ const chartSources = [
         min: x => front,
         max: x => x.domain()[0],
         y: d => d,
-        x: d => formatTrack(d)
+        x: d => formatTrack(d),
+        yFormat: y => y
     },
     {
         id: "rise",
@@ -1219,7 +1221,8 @@ const chartSources = [
         source: () => d3.map(data.tracks,
             track => new Date(track.timestamp).getDate()
         ),
-        binCount: 7
+        binCount: 7,
+        x: bin => `${bin.x0}\u2014${bin.x1 > 31 ? 1 : bin.x1}`
     },
     {
         id: "hourly_tracks",
