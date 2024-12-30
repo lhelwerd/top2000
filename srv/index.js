@@ -1212,11 +1212,32 @@ const chartSources = [
         xFormat: (d, i) => i + 1
     },
     {
+        id: "daily_tracks",
+        name: "Nummers per dag",
+        type: "hist",
+        enabled: () => data.tracks[0].timestamp,
+        source: () => d3.map(data.tracks,
+            track => new Date(track.timestamp).getDate()
+        ),
+        binCount: 7
+    },
+    {
+        id: "hourly_tracks",
+        name: "Nummers per uur",
+        type: "hist",
+        enabled: () => data.tracks[0].timestamp,
+        source: () => d3.map(data.tracks,
+            track => new Date(track.timestamp).getHours()
+        ),
+        binCount: 24,
+        xFormat: bin => bin.x0
+    },
+    {
         id: "decade",
         name: "Nummers per decennium",
         type: "hist",
         source: () => d3.map(data.tracks, track => track.year),
-        bin: 10,
+        binSize: 10,
     }
 ];
 const createChart = (column, chart) => {
@@ -1235,26 +1256,30 @@ const createChart = (column, chart) => {
     if (chart.type === "hist") {
         source = () => {
             const values = chart.source();
-            return d3.bin().thresholds(
-                d3.range(...d3.nice(...d3.extent(values), chart.bin), chart.bin)
+            return d3.bin().thresholds(chart.binCount ? chart.binCount :
+                d3.range(...d3.nice(...d3.extent(values), chart.binSize),
+                    chart.binSize
+                )
             )(values);
         };
         chart.min = x => 0;
         chart.max = x => d3.max(x.domain(), bin => bin.length);
-        chart.y = bin => bin.length;
-        chart.x = bin => `${bin.x0}\u2014${bin.x1}`;
+        chart.y = chart.y || (bin => bin.length);
+        chart.x = chart.x || (bin => `${bin.x0}\u2014${bin.x1}`);
+        chart.count = chart.count || chart.binCount;
     }
 
     const hExtent = [marginLeft, width - marginRight];
     const vExtent = [height - marginBottom, marginTop];
+    const count = chart.count || 10;
     const x = d3.scaleOrdinal()
-        .domain(source().slice(0, 10))
+        .domain(source().slice(0, count))
         .range(chart.swap ?
             d3.range(vExtent[1] + barWidth / 2, vExtent[0] + barWidth / 2,
-                (height - barWidth) / 10
+                (height - marginLeft - marginRight) / count
             ) :
             d3.range(hExtent[0] + barWidth / 2, hExtent[1] - barWidth / 2,
-                (width - barWidth) / 10
+                (width - marginLeft - marginRight) / count
             )
         );
     const yMin = chart.min(x);
@@ -1273,11 +1298,14 @@ const createChart = (column, chart) => {
     svg.append("g")
         .attr("transform", `translate(0,${height - marginBottom})`)
         .call(d3.axisBottom(chart.swap ? y : x)
-            .tickFormat(chart.swap ? chart.yFormat : chart.x));
+            .tickFormat(chart.swap ? chart.yFormat :
+                chart.xFormat ? chart.xFormat : chart.x
+            ));
     svg.append("g")
         .attr("transform", `translate(${marginLeft},0)`)
         .call(d3.axisLeft(chart.swap ? x : y)
-            .tickFormat((d, i) => chart.xFormat ? chart.xFormat(d, i) :
+            .tickFormat((d, i) => chart.swap && chart.xFormat ?
+                chart.xFormat(d, i) :
                 Number.isInteger(d) ? d : i + 1
             ));
     const bar = svg.selectAll("g.bars")
