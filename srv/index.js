@@ -31,8 +31,8 @@ const front = data.positions[data.positions.length - 1];
 const end = data.positions[0];
 const start = data.reverse ? end : front;
 
-const findTrack = (d) => {
-    return data.tracks[data.reverse ? data.tracks.length - d : d - 1];
+const findTrack = (d, field="tracks") => {
+    return data[field][data.reverse ? data.tracks.length - d : d - 1];
 };
 const formatTrack = (position, d=null) => {
     if (d === null) {
@@ -1034,6 +1034,70 @@ const performSearch = (results, text, searchOptions, handleClick) => {
         );
 };
 
+const getArtistName = (d) => {
+    const filterName = (artist) => artist.toLowerCase() === d;
+    for (let i = 0; i < data.artists[d].length; i++) {
+        const track = findTrack(data.artists[d][i]);
+        if (filterName(track.artist)) {
+            return track.artist;
+        }
+        if (data.artist_links) {
+            const names = d3.filter(
+                Object.values(findTrack(data.artists[d][i], "artist_links")),
+                filterName
+            );
+            if (names[0]) {
+                return names[0];
+            }
+        }
+    }
+    return d;
+};
+const isOverlap = (chart, key) => chart.isSubsetOf(new Set(data.artists[key]));
+const isCollab = (d) => {
+    const chart = new Set(data.artists[d]);
+    return d3.some(data.artists[d], pos => {
+        if (d3.some(findTrack(pos, "keys"),
+            key => key[0] !== d && isOverlap(chart, key[0])
+        )) {
+            return true;
+        }
+        const track = findTrack(pos);
+        if (track.artist_keys) {
+            if (track.artist_keys.length > 1) {
+                return true;
+            }
+            return d3.some(Object.values(track.artist_keys),
+                artist => artist.toLowerCase() !== d &&
+                    artist.toLowerCase() in data.artists &&
+                    isOverlap(chart, artist.toLowerCase())
+            );
+        }
+        return false;
+    });
+};
+const countCollabs = (d) => {
+    const chart = new Set(data.artists[d]);
+    const collabs = new Set(d3.merge(d3.map(data.artists[d], pos => {
+        const track = findTrack(pos);
+        const charts = new Map();
+        d3.map(findTrack(pos, "keys"), key => {
+            if (!isOverlap(chart, key[0])) {
+                charts.set(data.artists[key[0]].toString(), key[0]);
+            }
+        });
+        if (track.artist_keys) {
+            d3.map(Object.values(track.artist_keys), artist => {
+                const key = artist.toLowerCase();
+                if (key in data.artists && !isOverlap(chart, key)) {
+                    charts.set(data.artists[key].toString(), key);
+                }
+            });
+        }
+        return charts.values();
+    })));
+    return collabs.size;
+};
 const getTitleLength = (d) => d.title.replaceAll(/ *\([^)]+\) */g, "").length;
 const getTrackTime = (i) => {
     const next = i + direction;
@@ -1061,14 +1125,33 @@ const chartSources = [
         min: x => 0,
         max: x => d3.max(Object.values(data.artists), chart => chart.length),
         y: d => data.artists[d].length,
-        x: d => {
-            const track = findTrack(data.artists[d][0]);
-            if (track.artist.toLowerCase() === d) {
-                return track.artist;
-            }
-            return d;
-        },
+        x: d => getArtistName(d),
         yFormat: y => y
+    },
+    {
+        id: "artist_collab",
+        name: "Meeste samenwerkingen",
+        type: "bar",
+        source: () => d3.sort(Object.keys(data.artists),
+            d => -countCollabs(d)
+        ),
+        min: x => 0,
+        max: x => countCollabs(x.domain()[0]),
+        y: d => countCollabs(d),
+        x: d => getArtistName(d)
+    },
+    {
+        id: "artist_name",
+        name: "Langste artiestennamen",
+        type: "bar",
+        swap: true,
+        source: () => d3.sort(Object.keys(data.artists),
+            d => isCollab(d) ? 0 : -d.length
+        ),
+        min: x => 0,
+        max: x => x.domain()[0].length,
+        y: d => d.length,
+        x: d => getArtistName(d)
     },
     {
         type: "divider"
