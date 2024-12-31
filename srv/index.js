@@ -227,8 +227,12 @@ const nextPage = nav.append("a")
 const updatePagination = (current=null) => {
     const pages = d3.ticks(...d3.nice(end, front, 20), 20);
     if (current) {
-        const currentIndex = d3.bisectRight(pages, current);
-        if (pages[currentIndex-1] !== current) {
+        const currentIndex = data.reverse ? d3.bisectLeft(pages, current) :
+            d3.bisectRight(pages, current);
+        const page = Math.max(Math.min(end, front),
+            pages[currentIndex + direction]
+        );
+        if (page !== current) {
             pages.splice(currentIndex, 0, current);
         }
         const d = findTrack(current);
@@ -301,6 +305,9 @@ const setCurrent = (d, i, nodes) => {
     return isCurrent;
 };
 const setNextCurrent = (next, i, nodes, now) => {
+    if (!(next in data.tracks)) {
+        return;
+    }
     currentTimerParams = [next, i];
     currentTimer = d3.timeout(() => {
         const d = d3.select(nodes[i]).datum();
