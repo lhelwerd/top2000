@@ -279,8 +279,10 @@ const setCurrent = (d, i, nodes) => {
     const now = getCurrentDate();
     const previous = i - direction;
     const next = i + direction;
-    const isCurrent = d.timestamp <= now &&
-        (!(next in data.tracks) || data.tracks[next].timestamp > now);
+    const isCurrent = d.timestamp <= now && (
+        next in data.tracks ? data.tracks[next].timestamp > now :
+        new Date(currentYear + 1, 0) > now
+    );
     d3.select(nodes[i]).classed("is-selected", isCurrent);
     if (isCurrent) {
         updatePagination(data.positions[i]);
