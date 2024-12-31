@@ -1071,6 +1071,9 @@ const chartSources = [
         yFormat: y => y
     },
     {
+        type: "divider"
+    },
+    {
         id: "new",
         name: "Hoogste binnenkomers",
         type: "bar",
@@ -1155,6 +1158,9 @@ const chartSources = [
         yFormat: y => y
     },
     {
+        type: "divider"
+    },
+    {
         id: "old",
         name: "Oudste nummers",
         type: "bar",
@@ -1185,6 +1191,9 @@ const chartSources = [
         yFormat: y => y
     },
     {
+        type: "divider"
+    },
+    {
         id: "long_title",
         name: "Langste titels",
         type: "bar",
@@ -1196,6 +1205,10 @@ const chartSources = [
         max: x => getTitleLength(x.domain()[0][1]),
         y: p => getTitleLength(p[1]),
         x: p => formatTrack(...p)
+    },
+    {
+        type: "divider",
+        enabled: () => data.tracks[0].timestamp
     },
     {
         id: "long_track",
@@ -1234,6 +1247,9 @@ const chartSources = [
         ),
         binCount: 24,
         xFormat: bin => bin.x0
+    },
+    {
+        type: "divider"
     },
     {
         id: "start",
@@ -1409,19 +1425,26 @@ const createCharts = () => {
         .attr("role", "menu")
         .append("div")
         .classed("dropdown-content", true)
-        .selectAll("a")
+        .selectAll("a, hr")
         .data(d3.filter(chartSources,
-            chart => chart.enabled ? chart.enabled(): true
+            chart => chart.enabled ? chart.enabled() : true
         ))
-        .join("a")
-        .attr("href", d => `#/charts/${d.id}`)
-        .classed("dropdown-item", true)
-        .classed("is-active", (d, i) => i === 0)
-        .on("click", function(event, chart) {
-            dropdown.classed("is-active", false);
-            buttonIcon.text("\u25b8");
-        })
-        .text(d => d.name);
+        .join(enter => enter.append(
+                d => document.createElement(d.type === "divider" ? "hr" :"a")
+            )
+            .attr("href", d => d.id ? `#/charts/${d.id}` : null)
+            .classed("dropdown-item", d => d.type !== "divider")
+            .classed("dropdown-divider", d => d.type === "divider")
+            .on("click", function(event, chart) {
+                if (chart.type === "divider") {
+                    event.stopPropagation();
+                    return;
+                }
+                dropdown.classed("is-active", false);
+                buttonIcon.text("\u25b8");
+            })
+            .text(d => d.name ? d.name : null)
+        );
 };
 const selectChart = (id) => {
     const columns = container.select("#charts .columns");
