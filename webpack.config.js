@@ -113,7 +113,8 @@ module.exports = {
                 '[name].[contenthash].css'
         }),
         new WebpackManifestPlugin({
-            filter: (file) => file.name !== "index.html"
+            filter: (file) => file.name !== "index.html" &&
+                !file.name.startsWith("schema/")
         })
     ]
 };
