@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import {sep} from "./format.js";
 
 const chartLimit = 12;
 
@@ -17,16 +18,21 @@ const symbolEmoji = [
 ];
 
 export class Info {
-    constructor(locale, data, state, pos, cell, d) {
+    constructor(locale, data, state, scroll, search, pos, cell, d) {
         this.locale = locale;
         this.data = data;
         this.state = state;
+        this.scroll = scroll;
+        this.search = search;
+
         this.pos = pos;
         this.cell = cell;
         this.track = d;
+
         this.chartLength = 0;
         this.artists = new Set();
         this.artistPositions = new Set();
+
         this.setupPositions();
     }
 
@@ -101,8 +107,8 @@ export class Info {
 
     updateProgressionLines() {
         const maxPosition = d3.max(this.positions.values(), seq => d3.max(seq));
-        const yDomain = this.data.reverse ? [front, Math.max(maxPosition, end)] :
-            [Math.max(maxPosition, front), end];
+        const yDomain = this.data.reverse ? [this.data.front, Math.max(maxPosition, this.data.end)] :
+            [Math.max(maxPosition, this.data.front), this.data.end];
         this.y.domain(yDomain);
         const yTicks = this.y.ticks(10);
         yTicks.push(yDomain[1]);
@@ -245,7 +251,7 @@ export class Info {
         }
         if (isLink) {
             artistTitle.append("a")
-                .attr("href", getWikiUrl(artist[0]))
+                .attr("href", this.data.getWikiUrl(artist[0]))
                 .attr("title", artist[0])
                 .attr("target", "_blank")
                 .text(artist[1]);
@@ -307,11 +313,12 @@ export class Info {
                         .append("a")
                         .attr("href", `#/${this.data.year}/${d}`)
                         .on("click", (event) => {
-                            const posNode = scrollPositionRow(d);
+                            const posNode = this.scroll.scrollPositionRow(d);
                             if (posNode) {
                                 // Expand info
                                 toggleInfoCell(this.locale, this.data,
-                                    this.state, posNode, null, false, position
+                                    this.state, this.scroll, this.search,
+                                    posNode, null, false, position
                                 );
                                 this.state.autoscroll = false;
                                 event.stopPropagation();
@@ -368,7 +375,7 @@ export class Info {
             return this.data.reverse ? "\u2935\ufe0f" : "\u2934\ufe0f";
         }
         if (d > position) {
-            return this.ddata.reverse ? "\u2934\ufe0f" : "\u2935\ufe0f";
+            return this.data.reverse ? "\u2934\ufe0f" : "\u2935\ufe0f";
         }
         return symbolEmoji[1];
     }
@@ -446,7 +453,7 @@ export class Info {
             else {
                 addArtistSearch(r.id);
             }
-            performSearch(results, text, searchOptions, handleClick);
+            this.search.performSearch(results, text, searchOptions, handleClick);
         };
 
         if (chart.length) {
@@ -454,11 +461,11 @@ export class Info {
             fillSearchChart();
         }
 
-        createSearchBox(column, searchOptions, handleClick);
+        this.search.createBox(column, searchOptions, handleClick);
     }
 }
 
-export const toggleInfoCell = (locale, data, state, node, d=null, toggle=true, other=null) => {
+export const toggleInfoCell = (locale, data, state, scroll, search, node, d=null, toggle=true, other=null) => {
     const next = d3.select(node.nextSibling);
     if (!next.empty() && next.classed("info")) {
         if (toggle) {
@@ -481,11 +488,11 @@ export const toggleInfoCell = (locale, data, state, node, d=null, toggle=true, o
     const cell = d3.select(node.parentNode).insert("tr", () => node.nextSibling)
         .classed("info", true)
         .append("td")
-        .attr("colspan", columns.length + 1)
+        .attr("colspan", data.columns.length + 1)
         .append("div")
         .classed("columns is-multiline is-centered is-vcentered", true);
 
-    const info = new Info(locale, data, state, pos, cell, d);
+    const info = new Info(locale, data, state, scroll, search, pos, cell, d);
     if (other) {
         info.addPositions(other);
     }

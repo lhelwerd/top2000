@@ -1,9 +1,14 @@
 import * as d3 from "d3";
 
-export class Charts {
-    constructor(locale, data) {
+const stroke = d3.scaleOrdinal(d3.schemeTableau10);
+const cycle = stroke.range().length;
+
+export default class Charts {
+    constructor(locale, data, format) {
         this.locale = locale;
         this.data = data;
+        this.format = format;
+
         this.sources = [
             {
                 id: "max_artist",
@@ -63,7 +68,7 @@ export class Charts {
                 min: _ => data.front,
                 max: x => x.domain()[0],
                 y: d => d,
-                x: d => formatTrack(d),
+                x: d => format.track(d),
                 yFormat: y => y
             },
             {
@@ -78,7 +83,7 @@ export class Charts {
                 min: _ => 0,
                 max: x => x.domain()[0][1][data.year - 1] - x.domain()[0][0],
                 y: p => p[1][data.year - 1] - p[0],
-                x: p => formatTrack(...p),
+                x: p => format.track(...p),
                 yFormat: y => `\u25b2${y}`
             },
             {
@@ -86,7 +91,7 @@ export class Charts {
                 name: "Doorbraak uit De Extra 500",
                 type: "bar",
                 swap: true,
-                enabled: () => d3.some(data.tracks, d => d[data.year - 1] > datastart),
+                enabled: () => d3.some(data.tracks, d => d[data.year - 1] > data.start),
                 source: () => d3.sort(d3.zip(data.positions, data.tracks),
                     p => p[1][data.year - 1] > data.start ?
                         p[0] - p[1][data.year - 1] : 0
@@ -94,7 +99,7 @@ export class Charts {
                 min: _ => 0,
                 max: x => x.domain()[0][1][data.year - 1] - x.domain()[0][0],
                 y: p => p[1][data.year - 1] - p[0],
-                x: p => formatTrack(...p),
+                x: p => format.track(...p),
                 yFormat: y => `\u25b2${y}`
             },
             {
@@ -108,7 +113,7 @@ export class Charts {
                 min: _ => 0,
                 max: x => x.domain()[0][0] - x.domain()[0][1][data.year - 1],
                 y: p => p[0] - p[1][data.year - 1],
-                x: p => formatTrack(...p),
+                x: p => format.track(...p),
                 yFormat: y => `\u25bc${y}`
             },
             {
@@ -127,7 +132,7 @@ export class Charts {
                 min: _ => data.year,
                 max: x => data.year + x.domain()[0][2],
                 y: t => data.year + t[2],
-                x: t => formatTrack(t[0], t[1]),
+                x: t => format.track(t[0], t[1]),
                 yFormat: y => y
             },
             {
@@ -144,7 +149,7 @@ export class Charts {
                 min: _ => data.year,
                 max: x => x.domain()[0][1].year,
                 y: p => p[1].year,
-                x: p => formatTrack(...p),
+                x: p => format.track(...p),
                 yFormat: y => y
             },
             {
@@ -160,7 +165,7 @@ export class Charts {
                 min: _ => data.year,
                 max: x => x.domain()[0][1].year,
                 y: p => p[1].year,
-                x: p => formatTrack(...p),
+                x: p => format.track(...p),
                 yFormat: y => y
             },
             {
@@ -177,7 +182,7 @@ export class Charts {
                 min: _ => 0,
                 max: x => this.getTitleLength(x.domain()[0][1]),
                 y: p => this.getTitleLength(p[1]),
-                x: p => formatTrack(...p)
+                x: p => format.track(...p)
             },
             {
                 type: "divider",
@@ -195,7 +200,7 @@ export class Charts {
                 min: _ => 0,
                 max: x => this.getTrackTime(x.domain()[0]),
                 y: i => this.getTrackTime(i),
-                x: i => formatTrack(data.positions[i], data.tracks[i]),
+                x: i => format.track(data.positions[i], data.tracks[i]),
                 yFormat: locale.time.utcFormat("%M:%S"),
                 xFormat: (_, i) => i + 1
             },
@@ -274,7 +279,7 @@ export class Charts {
     }
 
     isOverlap(chart, key) {
-        return chart.isSubsetOf(new Set(data.artists[key]));
+        return chart.isSubsetOf(new Set(this.data.artists[key]));
     }
     
     isCollab(d) {
@@ -454,7 +459,8 @@ export class Charts {
     }
 
     create() {
-        const columns = container.append("div")
+        const columns = d3.select("#container")
+            .append("div")
             .attr("id", "charts")
             .classed("container is-overlay is-hidden", true)
             .append("div")
@@ -514,7 +520,8 @@ export class Charts {
     }
 
     select(id) {
-        const columns = container.select("#charts .columns");
+        const columns = d3.select("#container")
+            .select("#charts .columns");
         columns.select("#chart-dropdown")
             .selectAll(".dropdown-item")
             .classed("is-active", d => {

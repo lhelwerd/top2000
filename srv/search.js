@@ -1,14 +1,15 @@
 import MiniSearch from "minisearch";
 import * as d3 from "d3";
-import toggleInfoCell from "./info.js";
+import {toggleInfoCell} from "./info.js";
 
 const searchColumns = ["position", "artist", "title"];
 
-export class SearchModal {
-    constructor(locale, data, state) {
+export default class SearchModal {
+    constructor(locale, data, state, scroll) {
         this.locale = locale;
         this.data = data;
-        this.state = state
+        this.state = state;
+        this.scroll = scroll;
 
         this.search = new MiniSearch({
             fields: ['position', 'artist', 'title'],
@@ -24,7 +25,7 @@ export class SearchModal {
                     return Number.isInteger(i) ? this.data.tracks[i].title : "";
                 }
                 return Number.isInteger(i) ? this.data.tracks[i][fieldName] :
-                    findTrack(this.data.artists[i][0])[fieldName];
+                    this.data.findTrack(this.data.artists[i][0])[fieldName];
             }
         });
         for (const [key, value] of Object.entries(this.data)) {
@@ -57,11 +58,11 @@ export class SearchModal {
             fuzzy: 0.2,
             prefix: true
         }, (r) => {
-            const posNode = scrollPositionRow(this.data.positions[r.id]);
+            const posNode = this.scroll.scrollPositionRow(this.data.positions[r.id]);
             if (posNode) {
                 // Expand info
-                toggleInfoCell(this.locale, this.data, this.state, posNode,
-                    null, false
+                toggleInfoCell(this.locale, this.data, this.state, this.scroll,
+                    this, posNode, null, false
                 );
                 this.state.autoscroll = false;
                 modal.classed("is-active", false);

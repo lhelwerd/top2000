@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-export class Locale {
+export default class Locale {
     constructor() {
         this.time = d3.timeFormatLocale({
             dateTime: "%H:%M %d-%m-%Y",

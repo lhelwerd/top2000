@@ -1,6 +1,6 @@
-export class Data {
+export default class Data {
     constructor(data) {
-        Object.setPrototypeOf(this, data);
+        Object.assign(this, data);
         this.direction = this.reverse ? 1 : -1;
         this.front = this.positions[this.positions.length - 1];
         this.end = this.positions[0];
@@ -36,8 +36,8 @@ export class Data {
         };
     }
 
-    findTrack(pos) {
-        return this.tracks[this.reverse ? this.tracks.length - pos : pos - 1];
+    findTrack(pos, field="tracks") {
+        return this[field][this.reverse ? this.tracks.length - pos : pos - 1];
     }
 
     formatRankChange(d, position) {
