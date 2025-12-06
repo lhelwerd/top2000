@@ -12,15 +12,6 @@ import Charts from "./tabs/charts.js";
 import Info from "./tabs/info.js";
 import Table from "./tabs/table.js";
 
-d3.select("body")
-    .append("div")
-    .attr("id", "container")
-    .append("div")
-    .attr("id", "head-container")
-    .append("div")
-    .attr("id", "head")
-    .classed("columns is-multiline is-gapless is-centered", true);
-
 class State {
     constructor() {
         this.autoscroll = true;
@@ -28,26 +19,41 @@ class State {
 }
 
 const locale = new Locale();
-const data = new Data(currentData);
-const format = new Format(data);
 const state = new State();
+const defaultData = new Data(currentData);
 
-const scroll = new Scroll(locale, data, format, state);
-const search = new Search(locale, data, state, scroll);
+const load = (data=defaultData) => {
+    d3.select("#container").remove();
+    d3.select("body")
+        .append("div")
+        .attr("id", "container")
+        .append("div")
+        .attr("id", "head-container")
+        .append("div")
+        .attr("id", "head")
+        .classed("columns is-multiline is-gapless is-centered", true);
 
-const charts = new Charts(locale, data, format);
-const info = new Info(data);
-const table = new Table(locale, data, search, scroll, state);
+    const format = new Format(data);
 
-const tabs = new Tabs(data, scroll, charts);
+    const scroll = new Scroll(locale, data, format, state);
+    const search = new Search(locale, data, state, scroll);
 
-tabs.create();
-scroll.create();
+    const charts = new Charts(locale, data, format);
+    const info = new Info(data);
+    const table = new Table(locale, data, search, scroll, state);
 
-scroll.updatePagination();
-table.create();
-charts.create();
-info.create();
-search.createModal();
+    const tabs = new Tabs(data, scroll, charts);
 
-tabs.enable();
+    tabs.create();
+    scroll.create();
+
+    scroll.updatePagination();
+    table.create();
+    charts.create();
+    info.create();
+    search.createModal();
+
+    return tabs;
+};
+
+load().enable(load);

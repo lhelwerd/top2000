@@ -4,28 +4,32 @@ Base settings-based output format.
 
 from collections.abc import Callable, Sequence
 from pathlib import Path
+
 import tomllib
-from ..readers.base import Base as ReaderBase, Key, Positions, Artists
+
+from ..readers.base import Artists, Key, Positions
+from ..readers.base import Base as ReaderBase
 
 Setting = int | bool | dict[str, str]
 KeyPair = tuple[int, list[Key]]
+
 
 class Format:
     """
     Output formatter.
     """
 
-    _formats: dict[str, type['Format']] = {}
-    _keys: dict[type['Format'], str] = {}
+    _formats: dict[str, type["Format"]] = {}
+    _keys: dict[type["Format"], str] = {}
     _output_settings: dict[str, dict[str, dict[str, Setting]]] | None = None
 
     @classmethod
-    def register(cls, name: str) -> Callable[[type['Format']], type['Format']]:
+    def register(cls, name: str) -> Callable[[type["Format"]], type["Format"]]:
         """
         Register an output format by its settings key.
         """
 
-        def decorator(subclass: type['Format']) -> type['Format']:
+        def decorator(subclass: type["Format"]) -> type["Format"]:
             cls._formats[name] = subclass
             cls._keys[subclass] = name
             return subclass
@@ -33,7 +37,7 @@ class Format:
         return decorator
 
     @classmethod
-    def get_format(cls, name: str) -> type['Format']:
+    def get_format(cls, name: str) -> type["Format"]:
         """
         Retrieve a format class by its name.
         """
@@ -47,9 +51,12 @@ class Format:
                 cls._output_settings = tomllib.load(settings_file)
         return cls._output_settings.get(cls._keys[cls], {})
 
-    def __init__(self, first_year: float, current_year: float) -> None:
+    def __init__(
+        self, first_year: float, current_year: float, latest_year: float
+    ) -> None:
         self._first_year = int(first_year)
         self._current_year = int(current_year)
+        self._latest_year = int(latest_year)
         self._settings = self._load_settings()
 
         self.reset()
@@ -62,14 +69,14 @@ class Format:
 
         return tuple(self._settings.keys())
 
-    def _get_int_setting(self, output_format: str, key: str,
-                         default: int = 0) -> int:
+    def _get_int_setting(self, output_format: str, key: str, default: int = 0) -> int:
         setting = self._settings.get(output_format, {}).get(key, default)
         assert isinstance(setting, int), f"{key} must be an integer"
         return setting
 
-    def _get_bool_setting(self, output_format: str, key: str,
-                          default: bool = False) -> bool:
+    def _get_bool_setting(
+        self, output_format: str, key: str, default: bool = False
+    ) -> bool:
         setting = self._settings.get(output_format, {}).get(key, default)
         assert isinstance(setting, bool), f"{key} must be a boolean"
         return setting
@@ -89,8 +96,13 @@ class Format:
 
         self._last_position: int | None = None
 
-    def output_file(self, readers: list[ReaderBase], output_format: str,
-                    path: Path | None = None) -> bool:
+    def output_file(
+        self,
+        readers: list[ReaderBase],
+        output_format: str,
+        path: Path | None = None,
+        old_data_available: bool = False,
+    ) -> bool:
         """
         Output a formatted file based on positions and associated track data
         from potentially multiple readers.
@@ -98,10 +110,12 @@ class Format:
 
         raise NotImplementedError("Must be implemented by subclasses")
 
-    def _sort_positions(self, positions: Positions,
-                        reverse: bool = False) -> list[KeyPair]:
-        return sorted(positions.items(),
-                      key=lambda pair: -pair[0] if reverse else pair[0])
+    def _sort_positions(
+        self, positions: Positions, reverse: bool = False
+    ) -> list[KeyPair]:
+        return sorted(
+            positions.items(), key=lambda pair: -pair[0] if reverse else pair[0]
+        )
 
     def _check_position(self, position: int, reverse: bool = False) -> None:
         if self._last_position is not None:
@@ -115,25 +129,26 @@ class Format:
         self._last_position = position
 
     @staticmethod
-    def _find_artist_chart(position: int, keys: Sequence[Key],
-                           artists: Artists) -> str | None:
+    def _find_artist_chart(
+        position: int, keys: Sequence[Key], artists: Artists
+    ) -> str | None:
         max_tracks = 0
         max_artist_key = None
         max_position = 0
         for possible_key in keys:
-            #if possible_key[1] == "we all stand together":
+            # if possible_key[1] == "we all stand together":
             #    print(possible_key, max_tracks, max_artist_key,
             #          artists.get(possible_key[0]))
             if possible_key[0] not in artists:
                 continue
             num_tracks = len(artists[possible_key[0]])
             track_position = artists[possible_key[0]].index(position)
-            #if possible_key[1].startswith("als ik je weer zie"):
+            # if possible_key[1].startswith("als ik je weer zie"):
             #    print(possible_key, num_tracks, track_position,
             #          max_tracks, max_position)
-            if num_tracks > max_tracks or \
-                    (num_tracks == max_tracks and
-                     track_position > max_position):
+            if num_tracks > max_tracks or (
+                num_tracks == max_tracks and track_position > max_position
+            ):
                 max_tracks = num_tracks
                 max_artist_key = possible_key[0]
                 max_position = artists[possible_key[0]].index(position)

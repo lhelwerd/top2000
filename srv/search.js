@@ -44,6 +44,7 @@ export default class SearchModal {
     }
 
     createModal = () => {
+        d3.select("#search").remove();
         const modal = d3.select("body").append("div")
             .attr("id", "search")
             .classed("modal", true);
