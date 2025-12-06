@@ -197,14 +197,14 @@ class Wiki(Base):
         if title_links := links.get(fields["title"], {}):
             self._tracks[best_key]["title_link"] = title_links.popitem()[0]
 
-        if position != len(self._artist_links) + 1:
-            raise ValueError(f"{position} != {len(self._artist_links) + 1}")
+        while position > len(self._artist_links):
+            self._artist_links.append({})
 
         artist_links: Row = {}
         normalizer = Normalizer.get_instance()
         for link, artist in links.get(fields["artist"], {}).items():
             artist_links[link] = normalizer.find_artist_alternatives(artist)[-1]
-        self._artist_links.append(artist_links)
+        self._artist_links[position - 1] = artist_links
 
     @property
     def extra_data(self) -> dict[str, ExtraData]:
