@@ -382,6 +382,7 @@ type = "mapping"
 # Some could be moved to artist_replaces
 type = "mapping"
 [artist_full_replaces.items]
+"ZZ & de Maskers" = "ZZ en de Maskers"
 "One Republic" = "OneRepublic"
 "Blue Oyster Cult" = "Blue \u00d6yster Cult"
 "PHD" = "Ph.D."

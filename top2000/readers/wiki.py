@@ -2,10 +2,12 @@
 Wikipedia API parsed HTML reader.
 """
 
+import bisect
 import hashlib
 import json
 import sys
 from html.parser import HTMLParser
+from itertools import chain
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin
@@ -13,7 +15,17 @@ from urllib.request import Request, urlopen
 
 from .. import __version__ as module_version
 from ..normalization import Normalizer
-from .base import Base, ExtraData, ExtraPositions, FieldMap, Key, Row
+from .base import (
+    Artists,
+    Base,
+    ExtraData,
+    ExtraPositions,
+    FieldMap,
+    Key,
+    KeySet,
+    Positions,
+    Row,
+)
 
 RowLinks = dict[str, dict[str, str]]
 
@@ -119,6 +131,8 @@ class Wiki(Base):
     from different years.
     """
 
+    has_multiple_years = True
+
     @property
     def input_format(self) -> str | None:
         return "wiki"
@@ -163,7 +177,14 @@ class Wiki(Base):
 
     def reset(self) -> None:
         super().reset()
-        self._artist_links: ExtraPositions = []
+        self._artist_links: dict[float, ExtraPositions] = {}
+        self._year_positions: dict[float, Positions] = {}
+        self._year_artists: dict[float, Artists] = {}
+        self.reset_year()
+
+    def reset_year(self) -> None:
+        self._positions = self._year_positions.setdefault(self._year, {})
+        self._artists = self._year_artists.setdefault(self._year, {})
 
     def read(self) -> None:
         path = Path(f"wiki{self._get_hash()}.html")
@@ -185,31 +206,45 @@ class Wiki(Base):
         }
         for row, links in zip(parser.rows[1:], parser.links[1:]):
             try:
-                best_key, position = self._read_row(row, fields)
-                if best_key is not None and position is not None:
-                    self._fill_links(best_key, position, fields, links)
+                best_key, position, keys = self._read_row(row, fields)
+                if best_key is not None:
+                    self._fill_links(best_key, position, keys, fields, links)
             except KeyError as error:
                 raise KeyError(f"Could not parse row: {row}") from error
 
     def _fill_links(
-        self, best_key: Key, position: int, fields: FieldMap, links: RowLinks
+        self,
+        best_key: Key,
+        position: int | None,
+        keys: list[Key],
+        fields: FieldMap,
+        links: RowLinks,
     ) -> None:
         if title_links := links.get(fields["title"], {}):
             self._tracks[best_key]["title_link"] = title_links.popitem()[0]
-
-        while position > len(self._artist_links):
-            self._artist_links.append({})
 
         artist_links: Row = {}
         normalizer = Normalizer.get_instance()
         for link, artist in links.get(fields["artist"], {}).items():
             artist_links[link] = normalizer.find_artist_alternatives(artist)[-1]
-        self._artist_links[position - 1] = artist_links
+
+        for field, value in self._tracks[best_key].items():
+            if field.isnumeric():
+                self._set_artist_links(float(field), int(value), artist_links)
+        if position is not None:
+            self._set_artist_links(self._year, position, artist_links)
+
+    def _set_artist_links(self, year: float, position: int, artist_links: Row) -> None:
+        self._artist_links.setdefault(year, [])
+        while position > len(self._artist_links[year]):
+            self._artist_links[year].append({})
+
+        self._artist_links[year][position - 1] = artist_links
 
     @property
     def extra_data(self) -> dict[str, ExtraData]:
         return {
-            "artist_links": self._artist_links,
+            "artist_links": self._artist_links[self._year],
             "wiki_url": urljoin(
                 self._get_api_url(), self._get_str_field("path", "/wiki/")
             ),
@@ -240,15 +275,32 @@ class Wiki(Base):
             best_key, row, str(int(self._year)), best_key
         )
         self._is_current_year = old_current_year
+
         if self._is_current_year and not valid:
-            # Collision was detected
+            # Collision detected
             best_key = (artist_alternatives[-1].lower(), title_alternatives[-1].lower())
             self._tracks[best_key] = row
-            self._tracks[best_key]["artiest"] = artist_alternatives[-1]
-            self._tracks[best_key]["titel"] = title_alternatives[-1]
-            return best_key, True
+        self._tracks[best_key]["artiest"] = artist_alternatives[-1]
+        self._tracks[best_key]["titel"] = title_alternatives[-1]
 
-        return best_key, False
+        return best_key, True
+
+    def _set_accepted_keys(
+        self, position: int | None, keys: list[Key], rejected_keys: KeySet
+    ) -> None:
+        super()._set_accepted_keys(position, keys, rejected_keys)
+        for field, value in self._tracks[keys[0]].items():
+            if field.isnumeric():
+                year = float(field)
+                pos = int(value)
+                year_positions = self._year_positions.setdefault(year, {})
+                year_positions[pos] = keys
+
+                for key in chain(keys, rejected_keys):
+                    year_artists = self._year_artists.setdefault(year, {})
+                    year_artists.setdefault(key[0], [])
+                    if pos not in year_artists[key[0]]:
+                        bisect.insort(year_artists[key[0]], pos)
 
     def select_relevant_keys(
         self,
@@ -263,7 +315,7 @@ class Wiki(Base):
             super().select_relevant_keys(relevant_keys, position, keys, primary=primary)
 
         wiki_keys: dict[tuple[int, ...], Key] = {}
-        for title in self._artist_links[position - 1].values():
+        for title in self._artist_links[self._year][position - 1].values():
             key = (str(title).lower(), keys[0][1])
             chart = tuple(primary.artists.get(key[0], []))
             if chart:

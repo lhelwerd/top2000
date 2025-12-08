@@ -4,6 +4,7 @@ Parse lists of song tracks in the NPO Radio 2 Top 2000 from various years.
 
 import sys
 from collections import deque
+from itertools import zip_longest
 
 from .output.base import Format
 from .readers.base import Base as ReaderBase
@@ -121,32 +122,37 @@ def main(argv: list[str]) -> int:
     current_year = ReaderBase.first_year
     years = deque((latest_year,))
     old_data_available = False
+    readers: list[ReaderBase] = []
     while years:
         year = years.popleft()
 
-        readers: list[ReaderBase] = []
-        for inputter in inputs:
-            reader = inputter(year=year)
-            if latest_year is None:
-                current_year = latest_year = reader.latest_year
-                years.extend(range(ReaderBase.first_year, current_year))
-                old_data_available = True
-            else:
+        for index, (reader, inputter) in enumerate(zip_longest(readers, inputs)):
+            if reader is not None and reader.has_multiple_years:
+                reader.year = year
                 current_year = latest_year if year is None else year
-                latest_year = max(latest_year, reader.latest_year)
-
-            if isinstance(reader, Years):
-                reader.read_files(*_parse_year_args(reader, argv, current_year))
             else:
-                reader.read()
+                reader = inputter(year=year)
+                if latest_year is None:
+                    current_year = latest_year = reader.latest_year
+                    years.extend(range(ReaderBase.first_year, current_year))
+                    old_data_available = True
+                else:
+                    current_year = latest_year if year is None else year
+                    latest_year = max(latest_year, reader.latest_year)
 
-            readers.append(reader)
+                if isinstance(reader, Years):
+                    reader.read_files(*_parse_year_args(reader, argv, current_year))
+                else:
+                    reader.read()
+
+                readers[index:index] = [reader]
 
         for output in outputs:
             formatter = output(ReaderBase.first_year, current_year, latest_year)
             for output_format in formatter.output_names:
+                print(f"Writing file format {output_format} year {current_year}")
                 if not formatter.output_file(
-                    readers, output_format, old_data_available=old_data_available
+                    readers.copy(), output_format, old_data_available=old_data_available
                 ):
                     return 1
 
