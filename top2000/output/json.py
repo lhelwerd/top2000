@@ -127,7 +127,7 @@ class JSON(Format):
         )
         numeric_fields = {"year"}
         numeric_fields.update(
-            {str(year) for year in range(self._first_year, self._current_year)}
+            {str(year) for year in range(self._first_year, self._latest_year)}
         )
         return reader_fields, numeric_fields
 
@@ -163,6 +163,9 @@ class JSON(Format):
         reader: ReaderBase, keys: list[Key], fields: FieldMap, numeric_fields: set[str]
     ) -> Row:
         track = reader.tracks[keys[0]]
+        # if track.get("title_link") == "Master Blaster (Jammin')":
+        #    print(track)
+        #    print(fields)
         track = {field: track[key] for key, field in fields.items() if key in track}
         for field in numeric_fields:
             if field in track:
