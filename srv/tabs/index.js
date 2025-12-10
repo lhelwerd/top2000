@@ -22,14 +22,15 @@ export default class Tabs {
 
     fixAnchorScroll(content, d, hash, selector=null) {
         if (selector === null) {
-            console.log(content, d, hash);
             if (content.empty() || content.classed("is-hidden")) {
                 return false;
             }
             if (hash.startsWith(`#/${d}`) && this.tabs.get(d).scroll) {
                 this.tabs.get(d).scroll(d, hash);
             }
-            else if (hash.startsWith("#/")) {
+            else if (hash.startsWith("#/") &&
+                (!this.tabs.get(d).year || d === this.data.year)
+            ) {
                 content.node().scrollIntoView(true);
                 this.fixStickyScroll();
             }
@@ -53,10 +54,8 @@ export default class Tabs {
                     /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
                     this.fixAnchorScroll(content, d, hash, hash) :
                     d === this.data.year; // Fallback: current year list
-                const firstYear = this.data.old_data_available ?
-                    this.data.first_year : this.data.latest_year;
-                if (!active && /^#\/[0-9]{4}/.test(hash) && d >= firstYear &&
-                    d <= this.data.latest_year
+                if (!active && /^#\/[0-9]{4}/.test(hash) &&
+                    this.tabs.get(d).year
                 ) {
                     return active;
                 }
@@ -95,8 +94,8 @@ export default class Tabs {
                     year < this.data.year ? 0x1f519 : 0x1f51c),
                 text: `${year}`,
                 container: ".main",
+                year: true,
                 scroll: (d, hash) => {
-                    console.log(d, hash, this.data.year, latestYear);
                     if (d === this.data.year) {
                         this.scroll.scrollYearHash(d, hash);
                     }
