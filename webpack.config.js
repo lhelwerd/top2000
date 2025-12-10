@@ -118,6 +118,6 @@ module.exports = {
         })
     ],
     watchOptions: {
-        ignored: [/\.git/, /dist/, /node_modules/, /top2000/]
+        ignored: ['.git', 'dist', 'node_modules', 'top2000']
     }
 };

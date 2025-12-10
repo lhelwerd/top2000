@@ -10,9 +10,7 @@
                 "tracks": {
                     "type": "array",
                     "items": {"$ref": "#/$defs/track"},
-                    "minItems": 2000,
-                    "maxItems": 2500,
-                    "uniqueItems": true
+                    "maxItems": 2500
                 },
                 "positions": {
                     "type": "array",
@@ -30,7 +28,6 @@
                         "uniqueItems": true,
                         "description": "Normalized key pairs for the artist and track at the index."
                     },
-                    "minItems": 2000,
                     "maxItems": 2500
                 },
                 "artists": {
@@ -80,7 +77,6 @@
                         "minProperties": 1,
                         "description": "Names of articles about a subset of the artists that collaborated on the track at the position which exist on the Wikipedia where data was retrieved from."
                     },
-                    "minItems": 2000,
                     "maxItems": 2500
                 },
                 "wiki_url": {
