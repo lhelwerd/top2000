@@ -55,6 +55,16 @@
                     "minimum": 1999,
                     "description": "Year in which the chart was broadcast."
                 },
+                "latest_year": {
+                    "type": "number",
+                    "minimum": 1999,
+                    "description": "Year in which the most recent chart was broadcast."
+                },
+                "old_data_available": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether there are other dump files containing chart data for other years."
+                },
                 "reverse": {
                     "type": "boolean",
                     "default": false,

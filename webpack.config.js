@@ -116,5 +116,8 @@ module.exports = {
             filter: (file) => file.name !== "index.html" &&
                 !file.name.startsWith("schema/")
         })
-    ]
+    ],
+    watchOptions: {
+        ignored: [/\.git/, /dist/, /node_modules/, /top2000/]
+    }
 };

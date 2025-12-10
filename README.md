@@ -82,7 +82,7 @@ First install dependencies for the package using `npm install`. Ensure you have
 a suitable JSON dump file for the Web application, such as one generated in the 
 [parsing](#parsing) section above with `json` as one of the output formats. 
 Then use `npm start` to compile a development version of the application and 
-start a local server to hst the files. For production, use `npm run build` to 
+start a local server to host the files. For production, use `npm run build` to 
 obtain files for hosting on a server. In order to produce a single file with 
 all assets combined which most browsers can open from local filesystems, use 
 `npm run single-file`. Then, the `dist` directory contains an `index.html` file 
