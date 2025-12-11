@@ -98,7 +98,8 @@ export default class Scroll {
     }
 
     updatePagination(current=null) {
-        const pages = d3.ticks(...d3.nice(this.data.end, this.data.front, 20), 20);
+        const count = Math.min(Math.max(this.data.end, this.data.front), 20)
+        const pages = d3.ticks(...d3.nice(this.data.end, this.data.front, count), count);
         if (current) {
             const currentIndex = this.data.reverse ? d3.bisectLeft(pages, current) :
                 d3.bisectRight(pages, current);

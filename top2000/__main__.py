@@ -127,14 +127,18 @@ def main(argv: list[str]) -> int:
         year = years.popleft()
 
         for index, (reader, inputter) in enumerate(zip_longest(readers, inputs)):
-            if reader is not None and reader.has_multiple_years:
+            if (
+                reader is not None
+                and reader.has_multiple_years
+                and len(reader.positions) >= ReaderBase.expected_positions
+            ):
                 reader.year = year
                 current_year = latest_year if year is None else year
+                old_data_available = True
             else:
                 reader = inputter(year=year)
                 if latest_year is None:
                     current_year = latest_year = reader.latest_year
-                    years.extend(range(ReaderBase.first_year, current_year))
                     old_data_available = True
                 else:
                     current_year = latest_year if year is None else year
@@ -145,7 +149,11 @@ def main(argv: list[str]) -> int:
                 else:
                     reader.read()
 
-                readers[index:index] = [reader]
+                readers[index : index + 1] = [reader]
+
+            previous_year = year - 1 if year is not None else current_year - 1
+            if old_data_available and previous_year >= ReaderBase.first_year:
+                years.append(previous_year)
 
         for output in outputs:
             formatter = output(ReaderBase.first_year, current_year, latest_year)

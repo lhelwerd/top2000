@@ -40,11 +40,14 @@ year = 2024
 csv = {artist="Artiest", title="Titel", pos="Notering", year="Jaartal"}
 json.rows = ["positions"]
 
+[[years]]
+year = 2025
+
 [wiki]
 api = "https://nl.wikipedia.org/w/api.php"
 path = "/wiki/"
 page = "Lijst_van_Radio_2-Top_2000's"
-oldid = 68621294
+oldid = 70293968
 artist = "Artiest"
 title = "Titel"
 year = "Jaar"

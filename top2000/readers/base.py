@@ -157,6 +157,8 @@ class Base(metaclass=ABCMeta):
     first_year: float = 1999
     has_multiple_years = False
 
+    expected_positions = 2000
+
     csv_name_format = "TOP-2000-{}.csv"
     json_name_format = "top2000-{}.json"
 

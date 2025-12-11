@@ -233,7 +233,7 @@ class CSV(Format):
         # if (artist.isupper() or title.isupper() or artist.islower() or title.islower()) and (title.isupper() or track["artiest"] not in ("U2", "10cc", "INXS", "KISS", "Q65", "LP", "ABBA", "MGMT", "R.E.M.", "UB40", "3JS", "BAP", "AC/DC", "S10")):
         # pass
         # INCONSISTENT PREVIOUS YEAR FIELDS (missing/wrong merges/etc)
-        # if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))) and int(track.get(previous_year, 0)) <= 2000:
+        # if (prv_field in track and int(track[prv_field]) != int(track.get(previous_year, 0))) and int(track.get(previous_year, 0)) <= ReaderBase.expected_positions:
         # if max_artist_key not in artists or (len(artists[max_artist_key]) == 1 and artist.count(' ') > 2):
         # self._lines += 1
         # print(line)
