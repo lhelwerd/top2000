@@ -15,7 +15,7 @@ which feeds a Web application built in Node.js for interactive browsing.
 The module is written for recent Python versions, currently Python 3.11 and 
 later is supported. The intention is to have few (if any) package dependencies.
 
-The Web application is written for recent Node.js versions, currently Node 20 
+The Web application is written for recent Node.js versions, currently Node 22 
 and later is supported. The Web application makes use of Bulma and D3.js for 
 presentation, MiniSearch for search and several Webpack dependencies for 
 bundled compilation.
@@ -91,7 +91,7 @@ all assets combined which most browsers can open from local filesystems, use
 ### Validation
 
 In order to validate JSON files from APIs, JSON output and TOML setting files, 
-first install `check-jsonschema` with `pip install check-jsonschema==0.30.0`, 
+first install `check-jsonschema` with `pip install check-jsonschema==0.35.0`, 
 then run `./validate_schema.sh` in this repository.
 
 ## License

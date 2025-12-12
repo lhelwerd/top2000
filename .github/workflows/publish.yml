@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x]
-        python-version: [3.11.11]
+        node-version: [24.12.0]
+        python-version: [3.14.2]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@v6.0.1
+      - uses: actions/cache@v5.0.1
         with:
           path: |
             node_modules/.cache/webpack/
@@ -21,18 +21,18 @@ jobs:
           key: publish-${{ hashFiles('fields.toml') }}
 
       - name: Use Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.1.0
         with:
           python-version: "${{ matrix.python-version }}"
       - name: Collect data
         run: python -m top2000 wiki json
       - name: Validate schema
         run: |
-          pip install check-jsonschema==0.30.0
+          pip install check-jsonschema==0.35.0
           ./validate_schema.sh
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.1.0
         with:
           node-version: ${{ matrix.node-version }}
       - name: Build Web application
@@ -40,7 +40,7 @@ jobs:
           npm install
           npm run build
       - name: Archive Web application distribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: top2000-app
           path: dist
@@ -60,15 +60,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Collect Web application distribution
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7.0.0
         with:
           name: top2000-app
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v5.0.0
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4.0.0
         with:
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4.0.5
