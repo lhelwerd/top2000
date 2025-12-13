@@ -2,20 +2,21 @@
 Artist and song track title normalization and alternative key generation.
 """
 
-from pathlib import Path
 import re
 import tomllib
+from pathlib import Path
 from typing import Literal
+
 
 class Normalizer:
     """
     Normalization and alternative formats of artist and title names.
     """
 
-    _instance: 'Normalizer | None' = None
+    _instance: "Normalizer | None" = None
 
     @classmethod
-    def get_instance(cls) -> 'Normalizer':
+    def get_instance(cls) -> "Normalizer":
         """
         Retrieve the normalizer singleton.
         """
@@ -25,13 +26,15 @@ class Normalizer:
         return cls._instance
 
     def __init__(self) -> None:
-        with Path('fixes.toml').open('rb') as fixes_file:
-            self._fixes: dict[str, dict[str, list[str] | dict[str, str]]] = \
+        with Path("fixes.toml").open("rb") as fixes_file:
+            self._fixes: dict[str, dict[str, list[str] | dict[str, str]]] = (
                 tomllib.load(fixes_file)
+            )
 
         self._replaces = str.maketrans(self._get_mapping("replaces"))
-        artist_splits = "|".join(re.escape(split)
-                                 for split in self._get_list("artist_splits"))
+        artist_splits = "|".join(
+            re.escape(split) for split in self._get_list("artist_splits")
+        )
         self._artist_splits = re.compile(f"({artist_splits})")
 
     def _get_list(self, name: str) -> list[str]:
@@ -51,9 +54,11 @@ class Normalizer:
         artitst or title.
         """
 
-        alternatives = set(text.replace(remove, "")
-                           for remove in self._get_list("removes")
-                           if remove in text)
+        alternatives = {
+            text.replace(remove, "")
+            for remove in self._get_list("removes")
+            if remove in text
+        }
         alternatives.add(text.translate(self._replaces))
         alternatives.discard(text)
 
@@ -79,8 +84,10 @@ class Normalizer:
                 return [title_fixes[prefix]]
             alternatives.append(prefix)
         if title.startswith("("):
-            alternatives.append(title.replace("(", "").replace(")", ""))
-            alternatives.append(title.split(") ")[-1])
+            alternatives.extend((
+                title.replace("(", "").replace(")", ""),
+                title.split(") ")[-1],
+            ))
 
         alternatives.append(title)
         return alternatives
@@ -91,16 +98,20 @@ class Normalizer:
         if this is the case.
         """
 
-        if "(" in title and ")" in title and \
-            any(part in title for part in self._get_list("album_version")):
+        if (
+            "(" in title
+            and ")" in title
+            and any(part in title for part in self._get_list("album_version"))
+        ):
             replaces = self._get_mapping("album_version_replaces")
             for search, replace in replaces.items():
                 title = title.replace(search, replace)
 
         return title
 
-    def find_artist_splits(self,
-                           artist: str) -> tuple[dict[str, Literal[True]], int]:
+    def find_artist_splits(
+        self, artist: str
+    ) -> tuple[dict[str, Literal[True]], int]:
         """
         Find separate artists in a potential group of musicians listed in the
         string `artist`. The returned dictionary contains the splits names as
@@ -122,14 +133,17 @@ class Normalizer:
                 alternatives[f"{parts[two - 2]}{parts[two - 1]}{part}"] = True
                 split_count -= 1
                 continue
-            if index < split_count and \
-                f"{part}{parts[two + 1]}{parts[two + 2]}" in keep:
+            if (
+                index < split_count
+                and f"{part}{parts[two + 1]}{parts[two + 2]}" in keep
+            ):
                 alternatives[f"{part}{parts[two + 1]}{parts[two + 2]}"] = True
                 split_count -= 1
                 continue
             alternatives[part] = True
-            alternatives.update(dict.fromkeys(self.find_alternatives(part),
-                                              True))
+            alternatives.update(
+                dict.fromkeys(self.find_alternatives(part), True)
+            )
         alternative = "".join(parts[::-1])
         alternatives[alternative] = True
 
@@ -170,10 +184,10 @@ class Normalizer:
             alternatives[alternative] = True
 
         artist_full_replaces = self._get_mapping("artist_full_replaces")
-        if artist in artist_full_replaces:
-            artist = artist_full_replaces[artist]
-            if split_count == 0:
-                alternatives.update(self.find_artist_splits(artist)[0])
+        old_artist = artist
+        artist = artist_full_replaces.get(artist, artist)
+        if artist != old_artist and split_count == 0:
+            alternatives.update(self.find_artist_splits(artist)[0])
         # Ensure normal key is last
         alternatives.pop(artist, None)
         alternatives[artist] = True

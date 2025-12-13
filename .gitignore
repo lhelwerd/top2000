@@ -20,6 +20,12 @@ __pycache__
 env/
 mypy-report/
 
+# Python distribution
+src/
+build/
+*.egg-info
+*.egg
+
 # Node.js package files
 dist/
 node_modules/

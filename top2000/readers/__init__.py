@@ -8,4 +8,10 @@ from .json import JSON
 from .multi import Years
 from .wiki import Wiki
 
-__all__ = ["Base", "CSV", "JSON", "Years", "Wiki"]
+__all__ = [
+    "Base",
+    "CSV",
+    "JSON",
+    "Years",
+    "Wiki",
+]

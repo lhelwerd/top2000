@@ -3,20 +3,23 @@ Base row-based data parser.
 """
 
 import bisect
-from abc import ABCMeta
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, MutableMapping, MutableSequence
 from copy import deepcopy
 from itertools import chain, product
 from pathlib import Path
-from typing import Literal, overload
+from typing import ClassVar, Literal, TypeVar, overload
 
 import tomllib
 
 from ..normalization import Normalizer
 
+BaseT = TypeVar("BaseT", bound=type["Base"])
+
 RowPath = list[str | int]
 Key = tuple[str, str]
 KeySet = dict[Key, Literal[True]]
+RelevantKeys = dict[tuple[int, ...], Key]
 Positions = dict[int, list[Key]]
 RowElement = str | int | bool
 Row = dict[str, RowElement]
@@ -117,7 +120,11 @@ class FieldHolder(MutableMapping[float, Fields]):
         return int(field)
 
     def get_bool_field(
-        self, year: float, input_format: str | None, key: str, default: bool = False
+        self,
+        year: float,
+        input_format: str | None,
+        key: str,
+        default: bool = False,
     ) -> bool:
         """
         Get a boolean field for a year and input format.
@@ -149,7 +156,7 @@ class FieldHolder(MutableMapping[float, Fields]):
         return field
 
 
-class Base(metaclass=ABCMeta):
+class Base(ABC):
     """
     Base file reader based on field information.
     """
@@ -162,15 +169,15 @@ class Base(metaclass=ABCMeta):
     csv_name_format = "TOP-2000-{}.csv"
     json_name_format = "top2000-{}.json"
 
-    _readers: dict[str, type["Base"]] = {}
+    _readers: ClassVar[dict[str, type["Base"]]] = {}
 
     @classmethod
-    def register(cls, name: str) -> Callable[[type["Base"]], type["Base"]]:
+    def register(cls, name: str) -> Callable[[BaseT], BaseT]:
         """
         Register an input format by its subfield name or argument name.
         """
 
-        def decorator(subclass: type["Base"]) -> type["Base"]:
+        def decorator(subclass: BaseT) -> BaseT:
             cls._readers[name] = subclass
             return subclass
 
@@ -234,6 +241,7 @@ class Base(metaclass=ABCMeta):
         self.reset_year()
 
     @property
+    @abstractmethod
     def input_format(self) -> str | None:
         """
         Retrieve the name of the input format as used in the fields settings.
@@ -306,6 +314,7 @@ class Base(metaclass=ABCMeta):
             year = self._year
         return self._fields.get_path_field(year, input_format, key)
 
+    @abstractmethod
     def read(self) -> None:
         """
         Read relevant file(s).
@@ -377,7 +386,7 @@ class Base(metaclass=ABCMeta):
 
     def _read_row(
         self, row: Row, fields: FieldMap, offset: int = 0
-    ) -> tuple[Key | None, int | None, list[Key]]:
+    ) -> tuple[Key | None, int | None]:
         """
         Read data extracted from a CSV row or JSON array element.
         """
@@ -395,12 +404,7 @@ class Base(metaclass=ABCMeta):
         if position is not None and not self._is_current_year:
             row[str(int(self._year))] = position
 
-        prv_field = fields.get("prv", "prv")
-        if not self._is_current_year:
-            if str(int(self._year)) in pos_field and self._year != self.first_csv_year:
-                for year in range(int(self.first_year), int(self._year)):
-                    row.pop(str(year), None)
-            row.pop(prv_field, None)
+        self._clear_previous_years(row, fields)
 
         best_key, keys, rejected_keys = self._update_keys(position, row, fields)
         # if best_key == ("george michael & queen", "somebody to love (live)"):
@@ -420,7 +424,19 @@ class Base(metaclass=ABCMeta):
             self._tracks[best_key]["jaar"] = row[year_field]
 
         self._set_position_keys(position, best_key, keys, rejected_keys)
-        return best_key, position, keys
+        return best_key, position
+
+    def _clear_previous_years(self, row: Row, fields: FieldMap) -> None:
+        if not self._is_current_year:
+            prv_field = fields.get("prv", "prv")
+            pos_field = fields.get("pos", "position")
+            if (
+                str(int(self._year)) in pos_field
+                and self._year != self.first_csv_year
+            ):
+                for year in range(int(self.first_year), int(self._year)):
+                    row.pop(str(year), None)
+            row.pop(prv_field, None)
 
     def _check_album_version(self, row: Row, title_field: str) -> None:
         # Album version indicator
@@ -472,7 +488,7 @@ class Base(metaclass=ABCMeta):
 
     def _find_keys(
         self,
-        row,
+        row: Row,
         fields: FieldMap,
         artist_alternatives: list[str],
         title_alternatives: list[str],
@@ -503,12 +519,20 @@ class Base(metaclass=ABCMeta):
 
     @overload
     def _update_row(
-        self, key: Key, row: Row, pos_field: str | None = None, best_key: Key = ...
+        self,
+        key: Key,
+        row: Row,
+        pos_field: str | None = None,
+        best_key: Key = ...,
     ) -> tuple[Key, bool]: ...
 
     @overload
     def _update_row(
-        self, key: Key, row: Row, pos_field: str | None = None, best_key: None = None
+        self,
+        key: Key,
+        row: Row,
+        pos_field: str | None = None,
+        best_key: None = None,
     ) -> tuple[Key | None, bool]: ...
 
     def _update_row(
@@ -522,45 +546,49 @@ class Base(metaclass=ABCMeta):
         Update data for a track.
         """
 
+        if key not in self._tracks:
+            self._tracks[key] = row.copy()
+            # print(key, self._tracks[key])
+            return best_key, True
+
         new_row = row.copy()
-        if key in self._tracks:
-            # if "queen" in key[0] and "somebody to love" in key[1]:
-            #    print(key, best_key, repr(self._tracks[key].get("best")),
-            #          self._tracks[key].get(pos_field),
-            #          self._tracks[key].get(str(int(self._year))),
-            #          self._check_collision(key, pos_field),
-            #          row.get(pos_field), row.get(str(int(self._year))))
-            if self._check_collision(key, pos_field):
-                # print(f"Potential collision ({self._year}: {key!r} {best_key!r} {row!r}")
-                # print(self._tracks[key])
+        # if "queen" in key[0] and "somebody to love" in key[1]:
+        #    print(key, best_key, repr(self._tracks[key].get("best")),
+        #          self._tracks[key].get(pos_field),
+        #          self._tracks[key].get(str(int(self._year))),
+        #          self._check_collision(key, pos_field),
+        #          row.get(pos_field), row.get(str(int(self._year))))
+        if self._check_collision(key, pos_field):
+            # print(f"Potential collision ({self._year}: {key!r} {best_key!r} {row!r}")
+            # print(self._tracks[key])
 
-                if (
-                    pos_field in self._tracks[key]
-                    and self._is_current_year
-                    and self._tracks[key][pos_field] == row.get(pos_field)
-                ):
-                    return best_key, False
-
-                if best_key == key or (
-                    best_key is None
-                    and "best" in self._tracks[key]
-                    and self._tracks[key]["best"] is not True
-                ):
-                    # if self._tracks[key]["artiest"].lower() == "di-rect":
-                    # if self._tracks[key]["titel"] == "Times Are Changing":
-                    # print(f"Collision ({self._year}): {key!r} {best_key!r} {row!r}")
-                    # print(self._tracks[key])
-                    self._tracks[key] = new_row
-
+            if (
+                pos_field in self._tracks[key]
+                and self._is_current_year
+                and self._tracks[key][pos_field] == row.get(pos_field)
+            ):
                 return best_key, False
 
-            new_row.update(self._tracks[key])
-            if "best" in new_row:
-                best_key = (
-                    key
-                    if new_row["best"] is True
-                    else (str(new_row["best"]), str(new_row["best_title"]))
-                )
+            if best_key == key or (
+                best_key is None
+                and "best" in self._tracks[key]
+                and self._tracks[key]["best"] is not True
+            ):
+                # if self._tracks[key]["artiest"].lower() == "di-rect":
+                # if self._tracks[key]["titel"] == "Times Are Changing":
+                # print(f"Collision ({self._year}): {key!r} {best_key!r} {row!r}")
+                # print(self._tracks[key])
+                self._tracks[key] = new_row
+
+            return best_key, False
+
+        new_row.update(self._tracks[key])
+        if "best" in new_row:
+            best_key = (
+                key
+                if new_row["best"] is True
+                else (str(new_row["best"]), str(new_row["best_title"]))
+            )
 
         self._tracks[key] = new_row
         # print(key, self._tracks[key])
@@ -603,7 +631,11 @@ class Base(metaclass=ABCMeta):
         return best_key, False
 
     def _set_position_keys(
-        self, position: int | None, best_key: Key, keys: KeySet, rejected_keys: KeySet
+        self,
+        position: int | None,
+        best_key: Key,
+        keys: KeySet,
+        rejected_keys: KeySet,
     ) -> None:
         # Now we handle row[pos_field] and finalize best keys in the data
         self._set_accepted_keys(
@@ -614,7 +646,8 @@ class Base(metaclass=ABCMeta):
                 for key in keys
                 if best_key[0].startswith(key[0])
                 or not any(
-                    rejected_key[0].startswith(key[0]) for rejected_key in rejected_keys
+                    rejected_key[0].startswith(key[0])
+                    for rejected_key in rejected_keys
                 )
             ],
             rejected_keys,
@@ -636,7 +669,7 @@ class Base(metaclass=ABCMeta):
 
     def select_relevant_keys(
         self,
-        relevant_keys: dict[tuple[int, ...], Key],
+        relevant_keys: RelevantKeys,
         position: int,
         keys: list[Key],
         primary: "Base | None" = None,
@@ -649,22 +682,34 @@ class Base(metaclass=ABCMeta):
         if primary is None:
             primary = self
 
-        normalizer = Normalizer.get_instance()
         one: Key | None = None
         for key in keys:
-            if key[0] in primary.artists:
-                chart = tuple(primary.artists[key[0]])
-                # if "gotye" in key[0] or "kimbra" in key[0]:
-                #    print(key, chart, one, relevant_keys)
-                if len(chart) == 1:
-                    if one is None and not normalizer.find_artist_splits(key[0])[1]:
-                        one = key
-                elif chart not in relevant_keys:
-                    relevant_keys[chart] = key
+            one = self._select_relevant_key(key, relevant_keys, primary, one)
         if one is not None:
-            relevant_keys[(position,)] = one
+            chart = (position,)
+            relevant_keys[chart] = one
         elif not relevant_keys:
             # Always have some relevant key, so take best key
             best_key = keys[0]
             if best_key[0] in primary.artists:
                 relevant_keys[tuple(primary.artists[best_key[0]])] = best_key
+
+    def _select_relevant_key(
+        self,
+        key: Key,
+        relevant_keys: RelevantKeys,
+        primary: "Base",
+        one: Key | None,
+    ) -> Key | None:
+        if key[0] in primary.artists:
+            chart = tuple(primary.artists[key[0]])
+            # if "gotye" in key[0] or "kimbra" in key[0]:
+            #    print(key, chart, one, relevant_keys)
+            if len(chart) == 1:
+                normalizer = Normalizer.get_instance()
+                if one is None and not normalizer.find_artist_splits(key[0])[1]:
+                    one = key
+            elif chart not in relevant_keys:
+                relevant_keys[chart] = key
+
+        return one

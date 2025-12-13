@@ -3,21 +3,18 @@ CSV chart output.
 """
 
 import csv
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from typing import override
 
 from ..readers.base import (
     Artists,
+    Base as ReaderBase,
     Key,
     Positions,
-    Tracks,
-)
-from ..readers.base import (
-    Base as ReaderBase,
-)
-from ..readers.base import (
     Row as Track,
+    Tracks,
 )
 from .base import Format
 
@@ -28,6 +25,7 @@ class CSV(Format):
     CSV file with multi-column layout.
     """
 
+    @override
     def reset(self) -> None:
         super().reset()
         self._rows: list[list[str]] = []
@@ -35,6 +33,7 @@ class CSV(Format):
         self._lines = 0
         self._extra_lines = 0
 
+    @override
     def output_file(
         self,
         readers: list[ReaderBase],
@@ -53,17 +52,20 @@ class CSV(Format):
         # Format -> Print ranges -> Edit -> Rows to repeat -> $1
         # Bold first row, right-align first and fourth column
         # Add grey border at bottom of each/first row, between 3-header column
-        columns = self._get_int_setting(output_format, "columns_per_page", 2)
         column_names = self._get_dict_setting(output_format, "columns")
         reverse = self._get_bool_setting(output_format, "reverse")
-        header = list(column_names.values()) * columns
+        header = list(column_names.values()) * self._get_int_setting(
+            output_format, "columns_per_page", 2
+        )
         self.reset()
         data = readers[0]
         with path.open("w", encoding="utf-8") as output:
             writer = csv.writer(output)
             writer.writerow(header)
             for position, keys in self._sort_positions(data.positions, reverse):
-                cells = self._format_cells(position, keys, data.tracks, data.artists)
+                cells = self._format_cells(
+                    position, keys, data.tracks, data.artists
+                )
                 if self._format_timestamp(
                     output_format, cells, data.positions, position
                 ):
@@ -92,7 +94,11 @@ class CSV(Format):
         return self._lines == 0
 
     def _format_cells(
-        self, position: int, keys: Sequence[Key], tracks: Tracks, artists: Artists
+        self,
+        position: int,
+        keys: Sequence[Key],
+        tracks: Tracks,
+        artists: Artists,
     ) -> dict[str, str]:
         key = keys[0]
         track = tracks[key]
@@ -106,7 +112,9 @@ class CSV(Format):
             title += " \u29be"
 
         max_artist_key = self._find_artist_chart(position, keys, artists)
-        extra_text += self._format_artist_chart(position, max_artist_key, artists)
+        extra_text += self._format_artist_chart(
+            position, max_artist_key, artists
+        )
 
         if "jaar" in track:
             artist += f" ({track['jaar']})"
@@ -190,7 +198,9 @@ class CSV(Format):
                 cells.pop("timestamp")
                 if time != self._last_timestamp:
                     self._last_timestamp = time
-                    if self.add_row(output_format, ["", time, ""], positions, position):
+                    if self.add_row(
+                        output_format, ["", time, ""], positions, position
+                    ):
                         self._extra_lines = 0
                         return True
 
@@ -202,7 +212,11 @@ class CSV(Format):
         return False
 
     def validate_row(
-        self, keys: list[Key], cells: dict[str, str], tracks: Tracks, artists: Artists
+        self,
+        keys: list[Key],
+        cells: dict[str, str],
+        tracks: Tracks,
+        artists: Artists,
     ) -> None:
         """
         Validate whether a track to be output is actually proper.
@@ -242,7 +256,11 @@ class CSV(Format):
         # print(f"{line} prv={track[prv_field]} {previous_year}={track.get(previous_year)}")
 
     def add_row(
-        self, output_format: str, row: list[str], positions: Positions, position: int
+        self,
+        output_format: str,
+        row: list[str],
+        positions: Positions,
+        position: int,
     ) -> bool:
         """
         Insert a row in the proper location of a page of a CSV spreadsheet if it

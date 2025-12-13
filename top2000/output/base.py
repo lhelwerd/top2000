@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import tomllib
+from typing import ClassVar, TypeVar
 
 from ..readers.base import Artists, Key, Positions
 from ..readers.base import Base as ReaderBase
@@ -13,23 +14,27 @@ from ..readers.base import Base as ReaderBase
 Setting = int | bool | dict[str, str]
 KeyPair = tuple[int, list[Key]]
 
+FormatT = TypeVar("FormatT", bound=type["Format"])
+
 
 class Format:
     """
     Output formatter.
     """
 
-    _formats: dict[str, type["Format"]] = {}
-    _keys: dict[type["Format"], str] = {}
-    _output_settings: dict[str, dict[str, dict[str, Setting]]] | None = None
+    _formats: ClassVar[dict[str, type["Format"]]] = {}
+    _keys: ClassVar[dict[type["Format"], str]] = {}
+    _output_settings: ClassVar[
+        dict[str, dict[str, dict[str, Setting]]] | None
+    ] = None
 
     @classmethod
-    def register(cls, name: str) -> Callable[[type["Format"]], type["Format"]]:
+    def register(cls, name: str) -> Callable[[FormatT], FormatT]:
         """
         Register an output format by its settings key.
         """
 
-        def decorator(subclass: type["Format"]) -> type["Format"]:
+        def decorator(subclass: FormatT) -> FormatT:
             cls._formats[name] = subclass
             cls._keys[subclass] = name
             return subclass
@@ -69,7 +74,9 @@ class Format:
 
         return tuple(self._settings.keys())
 
-    def _get_int_setting(self, output_format: str, key: str, default: int = 0) -> int:
+    def _get_int_setting(
+        self, output_format: str, key: str, default: int = 0
+    ) -> int:
         setting = self._settings.get(output_format, {}).get(key, default)
         assert isinstance(setting, int), f"{key} must be an integer"
         return setting

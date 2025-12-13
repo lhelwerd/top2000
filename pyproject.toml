@@ -1,0 +1,116 @@
+[project]
+name = "top2000"
+version = "0.0.2025"
+description = "NPO Radio 2 Top 2000 data reader"
+readme = "README.md"
+authors = [{ name = "Leon Helwerda", email = "leon.helwerda@gmail.com" }]
+license = "MIT"
+requires-python = ">=3.11,<3.15"
+dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+keywords = ["music data", "data analysis"]
+
+[dependency-groups]
+analysis = [
+    "basedpyright==1.36.1",
+    "mypy==1.19.0",
+    "nodejs-wheel-binaries==22.20.0",
+    "ruff==0.14.9",
+]
+
+[project.scripts]
+top2000 = "top2000.__main__:main"
+
+[project.urls]
+"Website" = "https://lhelwerd.github.io/top2000/"
+"Source Code" = "https://github.com/lhelwerd/top2000"
+"Issues" = "https://github.com/lhelwerd/top2000/issues"
+"Pull Requests" = "https://github.com/lhelwerd/top2000/pulls"
+"CI: GitHub Actions" = "https://github.com/lhelwerd/top2000/actions"
+
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["top2000*"]
+
+[tool.setuptools.package-data]
+"top2000" = ["py.typed"]
+
+[tool.basedpyright]
+pythonVersion = "3.11"
+typeCheckingMode = "recommended"
+reportExplicitAny = "hint"
+
+[tool.pylint]
+disable = ["useless-import-alias"]
+ignored-modules = ["alembic"]
+max-line-length = 80
+
+[tool.ruff]
+target-version = "py311"
+line-length = 80
+
+[tool.ruff.lint]
+select = [
+    "ANN",  # flake8-annotations
+    "S",    # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "C4",   # flake8-comprehensions
+    "FIX",  # flake8-fixme
+    "ICN",  # flake8-import-conventions
+    "LOG",  # flake8-logging
+    "G",    # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "PYI",  # flake8-pyi
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+    "FLY",  # flynt
+    "C90",  # mccabe
+    "N",    # pep8-naming
+    "PERF", # Perflint
+    "E",
+    "W",    # pycodestyle
+    "D1",   # pydocstyle undocumented
+    "F",    # Pyflakes
+    "UP",   # pyupgrade
+    "FURB", # refurb
+    "RUF",  # ruff
+    "TRY",  # tryceratops
+]
+ignore = [
+    # Any type covered by basedpyright reportExplicitAny
+    "ANN401",
+    # Use of assert
+    "S101",
+    # Exception naming should not be error-specific
+    "N818",
+    # `try`..`except` in a loop is usually fine
+    "PERF203",
+    # Undocumented special methods, including `__init__`
+    "D105",
+    "D107",
+    # Keep `__all__` sorted as is because it the suggested order is not always the same as organized imports
+    "RUF022",
+    # Long exception messages
+    "TRY003",
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["__*__", "registry"]
