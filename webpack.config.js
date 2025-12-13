@@ -81,7 +81,7 @@ module.exports = {
         }
     },
     output: {
-        clean: true,
+        clean: process.env.NODE_ENV !== 'development',
         filename: '[name].[contenthash].js',
         path: path.resolve(__dirname, 'dist'),
         publicPath: ""
@@ -117,7 +117,12 @@ module.exports = {
                 !file.name.startsWith("schema/")
         })
     ],
+    resolve: {
+        alias: {
+            "@output": path.resolve(__dirname)
+        }
+    },
     watchOptions: {
-        ignored: ['.git', 'dist', 'node_modules', 'top2000']
+        ignored: ['**/.git', '**/dist', '**/node_modules', '**/top2000']
     }
 };

@@ -106,7 +106,7 @@ export default class Tabs {
                     else {
                         import(
                             /* webpackInclude: /output-\d\d\d\d\.json$/ */
-                            `../../output-${d}.json`
+                            `@output/output-${d}.json`
                         ).then(data => {
                             load(new Data(data)).enable(load);
                             this.scroll.scrollYearHash(d, hash);
