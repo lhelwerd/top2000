@@ -405,7 +405,7 @@ export class Info {
                     artists.set(track.max_artist_key, track.artist);
                     this.addArtistTitle(artistTitle, [track.artist]);
                 }
-                keys.push([[track.max_artist_key, track.title.lower()]]);
+                keys.push([[track.max_artist_key, track.title.toLowerCase()]]);
             }
             else {
                 keys.push([]);
