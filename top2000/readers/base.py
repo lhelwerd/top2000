@@ -12,6 +12,7 @@ from typing import ClassVar, Literal, TypeVar, overload
 
 import tomllib
 
+from ..logging import LOGGER
 from ..normalization import Normalizer
 
 BaseT = TypeVar("BaseT", bound=type["Base"])
@@ -407,15 +408,27 @@ class Base(ABC):
         self._clear_previous_years(row, fields)
 
         best_key, keys, rejected_keys = self._update_keys(position, row, fields)
-        # if best_key == ("george michael & queen", "somebody to love (live)"):
-        #    print(self._year, keys, rejected_keys)
+        LOGGER.track(
+            best_key[0],
+            ("george michael & queen", "somebody to love (live)"),
+            self._year,
+            keys,
+            rejected_keys,
+        )
         for key in keys:
             if self._tracks[key].get("best") is not True:
                 self._tracks[key]["best"] = best_key[0]
                 self._tracks[key]["best_title"] = best_key[1]
 
-        # if row[fields["title"]] == "Zombie":
-        #    print(self._year, best_key, keys, rejected_keys, position)
+        LOGGER.track(
+            str(row[fields["title"]]),
+            "Zombie",
+            self._year,
+            best_key,
+            keys,
+            rejected_keys,
+            position,
+        )
         if position is not None and not self._is_current_year:
             self._tracks[best_key][str(int(self._year))] = position
 
@@ -467,8 +480,6 @@ class Base(ABC):
         best_key, keys, rejected_keys = self._find_keys(
             row, fields, artist_alternatives, title_alternatives
         )
-        # if best_key == ("george michael & queen", "somebody to love (live)"):
-        #    print(self._year, artist_alternatives, title_alternatives)
 
         if self._is_current_year and position in self._positions:
             new_row = row
@@ -506,7 +517,9 @@ class Base(ABC):
             if key in keys or key in rejected_keys:
                 continue
 
-            best_key, valid = self._update_row(key, row, pos_field, best_key)
+            best_key, valid = self._update_row(
+                key, row, pos_field=pos_field, best_key=best_key
+            )
             if valid:
                 keys[key] = True
             else:
@@ -532,7 +545,7 @@ class Base(ABC):
         key: Key,
         row: Row,
         pos_field: str | None = None,
-        best_key: None = None,
+        best_key: Key | None = None,
     ) -> tuple[Key | None, bool]: ...
 
     def _update_row(
@@ -548,19 +561,26 @@ class Base(ABC):
 
         if key not in self._tracks:
             self._tracks[key] = row.copy()
-            # print(key, self._tracks[key])
             return best_key, True
 
         new_row = row.copy()
-        # if "queen" in key[0] and "somebody to love" in key[1]:
-        #    print(key, best_key, repr(self._tracks[key].get("best")),
-        #          self._tracks[key].get(pos_field),
-        #          self._tracks[key].get(str(int(self._year))),
-        #          self._check_collision(key, pos_field),
-        #          row.get(pos_field), row.get(str(int(self._year))))
+        LOGGER.track(
+            "queen/somebody to love",
+            "/".join(key),
+            key,
+            best_key,
+            self._tracks[key],
+            row,
+        )
         if self._check_collision(key, pos_field):
-            # print(f"Potential collision ({self._year}: {key!r} {best_key!r} {row!r}")
-            # print(self._tracks[key])
+            LOGGER.debug(
+                "Potential collision (%d: %r %r %r %r",
+                self._year,
+                key,
+                best_key,
+                row,
+                self._tracks[key],
+            )
 
             if (
                 pos_field in self._tracks[key]
@@ -574,10 +594,16 @@ class Base(ABC):
                 and "best" in self._tracks[key]
                 and self._tracks[key]["best"] is not True
             ):
-                # if self._tracks[key]["artiest"].lower() == "di-rect":
-                # if self._tracks[key]["titel"] == "Times Are Changing":
-                # print(f"Collision ({self._year}): {key!r} {best_key!r} {row!r}")
-                # print(self._tracks[key])
+                LOGGER.track(
+                    "di-rect",
+                    str(self._tracks[key]["artiest"]).lower(),
+                    "Collision",
+                    self._year,
+                    key,
+                    best_key,
+                    row,
+                    self._tracks[key],
+                )
                 self._tracks[key] = new_row
 
             return best_key, False
@@ -591,7 +617,6 @@ class Base(ABC):
             )
 
         self._tracks[key] = new_row
-        # print(key, self._tracks[key])
         return best_key, True
 
     def _check_collision(self, key: Key, pos_field: str | None) -> bool:
@@ -611,10 +636,15 @@ class Base(ABC):
         artist_alternatives: list[str],
         title_alternatives: list[str],
     ) -> tuple[Key, bool]:
-        # if "iron butterfly" in artist_alternatives[-1].lower():
-        # if "boogie wonderland" in title_alternatives[-1]:
-        #    print(self._year, artist_alternatives, title_alternatives,
-        #          best_key, self._tracks[best_key])
+        LOGGER.track(
+            "iron butterfly",
+            artist_alternatives[-1].lower(),
+            self._year,
+            artist_alternatives,
+            title_alternatives,
+            best_key,
+            self._tracks[best_key],
+        )
         old_current_year = self._is_current_year
         self._is_current_year = True
         best_key = self._update_row(best_key, row, best_key=best_key)[0]
@@ -624,9 +654,12 @@ class Base(ABC):
             # Update to best combination for current year
             self._tracks[best_key]["artiest"] = artist_alternatives[-1]
             self._tracks[best_key]["titel"] = title_alternatives[-1]
-            # if self._tracks[best_key]["titel"].startswith("Comptine"):
-            #    print(title_alternatives)
-            #    print(self._tracks[best_key])
+            LOGGER.track(
+                "Comptine",
+                str(self._tracks[best_key]["titel"]),
+                title_alternatives,
+                self._tracks[best_key],
+            )
 
         return best_key, False
 
@@ -656,8 +689,13 @@ class Base(ABC):
             self._tracks[best_key]["best"] = True
             for key in chain([best_key], keys, rejected_keys):
                 self._artists.setdefault(key[0], [])
-                # if "Mary J" in self._tracks[best_key]["artiest"]:
-                #    print(position, key, self._artists[key[0]])
+                LOGGER.track(
+                    "Mary J",
+                    str(self._tracks[best_key]["artiest"]),
+                    position,
+                    key,
+                    self._artists[key[0]],
+                )
                 if position not in self._artists[key[0]]:
                     bisect.insort(self._artists[key[0]], position)
 
@@ -703,8 +741,9 @@ class Base(ABC):
     ) -> Key | None:
         if key[0] in primary.artists:
             chart = tuple(primary.artists[key[0]])
-            # if "gotye" in key[0] or "kimbra" in key[0]:
-            #    print(key, chart, one, relevant_keys)
+            LOGGER.track(
+                key[0], ("gotye", "kimbra"), key, chart, one, relevant_keys
+            )
             if len(chart) == 1:
                 normalizer = Normalizer.get_instance()
                 if one is None and not normalizer.find_artist_splits(key[0])[1]:

@@ -7,6 +7,7 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import override
 
+from ..logging import LOGGER
 from ..readers.base import (
     Artists,
     ExtraData,
@@ -198,9 +199,12 @@ class JSON(Format):
         numeric_fields: set[str],
     ) -> Row:
         track = reader.tracks[keys[0]]
-        # if track.get("title_link") == "Master Blaster (Jammin')":
-        #    print(track)
-        #    print(fields)
+        LOGGER.track(
+            str(track.get("title_link")),
+            "Master Blaster (Jammin')",
+            track,
+            fields,
+        )
         track = {
             field: track[key] for key, field in fields.items() if key in track
         }
@@ -231,8 +235,12 @@ class JSON(Format):
                     relevant_keys, key_pair[0], key_pair[1], primary=readers[0]
                 )
             primary = False
-        # if "bob marley" in list(relevant_keys.values())[0][0]:
-        #    print(reader_keys, relevant_keys)
+        LOGGER.track(
+            "bob marley",
+            next(iter(relevant_keys.values()))[0],
+            reader_keys,
+            relevant_keys,
+        )
         return list(relevant_keys.values())
 
     def _select_artists(

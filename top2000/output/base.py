@@ -8,6 +8,7 @@ from pathlib import Path
 import tomllib
 from typing import ClassVar, TypeVar
 
+from ..logging import LOGGER
 from ..readers.base import Artists, Key, Positions
 from ..readers.base import Base as ReaderBase
 
@@ -143,16 +144,27 @@ class Format:
         max_artist_key = None
         max_position = 0
         for possible_key in keys:
-            # if possible_key[1] == "we all stand together":
-            #    print(possible_key, max_tracks, max_artist_key,
-            #          artists.get(possible_key[0]))
+            LOGGER.track(
+                "we all stand together",
+                possible_key[1],
+                possible_key,
+                max_tracks,
+                max_artist_key,
+                artists.get(possible_key[0]),
+            )
             if possible_key[0] not in artists:
                 continue
             num_tracks = len(artists[possible_key[0]])
             track_position = artists[possible_key[0]].index(position)
-            # if possible_key[1].startswith("als ik je weer zie"):
-            #    print(possible_key, num_tracks, track_position,
-            #          max_tracks, max_position)
+            LOGGER.track(
+                possible_key[1],
+                "als ik je weer zie",
+                possible_key,
+                num_tracks,
+                track_position,
+                max_tracks,
+                max_position,
+            )
             if num_tracks > max_tracks or (
                 num_tracks == max_tracks and track_position > max_position
             ):
