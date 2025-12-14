@@ -20,7 +20,7 @@ export default class Tabs {
         document.documentElement.scrollBy(0, -stickyHeight);
     }
 
-    fixAnchorScroll(content, d, hash, selector=null) {
+    fixAnchorScroll(content, d, hash, selector = null) {
         if (selector === null) {
             if (content.empty() || content.classed("is-hidden")) {
                 return false;
@@ -44,17 +44,22 @@ export default class Tabs {
         return false;
     }
 
+    checkActive(content, d, hash) {
+        if (hash.startsWith("#/")) { // Tab datum
+            return hash.startsWith(`#/${d}`);
+        }
+        return /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
+            this.fixAnchorScroll(content, d, hash, hash) :
+            d === this.data.year; // Fallback: current year list
+    }
+
     setActive(tab) {
         const hash = document.location.hash;
         tab.attr("class", d => hash.startsWith(`#/${d}`) ? "" : this.tabs.get(d).classed)
             .classed("is-active", d => {
                 const content = this.container.select(this.tabs.get(d).container);
-                const active = hash.startsWith("#/") ? // Tab datum
-                    hash.startsWith(`#/${d}`) :
-                    /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
-                    this.fixAnchorScroll(content, d, hash, hash) :
-                    d === this.data.year; // Fallback: current year list
-                if (!active && /^#\/[0-9]{4}/.test(hash) &&
+                const active = this.checkActive(content, d, hash);
+                if (!active && /^#\/\d{4}/.test(hash) &&
                     this.tabs.get(d).year
                 ) {
                     return active;
@@ -81,17 +86,26 @@ export default class Tabs {
             .attr("id", "tabs-list");
     }
 
+    selectYearIcon(year) {
+        const latestYear = this.data.latest_year || this.data.year;
+        if (year === latestYear) {
+            return String.fromCodePoint(0x1f534);
+        }
+        if (year === this.data.year) {
+            return String.fromCodePoint(0x1f535);
+        }
+        return String.fromCodePoint(year < this.data.year ? 0x1f519 : 0x1f51c);
+    }
+
     enable(load) {
         const latestYear = this.data.latest_year || this.data.year;
         const years = this.data.old_data_available ?
-            [...Array(latestYear - this.data.first_year + 1).keys()] :
+            [...new Array(latestYear - this.data.first_year + 1).keys()] :
             [latestYear - this.data.first_year];
         for (const index of years) {
             const year = this.data.first_year + index;
             this.tabs.set(year, {
-                icon: String.fromCodePoint(year === latestYear ? 0x1f534 :
-                    year === this.data.year ? 0x1f535 :
-                    year < this.data.year ? 0x1f519 : 0x1f51c),
+                icon: this.selectYearIcon(year),
                 text: `${year}`,
                 container: ".main",
                 year: true,
@@ -108,17 +122,16 @@ export default class Tabs {
                             /* webpackInclude: /output-\d\d\d\d\.json$/ */
                             `@output/output-${d}.json`
                         ).then(data => {
-                            load(new Data(data)).enable(load);
+                            load(new Data(data, this.locale)).enable(load);
                             this.scroll.scrollYearHash(d, hash);
                         });
                     }
                 },
-                classed: year === latestYear ? "" :
-                    year < this.data.year - 1 || year > this.data.year + 1 ?
+                classed: year !== latestYear && (year < this.data.year - 1 || year > this.data.year + 1) ?
                     "is-hidden" : ""
             });
         }
-    
+
         this.tabs.set("charts", {
             icon: String.fromCodePoint(0x1f4ca),
             text: "Charts",
@@ -147,7 +160,7 @@ export default class Tabs {
             .text(d => `\u00a0${this.tabs.get(d).text}`);
 
         items.call(tab => this.setActive(tab));
-        d3.select(window).on("hashchange",
+        d3.select("body").on("hashchange",
             () => items.call(tab => this.setActive(tab))
         );
     }

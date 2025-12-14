@@ -46,7 +46,7 @@ export default class Scroll {
                 d3.timerFlush();
                 if (this.currentTimer !== null && this.currentTimer === previousTimer) {
                     this.currentTimer.stop();
-                    setNextCurrent(...this.currentTimerParams,
+                    this.setNextCurrent(...this.currentTimerParams,
                         this.container.selectAll(rowsSelector).nodes(), this.getCurrentDate()
                     );
                 }
@@ -61,7 +61,7 @@ export default class Scroll {
         });
     }
 
-    scrollPage(d, current=null) {
+    scrollPage(d, current = null) {
         const posNode = this.scrollPositionRow(d);
         if (posNode) {
             this.pagination.selectAll(".pagination-link")
@@ -78,7 +78,7 @@ export default class Scroll {
     scrollPositionRow(d) {
         const data = this.data;
         const posCell = this.container.selectAll(`${rowsSelector} > td:first-child`)
-            .select(function(pos) {
+            .select(function (pos) {
                 return d === data.positions[pos] ? this : null;
             })
             .node();
@@ -97,7 +97,7 @@ export default class Scroll {
         ));
     }
 
-    updatePagination(current=null) {
+    updatePagination(current = null) {
         const count = Math.min(Math.max(this.data.end, this.data.front), 20)
         const pages = d3.ticks(...d3.nice(this.data.end, this.data.front, count), count);
         if (current) {
@@ -152,14 +152,14 @@ export default class Scroll {
     getCurrentDate() {
         return Date.now();
     }
-    
+
     setCurrent(d, i, nodes) {
         const now = this.getCurrentDate();
         const previous = i - this.data.direction;
         const next = i + this.data.direction;
         const isCurrent = d.timestamp <= now && (
             next in this.data.tracks ? this.data.tracks[next].timestamp > now :
-            new Date(this.data.year + 1, 0) > now
+                new Date(this.data.year + 1, 0) > now
         );
         d3.select(nodes[i]).classed("is-selected", isCurrent);
         if (isCurrent) {
@@ -169,8 +169,8 @@ export default class Scroll {
                 this.state.autoscroll = (this.state.autoscroll === null ? true : null);
             }
             if (this.state.autoscroll) {
-                window.requestAnimationFrame(() => {
-                    nodes[i].scrollIntoView({behavior: "smooth", block: "center"});
+                globalThis.requestAnimationFrame(() => {
+                    nodes[i].scrollIntoView({ behavior: "smooth", block: "center" });
                 });
             }
             this.setNextCurrent(next, i, nodes, now);
@@ -208,7 +208,7 @@ export default class Scroll {
         const diff = timestamp - now + currentUpdateDelay;
         const day = 24 * 60 * 60 * 1000;
         this.nextPage.datum(this.data.positions[pos])
-            .attr("href", d => `#/${data.year}/${d}`)
+            .attr("href", d => `#/${this.data.year}/${d}`)
             .classed("is-hidden", false)
             .text(diff > day ? this.locale.formatTimerLong(new Date(diff - day)) :
                 this.locale.formatTimerShort(new Date(diff))
@@ -221,7 +221,7 @@ export default class Scroll {
                 this.nextPage.classed("is-hidden", true);
             }
             else {
-                window.requestAnimationFrame(() => {
+                globalThis.requestAnimationFrame(() => {
                     this.nextPage.text(diff - elapsed > day ?
                         this.locale.formatTimerLong(new Date(diff - elapsed - day)) :
                         this.locale.formatTimerShort(new Date(diff - elapsed))

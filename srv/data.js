@@ -1,8 +1,8 @@
 export default class Data {
-    constructor(data) {
+    constructor(data, locale) {
         Object.assign(this, data);
         this.direction = this.reverse ? 1 : -1;
-        this.front = this.positions[this.positions.length - 1];
+        this.front = this.positions.at(-1);
         this.end = this.positions[0];
         this.start = this.reverse ? this.end : this.front;
 

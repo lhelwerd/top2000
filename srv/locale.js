@@ -17,4 +17,8 @@ export default class Locale {
         this.formatTimerLong = this.time.utcFormat("%-j:%H:%M:%S");
         this.formatTimerShort = this.time.utcFormat("%H:%M:%S");
     }
+
+    get code() {
+        return "nl";
+    }
 }

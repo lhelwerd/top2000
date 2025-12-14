@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import {toggleInfoCell} from "../info.js";
+import { toggleInfoCell } from "../info.js";
 
 export default class Table {
     constructor(locale, data, search, scroll, state) {
@@ -36,16 +36,20 @@ export default class Table {
             .join("tr")
             .classed("is-clickable", true)
             .each((d, i, nodes) => this.scroll.setCurrent(d, i, nodes));
-        const infoParams = [
-            this.locale, this.data, this.state, this.scroll, this.search
-        ];
+        const infoParams = {
+            locale: this.locale,
+            data: this.data,
+            state: this.state,
+            scroll: this.scroll,
+            search: this.search
+        };
         const state = this.state;
-        rows.on("click", function(_, d) {
-            toggleInfoCell(...infoParams, this, d);
+        rows.on("click", function (_, d) {
+            toggleInfoCell(infoParams, this, d);
             state.autoscroll = false;
         });
         rows.selectAll("td")
-            .data((_, i) => Array(this.data.columns.length + 1).fill(i))
+            .data((_, i) => new Array(this.data.columns.length + 1).fill(i))
             .join("td")
             .text((pos, i) => i === this.data.columns.length ? "\u25b6" :
                 this.data.fields[this.data.columns[i]].field(this.data.tracks[pos],

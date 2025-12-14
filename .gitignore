@@ -18,6 +18,7 @@ wiki*.html
 __pycache__
 *.pyc
 env/
+.venv/
 mypy-report/
 
 # Python distribution

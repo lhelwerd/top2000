@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import {sep} from "./format.js";
+import { sep } from "./format.js";
 
 const chartLimit = 12;
 
@@ -18,12 +18,12 @@ const symbolEmoji = [
 ];
 
 export class Info {
-    constructor(locale, data, state, scroll, search, pos, cell, d) {
-        this.locale = locale;
-        this.data = data;
-        this.state = state;
-        this.scroll = scroll;
-        this.search = search;
+    constructor(context, pos, cell, d) {
+        this.locale = context.locale;
+        this.data = context.data;
+        this.state = context.state;
+        this.scroll = context.scroll;
+        this.search = context.search;
 
         this.pos = pos;
         this.cell = cell;
@@ -81,12 +81,12 @@ export class Info {
         const marginLeft = 40;
 
         this.x = d3.scaleUtc()
-            .domain([this.years[0], this.years[this.years.length - 1]])
+            .domain([this.years[0], this.years.at(-1)])
             .range([marginLeft, width - marginRight]);
         this.y = d3.scaleLinear()
             .range([height - marginBottom, marginTop]);
         const xTicks = this.x.ticks(this.data.year - this.data.first_year);
-        xTicks.push(this.years[this.years.length - 1]);
+        xTicks.push(this.years.at(-1));
         const xAxis = d3.axisBottom(this.x)
             .tickValues(xTicks)
             .tickFormat(this.locale.formatYear);
@@ -119,12 +119,12 @@ export class Info {
             );
 
         const line = d3.line()
-            .defined(p => typeof p !== "undefined")
+            .defined(p => p !== undefined)
             .x((_, i) => this.x(this.years[i]))
             .y(p => this.y(p))
             .curve(d3.curveMonotoneX);
         this.svg.selectAll("g.lines")
-            .data(this.positions.values(), key => key[key.length - 1])
+            .data(this.positions.values(), key => key.at(-1))
             .join(
                 enter => enter.append("g")
                     .classed("lines", true)
@@ -137,7 +137,7 @@ export class Info {
             .attr("stroke", (_, i) => stroke(i % cycle))
             .attr("d", d => line(d));
         const points = this.svg.selectAll("g.points")
-            .data(this.positions.values(), key => key[key.length - 1])
+            .data(this.positions.values(), key => key.at(-1))
             .join("g")
             .classed("points", true)
             .attr("font-size", 10)
@@ -145,7 +145,7 @@ export class Info {
             .attr("text-anchor", "middle")
             .selectAll("g")
             .data((d, i) => d3.cross(d3.filter(d3.map(d, (pos, j) => [pos, j]),
-                p => typeof p[0] !== "undefined"
+                p => p[0] !== undefined
             ), [i], (a, b) => [...a, b]))
             .join(
                 enter => {
@@ -194,8 +194,7 @@ export class Info {
     }
 
     makeArtistChart(artist, i, chartCell, charts) {
-        const isLink = this.data.artist_links &&
-            this.data.artist_links[this.pos][artist[0]];
+        const isLink = this.data.artist_links?.[this.pos][artist[0]];
         let key = isLink ? artist[1].toLowerCase() : artist[0];
         if (!this.data.artists[key]) {
             key = this.data.keys[this.pos][i][0];
@@ -241,7 +240,7 @@ export class Info {
         this.fillArtistTable(subtable, chart, key);
     }
 
-    addArtistTitle(artistTitle, artist, isLink=false, appendLinkOnly=false) {
+    addArtistTitle(artistTitle, artist, isLink = false, appendLinkOnly = false) {
         if (!artistTitle.select(":first-child").empty()) {
             if (appendLinkOnly && !isLink) {
                 return;
@@ -305,7 +304,7 @@ export class Info {
             .classed("is-clickable", d => d !== position)
             .call(row => this.setTrackSelection(row))
             .selectAll("td")
-            .data(d => Array(this.data.artistColumns.length + 1).fill(d))
+            .data(d => new Array(this.data.artistColumns.length + 1).fill(d))
             .join(enter => enter.append("td").each((d, i, nodes) => {
                 const cell = d3.select(nodes[i]);
                 if (i === this.data.artistColumns.length) {
@@ -316,8 +315,14 @@ export class Info {
                             const posNode = this.scroll.scrollPositionRow(d);
                             if (posNode) {
                                 // Expand info
-                                toggleInfoCell(this.locale, this.data,
-                                    this.state, this.scroll, this.search,
+                                toggleInfoCell(
+                                    {
+                                        locale: this.locale,
+                                        data: this.data,
+                                        state: this.state,
+                                        scroll: this.scroll,
+                                        search: this.search
+                                    },
                                     posNode, null, false, position
                                 );
                                 this.state.autoscroll = false;
@@ -441,7 +446,7 @@ export class Info {
             !this.artistPositions.has(this.data.positions[r.id]) :
             this.data.artists[r.id].length > 1 && !this.artists.has(r.id);
         const searchOptions = {
-            boost: {artist: 1.5},
+            boost: { artist: 1.5 },
             filter: filter,
             fuzzy: 0.2,
             prefix: true
@@ -465,7 +470,7 @@ export class Info {
     }
 }
 
-export const toggleInfoCell = (locale, data, state, scroll, search, node, d=null, toggle=true, other=null) => {
+export const toggleInfoCell = (context, node, d = null, toggle = true, other = null) => {
     const next = d3.select(node.nextSibling);
     if (!next.empty() && next.classed("info")) {
         if (toggle) {
@@ -488,11 +493,11 @@ export const toggleInfoCell = (locale, data, state, scroll, search, node, d=null
     const cell = d3.select(node.parentNode).insert("tr", () => node.nextSibling)
         .classed("info", true)
         .append("td")
-        .attr("colspan", data.columns.length + 1)
+        .attr("colspan", context.data.columns.length + 1)
         .append("div")
         .classed("columns is-multiline is-centered is-vcentered", true);
 
-    const info = new Info(locale, data, state, scroll, search, pos, cell, d);
+    const info = new Info(context, pos, cell, d);
     if (other) {
         info.addPositions(other);
     }
