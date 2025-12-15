@@ -4,19 +4,25 @@ NPO Radio 2 Top 2000 CSV reader.
 
 import csv
 from pathlib import Path
+from typing import final
+
+from typing_extensions import override
 
 from .base import Artists, Base, FieldMap, Key, Positions, Row, Tracks
 
 
+@final
 class CSV(Base):
     """
     Read CSV file describing NPO Radio 2 Top 2000 charts from one or more years.
     """
 
     @property
+    @override
     def input_format(self) -> str | None:
         return "csv"
 
+    @override
     def read(self) -> None:
         csv_name_format = self._get_str_field("name", self.csv_name_format)
         csv_path = Path(csv_name_format.format(int(self._year)))
@@ -52,16 +58,17 @@ class CSV(Base):
         with csv_path.open("r", encoding=encoding) as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
-                self._read_row(row, fields, offset=offset)
+                _ = self._read_row(row, fields, offset=offset)
 
+    @override
     def _read_row(
         self, row: Row, fields: FieldMap, offset: int = 0
-    ) -> tuple[Key | None, int | None, list[Key]]:
+    ) -> tuple[Key | None, int | None]:
         pos_field = fields.get("pos", "position")
         if pos_field in row and row[pos_field] == "":
             # Date/time row, track last_time
             self._last_time = str(row[fields["title"]])
-            return None, None, []
+            return None, None
         if pos_field not in row and str(int(self._year)) in row:
             row[pos_field] = row[str(int(self._year))]
 

@@ -2,34 +2,40 @@
 Base settings-based output format.
 """
 
+import tomllib
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import ClassVar, TypeVar
 
-import tomllib
-
-from ..readers.base import Artists, Key, Positions
-from ..readers.base import Base as ReaderBase
+from ..logging import LOGGER
+from ..readers.base import Artists, Base as ReaderBase, Key, Positions
 
 Setting = int | bool | dict[str, str]
+Settings = dict[str, dict[str, Setting]]
 KeyPair = tuple[int, list[Key]]
 
+FormatT = TypeVar("FormatT", bound=type["Format"])
 
-class Format:
+
+class Format(ABC):
     """
     Output formatter.
     """
 
-    _formats: dict[str, type["Format"]] = {}
-    _keys: dict[type["Format"], str] = {}
-    _output_settings: dict[str, dict[str, dict[str, Setting]]] | None = None
+    _formats: ClassVar[dict[str, type["Format"]]] = {}
+    _keys: ClassVar[dict[type["Format"], str]] = {}
+    _output_settings: ClassVar[
+        dict[str, dict[str, dict[str, Setting]]] | None
+    ] = None
 
     @classmethod
-    def register(cls, name: str) -> Callable[[type["Format"]], type["Format"]]:
+    def register(cls, name: str) -> Callable[[FormatT], FormatT]:
         """
         Register an output format by its settings key.
         """
 
-        def decorator(subclass: type["Format"]) -> type["Format"]:
+        def decorator(subclass: FormatT) -> FormatT:
             cls._formats[name] = subclass
             cls._keys[subclass] = name
             return subclass
@@ -45,7 +51,7 @@ class Format:
         return cls._formats[name]
 
     @classmethod
-    def _load_settings(cls) -> dict[str, dict[str, Setting]]:
+    def _load_settings(cls) -> Settings:
         if cls._output_settings is None:
             with Path("output.toml").open("rb") as settings_file:
                 cls._output_settings = tomllib.load(settings_file)
@@ -54,10 +60,10 @@ class Format:
     def __init__(
         self, first_year: float, current_year: float, latest_year: float
     ) -> None:
-        self._first_year = int(first_year)
-        self._current_year = int(current_year)
-        self._latest_year = int(latest_year)
-        self._settings = self._load_settings()
+        self._first_year: int = int(first_year)
+        self._current_year: int = int(current_year)
+        self._latest_year: int = int(latest_year)
+        self._settings: Settings = self._load_settings()
 
         self.reset()
 
@@ -69,7 +75,9 @@ class Format:
 
         return tuple(self._settings.keys())
 
-    def _get_int_setting(self, output_format: str, key: str, default: int = 0) -> int:
+    def _get_int_setting(
+        self, output_format: str, key: str, default: int = 0
+    ) -> int:
         setting = self._settings.get(output_format, {}).get(key, default)
         assert isinstance(setting, int), f"{key} must be an integer"
         return setting
@@ -96,6 +104,7 @@ class Format:
 
         self._last_position: int | None = None
 
+    @abstractmethod
     def output_file(
         self,
         readers: list[ReaderBase],
@@ -136,16 +145,27 @@ class Format:
         max_artist_key = None
         max_position = 0
         for possible_key in keys:
-            # if possible_key[1] == "we all stand together":
-            #    print(possible_key, max_tracks, max_artist_key,
-            #          artists.get(possible_key[0]))
+            LOGGER.track(
+                "we all stand together",
+                possible_key[1],
+                possible_key,
+                max_tracks,
+                max_artist_key,
+                artists.get(possible_key[0]),
+            )
             if possible_key[0] not in artists:
                 continue
             num_tracks = len(artists[possible_key[0]])
             track_position = artists[possible_key[0]].index(position)
-            # if possible_key[1].startswith("als ik je weer zie"):
-            #    print(possible_key, num_tracks, track_position,
-            #          max_tracks, max_position)
+            LOGGER.track(
+                possible_key[1],
+                "als ik je weer zie",
+                possible_key,
+                num_tracks,
+                track_position,
+                max_tracks,
+                max_position,
+            )
             if num_tracks > max_tracks or (
                 num_tracks == max_tracks and track_position > max_position
             ):

@@ -260,18 +260,15 @@ export default class Charts {
 
     getArtistName(d) {
         const filterName = (artist) => artist.toLowerCase() === d;
-        for (let i = 0; i < this.data.artists[d].length; i++) {
-            const track = this.data.findTrack(this.data.artists[d][i]);
+        for (const position of this.data.artists[d]) {
+            const track = this.data.findTrack(position);
             if (filterName(track.artist)) {
                 return track.artist;
             }
             if (this.data.artist_links) {
-                const names = d3.filter(
-                    Object.values(this.data.findTrack(this.data.artists[d][i], "artist_links")),
-                    filterName
-                );
-                if (names[0]) {
-                    return names[0];
+                const name = Object.values(this.data.findTrack(position, "artist_links")).find(filterName);
+                if (name) {
+                    return name;
                 }
             }
         }
@@ -281,7 +278,7 @@ export default class Charts {
     isOverlap(chart, key) {
         return chart.isSubsetOf(new Set(this.data.artists[key]));
     }
-    
+
     isCollab(d) {
         const chart = new Set(this.data.artists[d]);
         return d3.some(this.data.artists[d], pos => {
@@ -329,13 +326,13 @@ export default class Charts {
     }
 
     getTitleLength(d) {
-        return d.title.replaceAll(/ *\([^)]+\) */g, "").length;
+        return d.title.replaceAll(/(?: |^)\([^)]+\)(?: |$)/g, "").length;
     }
 
     getTrackTime(i) {
-        const next = i + direction;
+        const next = i + this.data.direction;
         if (!(next in this.data.tracks)) {
-            return new Date(data.year + 1, 0) - this.data.tracks[i].timestamp;
+            return new Date(this.data.year + 1, 0) - this.data.tracks[i].timestamp;
         }
         const nextDate = new Date(this.data.tracks[next].timestamp);
         let diff = 0;
@@ -347,6 +344,23 @@ export default class Charts {
         }
         return this.data.tracks[next].timestamp - this.data.tracks[i].timestamp - diff;
     };
+
+    createHistChart(chart) {
+        const source = () => {
+            const values = chart.source();
+            return d3.bin().thresholds(chart.binCount ? chart.binCount :
+                d3.range(...d3.nice(...d3.extent(values), chart.binSize),
+                    chart.binSize
+                )
+            )(values);
+        };
+        chart.min = chart.min || (_ => 0);
+        chart.max = chart.max || (x => d3.max(x.domain(), bin => bin.length));
+        chart.y = chart.y || (bin => bin.length);
+        chart.x = chart.x || (bin => `${bin.x0}\u2014${bin.x1}`);
+        chart.count = chart.count || chart.binCount;
+        return source;
+    }
 
     createChart(column, chart) {
         // Stats chart
@@ -362,19 +376,7 @@ export default class Charts {
 
         let source = chart.source;
         if (chart.type === "hist") {
-            source = () => {
-                const values = chart.source();
-                return d3.bin().thresholds(chart.binCount ? chart.binCount :
-                    d3.range(...d3.nice(...d3.extent(values), chart.binSize),
-                        chart.binSize
-                    )
-                )(values);
-            };
-            chart.min = chart.min || (_ => 0);
-            chart.max = chart.max || (x => d3.max(x.domain(), bin => bin.length));
-            chart.y = chart.y || (bin => bin.length);
-            chart.x = chart.x || (bin => `${bin.x0}\u2014${bin.x1}`);
-            chart.count = chart.count || chart.binCount;
+            source = this.createHistChart(chart);
         }
 
         const hExtent = [marginLeft, width - marginRight];
@@ -407,15 +409,17 @@ export default class Charts {
             .attr("transform", `translate(0,${height - marginBottom})`)
             .call(d3.axisBottom(chart.swap ? y : x)
                 .tickFormat(chart.swap ? chart.yFormat :
-                    chart.xFormat ? chart.xFormat : chart.x
+                    (chart.xFormat || chart.x)
                 ));
         svg.append("g")
             .attr("transform", `translate(${marginLeft},0)`)
             .call(d3.axisLeft(chart.swap ? x : y)
-                .tickFormat((d, i) => chart.swap && chart.xFormat ?
-                    chart.xFormat(d, i) :
-                    Number.isInteger(d) ? d : i + 1
-                ));
+                .tickFormat((d, i) => {
+                    if (chart.swap && chart.xFormat) {
+                        return chart.xFormat(d, i);
+                    }
+                    return Number.isInteger(d) ? d : i + 1;
+                }));
         const bar = svg.selectAll("g.bars")
             .data(x.domain())
             .join("g")
@@ -502,12 +506,12 @@ export default class Charts {
                 chart => chart.enabled ? chart.enabled() : true
             ))
             .join(enter => enter.append(
-                    d => document.createElement(d.type === "divider" ? "hr" :"a")
-                )
+                d => document.createElement(d.type === "divider" ? "hr" : "a")
+            )
                 .attr("href", d => d.id ? `#/charts/${d.id}` : null)
                 .classed("dropdown-item", d => d.type !== "divider")
                 .classed("dropdown-divider", d => d.type === "divider")
-                .on("click", function(event, chart) {
+                .on("click", function (event, chart) {
                     if (chart.type === "divider") {
                         event.stopPropagation();
                         return;

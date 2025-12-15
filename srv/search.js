@@ -1,6 +1,6 @@
 import MiniSearch from "minisearch";
 import * as d3 from "d3";
-import {toggleInfoCell} from "./info.js";
+import { toggleInfoCell } from "./info.js";
 
 const searchColumns = ["position", "artist", "title"];
 
@@ -28,6 +28,15 @@ export default class SearchModal {
                     this.data.findTrack(this.data.artists[i][0])[fieldName];
             }
         });
+        this.fill();
+        this.artistFields = {
+            position: d => `${this.data.artists[d][0]}.`,
+            artist: d => this.data.findTrack(this.data.artists[d][0]).artist,
+            title: d => `(${this.data.artists[d].length}\u00d7)`
+        };
+    }
+
+    fill() {
         for (const [key, value] of Object.entries(this.data)) {
             if (key === "positions") {
                 this.search.addAllAsync(d3.range(value.length));
@@ -36,14 +45,9 @@ export default class SearchModal {
                 this.search.addAllAsync(Object.keys(value));
             }
         }
-        this.artistFields = {
-            position: d => `${this.data.artists[d][0]}.`,
-            artist: d => this.data.findTrack(this.data.artists[d][0]).artist,
-            title: d => `(${this.data.artists[d].length}\u00d7)`
-        };
     }
 
-    createModal = () => {
+    createModal() {
         d3.select("#search").remove();
         const modal = d3.select("body").append("div")
             .attr("id", "search")
@@ -62,8 +66,15 @@ export default class SearchModal {
             const posNode = this.scroll.scrollPositionRow(this.data.positions[r.id]);
             if (posNode) {
                 // Expand info
-                toggleInfoCell(this.locale, this.data, this.state, this.scroll,
-                    this, posNode, null, false
+                toggleInfoCell(
+                    {
+                        locale: this.locale,
+                        data: this.data,
+                        state: this.state,
+                        scroll: this.scroll,
+                        search: this
+                    },
+                    posNode, null, false
                 );
                 this.state.autoscroll = false;
                 modal.classed("is-active", false);
@@ -116,11 +127,11 @@ export default class SearchModal {
             .join(enter => enter.append("tr")
                 .classed("is-clickable", true)
             )
-            .on("click", function(_, r) {
+            .on("click", function (_, r) {
                 handleClick(r, results, text);
             })
             .selectAll("td")
-            .data(r => Array(searchColumns.length).fill(r.id))
+            .data(r => new Array(searchColumns.length).fill(r.id))
             .join("td")
             .text((d, i) => Number.isInteger(d) ?
                 this.data.fields[searchColumns[i]].field(this.data.tracks[d], this.data.positions[d],

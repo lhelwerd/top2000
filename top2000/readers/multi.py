@@ -3,14 +3,18 @@ Multiple file reader.
 """
 
 from pathlib import Path
+from typing import final
 
-from .base import Artists, Base, Positions, Row
+from typing_extensions import override
+
+from .base import Artists, Base, FieldHolder, Positions, Row
 from .csv import CSV
 from .json import JSON
 
 OldFiles = tuple[tuple[float, str, str], ...]
 
 
+@final
 @Base.register("multi")
 class Years(Base):
     """
@@ -20,16 +24,31 @@ class Years(Base):
 
     has_multiple_years = True
 
+    def __init__(
+        self,
+        year: float | None = None,
+        is_current_year: bool = True,
+        fields: FieldHolder | None = None,
+    ) -> None:
+        super().__init__(
+            year=year, is_current_year=is_current_year, fields=fields
+        )
+        self._year_positions: dict[float, Positions] = {}
+        self._year_artists: dict[float, Artists] = {}
+
     @property
+    @override
     def input_format(self) -> str | None:
         return None
 
+    @override
     def reset(self) -> None:
         super().reset()
-        self._year_positions: dict[float, Positions] = {}
-        self._year_artists: dict[float, Artists] = {}
+        self._year_positions = {}
+        self._year_artists = {}
         self.reset_year()
 
+    @override
     def reset_year(self) -> None:
         self._positions = self._year_positions.setdefault(self._year, {})
         self._artists = self._year_artists.setdefault(self._year, {})
@@ -63,6 +82,7 @@ class Years(Base):
 
         return csv_name, json_name
 
+    @override
     def read(self) -> None:
         csv_name, json_name = self.format_filenames()
         self.read_files(csv_name, json_name)
@@ -83,7 +103,9 @@ class Years(Base):
         if current_year_json is not None and current_year_json != "":
             json = JSON(self._year, fields=self._fields)
             json.read_file(
-                Path(current_year_json), tracks=self._tracks, artists=self._artists
+                Path(current_year_json),
+                tracks=self._tracks,
+                artists=self._artists,
             )
             self._positions = self._year_positions[self._year] = json.positions
             self._artists = self._year_artists[self._year] = json.artists
@@ -122,13 +144,16 @@ class Years(Base):
                 # No JSON file, so instead use CSV (very old years)
                 # These are overview CSV files with possibly multiple years
                 # The current year position is stored in a "pos XXXX" field
-                self._fields.update_year(year, {"csv": {"pos": f"pos {int(year)}"}})
+                self._fields.update_year(
+                    year, {"csv": {"pos": f"pos {int(year)}"}}
+                )
                 csv = CSV(year, is_current_year=False, fields=self._fields)
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)
                 self._year_positions[year] = csv.positions
                 self._year_artists[year] = csv.artists
 
     @property
+    @override
     def credits(self) -> Row:
         return {
             "name": "NPO Radio 2 Top 2000",

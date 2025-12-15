@@ -1,4 +1,4 @@
-import {json} from "d3-fetch";
+import { json } from "d3-fetch";
 import data from "../output-sorted.json";
 
 const baseUrl = data.web_url || "https://lhelwerd.github.io/top2000";
@@ -19,11 +19,12 @@ const loadManifest = (manifest) => {
     }
 };
 
-(self.webpackChunktop2000 = self.webpackChunktop2000 || []).push(
-    [[543],{415:e=>{e.exports=data;}}]
+globalThis.webpackChunktop2000 = globalThis.webpackChunktop2000 || [];
+globalThis.webpackChunktop2000.push(
+    [[543], { 415: e => { e.exports = data; } }]
 );
 if (data.web_jsonp) {
-    window.jsonptop2000 = loadManifest;
+    globalThis.jsonptop2000 = loadManifest;
     const manifestUrl = new URL("manifest.jsonp", baseUrl);
     const manifestScript = document.createElement("script");
     manifestScript.setAttribute("src", manifestUrl);

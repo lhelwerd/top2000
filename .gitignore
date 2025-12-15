@@ -18,7 +18,14 @@ wiki*.html
 __pycache__
 *.pyc
 env/
+.venv/
 mypy-report/
+
+# Python distribution
+src/
+build/
+*.egg-info
+*.egg
 
 # Node.js package files
 dist/

@@ -6,11 +6,34 @@ import json
 from itertools import zip_longest
 from pathlib import Path
 
-from ..readers.base import Artists, ExtraData, Key, Row, RowElement
-from ..readers.base import Base as ReaderBase
+from typing_extensions import override
+
+from ..logging import LOGGER
+from ..readers.base import (
+    Artists,
+    Base as ReaderBase,
+    ExtraData,
+    Key,
+    RelevantKeys,
+    Row,
+    RowElement,
+)
 from .base import Format, KeyPair
 
 FieldMap = dict[str, str]
+
+Track = dict[str, RowElement | Row]
+Dump = dict[
+    str,
+    list[Track]
+    | list[int]
+    | list[list[Key]]
+    | Artists
+    | int
+    | bool
+    | dict[str, str]
+    | ExtraData,
+]
 
 
 @Format.register("json")
@@ -19,6 +42,9 @@ class JSON(Format):
     JSON file with all details.
     """
 
+    _last_position: int | None = None
+
+    @override
     def output_file(
         self,
         readers: list[ReaderBase],
@@ -29,12 +55,7 @@ class JSON(Format):
         if not readers:
             return False
         if path is None:
-            name = (
-                output_format
-                if self._current_year == self._latest_year
-                else self._current_year
-            )
-            path = Path(f"output-{name}.json")
+            path = self._generate_path(output_format)
 
         reverse = self._get_bool_setting(output_format, "reverse")
         relevant = self._get_bool_setting(output_format, "relevant")
@@ -43,12 +64,17 @@ class JSON(Format):
         self._sort_readers(readers)
 
         track_keys: list[list[Key]] = []
-        tracks = []
+        tracks: list[Track] = []
         positions: list[int] = []
-        reader_fields, numeric_fields = self._build_fields(readers, output_format)
+        reader_fields, numeric_fields = self._build_fields(
+            readers, output_format
+        )
 
         for reader_keys in zip_longest(
-            *(self._sort_positions(reader.positions, reverse) for reader in readers)
+            *(
+                self._sort_positions(reader.positions, reverse)
+                for reader in readers
+            )
         ):
             self._check_positions(reader_keys, reverse)
             tracks.append(
@@ -61,7 +87,7 @@ class JSON(Format):
 
             track_keys.append(self._select_keys(readers, reader_keys, relevant))
 
-        data = {
+        data: Dump = {
             "tracks": tracks,
             "positions": positions,
             "keys": track_keys,
@@ -79,6 +105,14 @@ class JSON(Format):
             json.dump(data, json_file, separators=(",", ":"))
 
         return True
+
+    def _generate_path(self, output_format: str) -> Path:
+        name = (
+            output_format
+            if self._current_year == self._latest_year
+            else self._current_year
+        )
+        return Path(f"output-{name}.json")
 
     def _sort_readers(self, readers: list[ReaderBase]) -> None:
         try:
@@ -140,7 +174,9 @@ class JSON(Format):
     ) -> dict[str, RowElement | Row]:
         track: dict[str, RowElement | Row] = {}
         primary = True
-        for reader, pair, fields in zip(readers, reader_keys, reader_fields):
+        for reader, pair, fields in zip(
+            readers, reader_keys, reader_fields, strict=True
+        ):
             if pair is None:
                 continue
 
@@ -148,7 +184,9 @@ class JSON(Format):
             subtrack = self._filter_track(reader, keys, fields, numeric_fields)
             if primary:
                 track.update(subtrack)
-                max_artist_key = self._find_artist_chart(position, keys, reader.artists)
+                max_artist_key = self._find_artist_chart(
+                    position, keys, reader.artists
+                )
                 if max_artist_key is not None:
                     track["max_artist_key"] = max_artist_key
             elif reader.input_format is not None:
@@ -160,17 +198,25 @@ class JSON(Format):
 
     @staticmethod
     def _filter_track(
-        reader: ReaderBase, keys: list[Key], fields: FieldMap, numeric_fields: set[str]
+        reader: ReaderBase,
+        keys: list[Key],
+        fields: FieldMap,
+        numeric_fields: set[str],
     ) -> Row:
         track = reader.tracks[keys[0]]
-        # if track.get("title_link") == "Master Blaster (Jammin')":
-        #    print(track)
-        #    print(fields)
-        track = {field: track[key] for key, field in fields.items() if key in track}
+        LOGGER.track(
+            str(track.get("title_link")),
+            "Master Blaster (Jammin')",
+            track,
+            fields,
+        )
+        track = {
+            field: track[key] for key, field in fields.items() if key in track
+        }
         for field in numeric_fields:
             if field in track:
                 if track[field] in {"", "0", 0}:
-                    track.pop(field)
+                    _ = track.pop(field)
                 else:
                     track[field] = int(track[field])
 
@@ -184,9 +230,9 @@ class JSON(Format):
     ) -> list[Key]:
         if not relevant:
             return reader_keys[0][1] if reader_keys[0] is not None else []
-        relevant_keys: dict[tuple[int, ...], Key] = {}
+        relevant_keys: RelevantKeys = {}
         primary = True
-        for reader, key_pair in zip(readers, reader_keys):
+        for reader, key_pair in zip(readers, reader_keys, strict=True):
             if reader is readers[0] and not primary:
                 continue
             if key_pair is not None:
@@ -194,8 +240,12 @@ class JSON(Format):
                     relevant_keys, key_pair[0], key_pair[1], primary=readers[0]
                 )
             primary = False
-        # if "bob marley" in list(relevant_keys.values())[0][0]:
-        #    print(reader_keys, relevant_keys)
+        LOGGER.track(
+            "bob marley",
+            next(iter(relevant_keys.values()))[0],
+            reader_keys,
+            relevant_keys,
+        )
         return list(relevant_keys.values())
 
     def _select_artists(
@@ -222,7 +272,9 @@ class JSON(Format):
                 )
         return artists
 
-    def _select_extra_data(self, readers: list[ReaderBase]) -> dict[str, ExtraData]:
+    def _select_extra_data(
+        self, readers: list[ReaderBase]
+    ) -> dict[str, ExtraData]:
         primary = True
         data: dict[str, ExtraData] = {}
         credits_data: list[Row] = []

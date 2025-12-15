@@ -91,8 +91,9 @@ all assets combined which most browsers can open from local filesystems, use
 ### Validation
 
 In order to validate JSON files from APIs, JSON output and TOML setting files, 
-first install `check-jsonschema` with `pip install check-jsonschema==0.35.0`, 
-then run `./validate_schema.sh` in this repository.
+first install validation dependencies using one of `pip install .[validate]`, 
+`poetry install .[validate]` or `uv sync --group validate`, then run 
+`./validate_schema.sh` in this repository.
 
 ## License
 

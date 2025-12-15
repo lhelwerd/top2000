@@ -12,17 +12,11 @@ import Charts from "./tabs/charts.js";
 import Info from "./tabs/info.js";
 import Table from "./tabs/table.js";
 
-class State {
-    constructor() {
-        this.autoscroll = true;
-    }
-}
-
 const locale = new Locale();
-const state = new State();
-const defaultData = new Data(currentData);
+const state = { autoscroll: true };
+const defaultData = new Data(currentData, locale);
 
-const load = (data=defaultData) => {
+const load = (data = defaultData) => {
     d3.select("#container").remove();
     d3.select("body")
         .append("div")
