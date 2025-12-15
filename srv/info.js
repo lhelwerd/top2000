@@ -59,7 +59,7 @@ export class Info {
 
     addPositions(d) {
         if (this.positions.has(d)) {
-            return;
+            return false;
         }
         const track = this.data.findTrack(d);
         const chart = [];
@@ -69,6 +69,7 @@ export class Info {
         chart.push(d);
         this.positionIndexes.set(d, this.positions.size);
         this.positions.set(d, chart);
+        return true;
     }
 
     makeProgressionChart() {
@@ -426,7 +427,9 @@ export class Info {
             this.checkArtistChartLength(chartColumn, chartCell);
         };
         const addSearchChart = (pos, track) => {
-            this.addPositions(pos);
+            if (!this.addPositions(pos)) {
+                return;
+            }
             if (!artists.has(track.max_artist_key)) {
                 artists.set(track.max_artist_key, track.artist);
                 this.addArtistTitle(artistTitle, [track.artist]);
