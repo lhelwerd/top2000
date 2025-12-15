@@ -1,10 +1,9 @@
-name: analysis
+name: Analyze code style
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches: ["main"]
 jobs:
   analysis:
     if: ${{ always() }}
@@ -28,15 +27,12 @@ jobs:
       - name: Install dependencies for analysis
         run: |
           uv venv .venv
-          uv sync --group analysis
+          uv sync --group analysis --group validate
       - name: Typing analysis and coverage (mypy)
         if: "${{ always() }}"
         run: |
           source .venv/bin/activate
-          mypy top2000 \
-		    --cobertura-xml-report mypy-report \
-		    --junit-xml mypy-report/TEST-junit.xml \
-		    --no-incremental --show-traceback
+          mypy top2000 --cobertura-xml-report mypy-report --junit-xml mypy-report/TEST-junit.xml
       - name: Typing analysis (basedpyright)
         if: "${{ always() }}"
         run: |
