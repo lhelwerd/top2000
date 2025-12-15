@@ -30,7 +30,6 @@ jobs:
         run: |
           pip install check-jsonschema==0.35.0
           ./validate_schema.sh
-
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6.1.0
         with:

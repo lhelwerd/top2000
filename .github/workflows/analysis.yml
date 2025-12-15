@@ -1,0 +1,61 @@
+name: analysis
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  analysis:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.14.2]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+        with:
+          fetch-depth: 0
+      - name: Use Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6.1.0
+        with:
+          python-version: "${{ matrix.python-version }}"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.1.6
+        with:
+          version: "0.9.17"
+      - name: Install dependencies for analysis
+        run: |
+          uv venv .venv
+          uv sync --group analysis
+      - name: Typing analysis and coverage (mypy)
+        if: "${{ always() }}"
+        run: |
+          source .venv/bin/activate
+          mypy top2000 \
+		    --cobertura-xml-report mypy-report \
+		    --junit-xml mypy-report/TEST-junit.xml \
+		    --no-incremental --show-traceback
+      - name: Typing analysis (basedpyright)
+        if: "${{ always() }}"
+        run: |
+          source .venv/bin/activate
+          basedpyright top2000
+      - name: Code style formatting (ruff)
+        if: "${{ always() }}"
+        shell: bash
+        run: |
+          source .venv/bin/activate
+          set +e
+          ruff check top2000
+          if [ $? -ne 0 ]; then ruff check --output-format=json --output-file=ruff-report.json top2000; ruff check --output-format=github top2000; fi
+      - name: Validate schema
+        run: |
+          source .venv/bin/activate
+          ./validate_schema.sh
+      - name: SonarQube scan
+        if: "${{ always() }}"
+        uses: SonarSource/sonarqube-scan-action@v7.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
