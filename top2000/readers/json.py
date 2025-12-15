@@ -8,10 +8,10 @@ from typing import TypeVar, cast, final
 
 from typing_extensions import override
 
-from .base import Artists, Base, Row, Tracks
+from .base import Artists, Base, Row, RowElement, Tracks
 
 Rows = list[Row] | dict[str | int, "Rows"]
-NestedRow = dict[str, Row]
+NestedRow = dict[str, Row | RowElement]
 NestedRows = list[NestedRow] | dict[str | int, "NestedRow"]
 RowT = TypeVar("RowT", Row, NestedRow)
 
@@ -115,13 +115,15 @@ class JSON(Base):
 
         rows = self._load_rows(json_path, NestedRow)
         for row in rows:
-            new_row: Row = {
-                key: value
-                for key, value in row.items()
-                if isinstance(value, (str, int, bool))
-            }
-            new_row["pos"] = row["position"][pos_field]
-            new_row["prv"] = row["position"][prv_field]
-            new_row["artist"] = row["track"][artist_field]
-            new_row["title"] = row["track"][title_field]
+            new_row: Row = {}
+            for key, value in row.items():
+                if isinstance(value, (str, int, bool)):
+                    new_row[key] = value
+                elif key == "position":
+                    new_row["pos"] = value[pos_field]
+                    new_row["prv"] = value[prv_field]
+                elif key == "track":
+                    new_row["artist"] = value[artist_field]
+                    new_row["title"] = value[title_field]
+
             _ = self._read_row(new_row, fields)

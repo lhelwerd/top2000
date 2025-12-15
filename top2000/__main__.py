@@ -20,7 +20,8 @@ def _parse_first_args(
     parsed_first = False
     try:
         while argv:
-            readers.append(ReaderBase.get_reader(argv.popleft()))
+            readers.append(ReaderBase.get_reader(argv[0]))
+            _ = argv.popleft()
             parsed_first = True
     except KeyError:
         pass

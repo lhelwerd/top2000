@@ -22,6 +22,7 @@ keywords = ["music data", "data analysis"]
 [dependency-groups]
 analysis = [
     "basedpyright==1.36.1",
+    "lxml==6.0.2",
     "mypy==1.19.0",
     "nodejs-wheel-binaries==22.20.0",
     "ruff==0.14.9",

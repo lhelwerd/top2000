@@ -27,7 +27,7 @@ class Logger(logging.Logger):
         self,
         field: str,
         search: str | tuple[str, ...] | re.Pattern[str],
-        *context: Representable,
+        *context: Representable | None,
     ) -> None:
         """
         Track information when a field matches a search pattern.

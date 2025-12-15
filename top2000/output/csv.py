@@ -47,7 +47,7 @@ class CSV(Format):
         if not readers:
             return False
         if path is None:
-            path = Path(f"output-{output_format}.csv")
+            path = Path(f"output-{output_format}-{self._current_year}.csv")
 
         # Headers sizes for 2 columns, 3 headers: 1,05cm 6,36cm 8,55cm
         # Margins: left, right, top, bottom: 0,30cm 0,30cm 0,90cm 0,30cm
@@ -266,7 +266,7 @@ class CSV(Format):
             LOGGER.debug(
                 "%s prv=%s %s=%s",
                 line,
-                track[prv_field],
+                track.get(prv_field),
                 previous_year,
                 track.get(previous_year),
             )

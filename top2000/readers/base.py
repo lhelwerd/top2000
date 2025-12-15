@@ -498,7 +498,7 @@ class Base(ABC):
             keys.update(dict.fromkeys(self._positions[position], True))
 
         best_key, reinstate = self._update_best_key(
-            best_key, row, artist_alternatives, title_alternatives
+            best_key, row, artist_alternatives, title_alternatives, fields
         )
         if reinstate:
             keys.update(rejected_keys)
@@ -650,6 +650,7 @@ class Base(ABC):
         row: Row,
         artist_alternatives: list[str],
         title_alternatives: list[str],
+        fields: FieldMap,
     ) -> tuple[Key, bool]:
         LOGGER.track(
             "iron butterfly",
@@ -658,7 +659,7 @@ class Base(ABC):
             artist_alternatives,
             title_alternatives,
             best_key,
-            self._tracks[best_key],
+            self._tracks[best_key][fields.get("artist", "artiest")],
         )
         old_current_year = self._is_current_year
         self._is_current_year = True

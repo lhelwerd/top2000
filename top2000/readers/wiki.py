@@ -7,8 +7,10 @@ import hashlib
 import json
 import sys
 from html.parser import HTMLParser
+from http.client import HTTPResponse
 from itertools import chain
 from pathlib import Path
+from typing import cast, final
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin
 from urllib.request import Request, urlopen
@@ -22,6 +24,7 @@ from .base import (
     Base,
     ExtraData,
     ExtraPositions,
+    FieldHolder,
     FieldMap,
     Key,
     KeySet,
@@ -30,9 +33,11 @@ from .base import (
     Row,
 )
 
+ParseResult = dict[str, dict[str, str | dict[str, str]]]
 RowLinks = dict[str, dict[str, str]]
 
 
+@final
 class WikiHTMLParser(HTMLParser):
     """
     Parser of wiki table with chart data.
@@ -41,16 +46,26 @@ class WikiHTMLParser(HTMLParser):
     TAGS = frozenset({"tr", "th", "td"})
     CELL_TAGS = frozenset({"a", "span"})
 
-    @override
-    def reset(self) -> None:
-        super().reset()
+    def __init__(self) -> None:
+        super().__init__()
         self._headers: list[str] = []
         self._rows: list[Row] = []
-        self._row = 0
-        self._column = 0
+        self._row: int = 0
+        self._column: int = 0
         self._state: str | None = None
         self._links: list[RowLinks] = []
         self._title: str | None = None
+
+    @override
+    def reset(self) -> None:
+        super().reset()
+        self._headers = []
+        self._rows = []
+        self._row = 0
+        self._column = 0
+        self._state = None
+        self._links = []
+        self._title = None
 
     @property
     def rows(self) -> list[Row]:
@@ -119,8 +134,8 @@ class WikiHTMLParser(HTMLParser):
             column = self._headers[self._column]
             row[column] = f"{row.get(column, '')}{data}"
             if self._title is not None:
-                self._links[self._row].setdefault(column, {})
-                self._links[self._row][column][self._title] = data
+                links = self._links[self._row].setdefault(column, {})
+                links[self._title] = data
                 self._title = None
 
 
@@ -129,10 +144,12 @@ class WikiURLError(URLError):
     Error indicating a problem when retrieving a page from a wiki.
     """
 
+    @override
     def __str__(self) -> str:
         return str(self.reason)
 
 
+@final
 @Base.register("wiki")
 class Wiki(Base):
     """
@@ -141,6 +158,19 @@ class Wiki(Base):
     """
 
     has_multiple_years = True
+
+    def __init__(
+        self,
+        year: float | None = None,
+        is_current_year: bool = True,
+        fields: FieldHolder | None = None,
+    ) -> None:
+        super().__init__(
+            year=year, is_current_year=is_current_year, fields=fields
+        )
+        self._artist_links: dict[float, ExtraPositions] = {}
+        self._year_positions: dict[float, Positions] = {}
+        self._year_artists: dict[float, Artists] = {}
 
     @property
     @override
@@ -174,11 +204,17 @@ class Wiki(Base):
         try:
             if not url.startswith(("http:", "https:")):
                 raise WikiURLError("Attempt to read from non-HTTP URL")
-            with urlopen(Request(url, headers=headers)) as request:  # noqa: S310
-                data = json.load(request)
+            with urlopen(Request(url, headers=headers)) as response:  # noqa: S310 # pyright: ignore[reportAny]
+                if not isinstance(response, HTTPResponse):
+                    raise WikiURLError("Unexpected return type for urlopen")
+                data: ParseResult = cast(ParseResult, json.load(response))
                 if "error" in data:
                     raise WikiURLError(
                         f"Parsing failed: {data['error']['info']}"
+                    )
+                if not isinstance(data["parse"]["text"], dict):
+                    raise WikiURLError(
+                        f"Unexpected parse result text: {data['parse']['text']}"
                     )
                 return data["parse"]["text"]["*"]
         except HTTPError as error:
@@ -192,9 +228,9 @@ class Wiki(Base):
     @override
     def reset(self) -> None:
         super().reset()
-        self._artist_links: dict[float, ExtraPositions] = {}
-        self._year_positions: dict[float, Positions] = {}
-        self._year_artists: dict[float, Artists] = {}
+        self._artist_links = {}
+        self._year_positions = {}
+        self._year_artists = {}
         self.reset_year()
 
     @override
@@ -211,7 +247,7 @@ class Wiki(Base):
         else:
             html = self._read_http()
             with path.open("w", encoding="utf-8") as wiki_file:
-                wiki_file.write(html)
+                _ = wiki_file.write(html)
 
         parser = WikiHTMLParser()
         parser.feed(html)
@@ -253,11 +289,11 @@ class Wiki(Base):
     def _set_artist_links(
         self, year: float, position: int, artist_links: Row
     ) -> None:
-        self._artist_links.setdefault(year, [])
-        while position > len(self._artist_links[year]):
-            self._artist_links[year].append({})
+        year_artist_links = self._artist_links.setdefault(year, [])
+        while position > len(year_artist_links):
+            year_artist_links.append({})
 
-        self._artist_links[year][position - 1] = artist_links
+        year_artist_links[position - 1] = artist_links
 
     @property
     @override
@@ -286,17 +322,19 @@ class Wiki(Base):
             "terms": "https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use",
         }
 
+    @override
     def _update_best_key(
         self,
         best_key: Key,
         row: Row,
         artist_alternatives: list[str],
         title_alternatives: list[str],
+        fields: FieldMap,
     ) -> tuple[Key, bool]:
         old_current_year = self._is_current_year
         self._is_current_year = True
         best_key, valid = self._update_row(
-            best_key, row, str(int(self._year)), best_key
+            best_key, row, {**fields, "pos": str(int(self._year))}, best_key
         )
         self._is_current_year = old_current_year
 
@@ -312,6 +350,7 @@ class Wiki(Base):
 
         return best_key, True
 
+    @override
     def _set_accepted_keys(
         self, position: int | None, keys: list[Key], rejected_keys: KeySet
     ) -> None:
@@ -325,9 +364,9 @@ class Wiki(Base):
 
                 for key in chain(keys, rejected_keys):
                     year_artists = self._year_artists.setdefault(year, {})
-                    year_artists.setdefault(key[0], [])
-                    if pos not in year_artists[key[0]]:
-                        bisect.insort(year_artists[key[0]], pos)
+                    chart = year_artists.setdefault(key[0], [])
+                    if pos not in chart:
+                        bisect.insort(chart, pos)
 
     @override
     def select_relevant_keys(
