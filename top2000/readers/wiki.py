@@ -9,10 +9,11 @@ import sys
 from html.parser import HTMLParser
 from itertools import chain
 from pathlib import Path
-from typing import override
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin
 from urllib.request import Request, urlopen
+
+from typing_extensions import override
 
 from .. import __version__ as module_version
 from ..normalization import Normalizer

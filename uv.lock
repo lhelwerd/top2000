@@ -642,6 +642,9 @@ wheels = [
 name = "top2000"
 version = "0.0.2025"
 source = { editable = "." }
+dependencies = [
+    { name = "typing-extensions" },
+]
 
 [package.dev-dependencies]
 analysis = [
@@ -653,11 +656,12 @@ analysis = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "typing-extensions", specifier = "==4.15.0" }]
 
 [package.metadata.requires-dev]
 analysis = [
     { name = "basedpyright", specifier = "==1.36.1" },
-    { name = "check-jsonschema", specifier = ">=0.35.0" },
+    { name = "check-jsonschema", specifier = "==0.35.0" },
     { name = "mypy", specifier = "==1.19.0" },
     { name = "nodejs-wheel-binaries", specifier = "==22.20.0" },
     { name = "ruff", specifier = "==0.14.9" },

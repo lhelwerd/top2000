@@ -3,11 +3,12 @@ CSV chart output.
 """
 
 import csv
+import logging
 from collections.abc import Sequence
 from datetime import datetime
-import logging
 from pathlib import Path
-from typing import override
+
+from typing_extensions import override
 
 from ..logging import LOGGER
 from ..readers.base import (
@@ -32,8 +33,8 @@ class CSV(Format):
         super().reset()
         self._rows: list[list[str]] = []
         self._last_timestamp: str | None = None
-        self._lines = 0
-        self._extra_lines = 0
+        self._lines: int = 0
+        self._extra_lines: int = 0
 
     @override
     def output_file(
@@ -173,7 +174,7 @@ class CSV(Format):
             if self._last_timestamp is not None:
                 parts = cells["timestamp"].split(" ")
                 time = f" {parts[0]}/12 {int(parts[2].split('-')[0]):02}:00"
-                cells.pop("timestamp")
+                _ = cells.pop("timestamp")
                 if time != self._last_timestamp:
                     self._last_timestamp = time
                     if self.add_row(

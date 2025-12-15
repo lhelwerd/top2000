@@ -5,18 +5,19 @@ JSON dump output.
 import json
 from itertools import zip_longest
 from pathlib import Path
-from typing import override
+
+from typing_extensions import override
 
 from ..logging import LOGGER
 from ..readers.base import (
     Artists,
+    Base as ReaderBase,
     ExtraData,
     Key,
     RelevantKeys,
     Row,
     RowElement,
 )
-from ..readers.base import Base as ReaderBase
 from .base import Format, KeyPair
 
 FieldMap = dict[str, str]
@@ -40,6 +41,8 @@ class JSON(Format):
     """
     JSON file with all details.
     """
+
+    _last_position: int | None = None
 
     @override
     def output_file(
@@ -150,14 +153,16 @@ class JSON(Format):
             )
             for index, reader in enumerate(readers)
         ]
-        reader_fields[0].update({
-            str(year): str(year)
-            for year in range(self._first_year, self._current_year)
-        })
+        reader_fields[0].update(
+            {
+                str(year): str(year)
+                for year in range(self._first_year, self._current_year)
+            }
+        )
         numeric_fields = {"year"}
-        numeric_fields.update({
-            str(year) for year in range(self._first_year, self._latest_year)
-        })
+        numeric_fields.update(
+            {str(year) for year in range(self._first_year, self._latest_year)}
+        )
         return reader_fields, numeric_fields
 
     def _aggregate_track(
@@ -211,7 +216,7 @@ class JSON(Format):
         for field in numeric_fields:
             if field in track:
                 if track[field] in {"", "0", 0}:
-                    track.pop(field)
+                    _ = track.pop(field)
                 else:
                     track[field] = int(track[field])
 
@@ -258,11 +263,13 @@ class JSON(Format):
             if not relevant:
                 artists.update(reader.artists)
             else:
-                artists.update({
-                    artist: chart
-                    for artist, chart in reader.artists.items()
-                    if artist in relevant_keys
-                })
+                artists.update(
+                    {
+                        artist: chart
+                        for artist, chart in reader.artists.items()
+                        if artist in relevant_keys
+                    }
+                )
         return artists
 
     def _select_extra_data(

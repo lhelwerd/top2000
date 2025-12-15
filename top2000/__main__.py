@@ -20,8 +20,7 @@ def _parse_first_args(
     parsed_first = False
     try:
         while argv:
-            readers.append(ReaderBase.get_reader(argv[0]))
-            argv.popleft()
+            readers.append(ReaderBase.get_reader(argv.popleft()))
             parsed_first = True
     except KeyError:
         pass
@@ -31,7 +30,7 @@ def _parse_first_args(
     try:
         while argv:
             outputs.append(Format.get_format(argv[0]))
-            argv.popleft()
+            _ = argv.popleft()
             parsed_first = True
     except KeyError:
         pass
@@ -40,8 +39,7 @@ def _parse_first_args(
 
     if argv:
         try:
-            latest_year = float(argv[0])
-            argv.popleft()
+            latest_year = float(argv.popleft())
             parsed_first = True
         except ValueError:
             if not parsed_first:

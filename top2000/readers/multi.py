@@ -3,15 +3,18 @@ Multiple file reader.
 """
 
 from pathlib import Path
-from typing import override
+from typing import final
 
-from .base import Artists, Base, Positions, Row
+from typing_extensions import override
+
+from .base import Artists, Base, FieldHolder, Positions, Row
 from .csv import CSV
 from .json import JSON
 
 OldFiles = tuple[tuple[float, str, str], ...]
 
 
+@final
 @Base.register("multi")
 class Years(Base):
     """
@@ -21,6 +24,18 @@ class Years(Base):
 
     has_multiple_years = True
 
+    def __init__(
+        self,
+        year: float | None = None,
+        is_current_year: bool = True,
+        fields: FieldHolder | None = None,
+    ) -> None:
+        super().__init__(
+            year=year, is_current_year=is_current_year, fields=fields
+        )
+        self._year_positions: dict[float, Positions] = {}
+        self._year_artists: dict[float, Artists] = {}
+
     @property
     @override
     def input_format(self) -> str | None:
@@ -29,8 +44,8 @@ class Years(Base):
     @override
     def reset(self) -> None:
         super().reset()
-        self._year_positions: dict[float, Positions] = {}
-        self._year_artists: dict[float, Artists] = {}
+        self._year_positions = {}
+        self._year_artists = {}
         self.reset_year()
 
     @override

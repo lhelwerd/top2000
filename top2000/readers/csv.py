@@ -4,11 +4,14 @@ NPO Radio 2 Top 2000 CSV reader.
 
 import csv
 from pathlib import Path
-from typing import override
+from typing import final
+
+from typing_extensions import override
 
 from .base import Artists, Base, FieldMap, Key, Positions, Row, Tracks
 
 
+@final
 class CSV(Base):
     """
     Read CSV file describing NPO Radio 2 Top 2000 charts from one or more years.
@@ -55,8 +58,9 @@ class CSV(Base):
         with csv_path.open("r", encoding=encoding) as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
-                self._read_row(row, fields, offset=offset)
+                _ = self._read_row(row, fields, offset=offset)
 
+    @override
     def _read_row(
         self, row: Row, fields: FieldMap, offset: int = 0
     ) -> tuple[Key | None, int | None]:

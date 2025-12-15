@@ -2,9 +2,20 @@
 Logging of parsing handling.
 """
 
-import re
 import logging
-from typing import Any
+import re
+from typing import Protocol
+
+from typing_extensions import override
+
+
+class Representable(Protocol):
+    """
+    An object that can be represented as a string.
+    """
+
+    @override
+    def __repr__(self) -> str: ...
 
 
 class Logger(logging.Logger):
@@ -16,7 +27,7 @@ class Logger(logging.Logger):
         self,
         field: str,
         search: str | tuple[str, ...] | re.Pattern[str],
-        *context: Any,
+        *context: Representable,
     ) -> None:
         """
         Track information when a field matches a search pattern.

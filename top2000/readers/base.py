@@ -3,6 +3,7 @@ Base row-based data parser.
 """
 
 import bisect
+import tomllib
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, MutableMapping, MutableSequence
 from copy import deepcopy
@@ -10,7 +11,7 @@ from itertools import chain, product
 from pathlib import Path
 from typing import ClassVar, Literal, TypeVar, overload
 
-import tomllib
+from typing_extensions import override
 
 from ..logging import LOGGER
 from ..normalization import Normalizer
@@ -51,18 +52,23 @@ class FieldHolder(MutableMapping[float, Fields]):
                     if isinstance(year["year"], (int, float)):
                         self._fields[year["year"]] = deepcopy(year)
 
+    @override
     def __getitem__(self, key: float) -> Fields:
         return self._fields[key]
 
+    @override
     def __setitem__(self, key: float, value: Fields) -> None:
         self._fields[key] = deepcopy(value)
 
+    @override
     def __delitem__(self, key: float) -> None:
         del self._fields[key]
 
+    @override
     def __iter__(self) -> Iterator[float]:
         return iter(self._fields)
 
+    @override
     def __len__(self) -> int:
         return len(self._fields)
 
@@ -163,12 +169,12 @@ class Base(ABC):
     """
 
     first_year: float = 1999
-    has_multiple_years = False
+    has_multiple_years: bool = False
 
-    expected_positions = 2000
+    expected_positions: int = 2000
 
-    csv_name_format = "TOP-2000-{}.csv"
-    json_name_format = "top2000-{}.json"
+    csv_name_format: str = "TOP-2000-{}.csv"
+    json_name_format: str = "top2000-{}.json"
 
     _readers: ClassVar[dict[str, type["Base"]]] = {}
 
@@ -199,17 +205,21 @@ class Base(ABC):
         fields: FieldHolder | None = None,
     ) -> None:
         if fields is None:
-            self._fields = FieldHolder()
+            self._fields: FieldHolder = FieldHolder()
         else:
             self._fields = fields
-        self._had_empty_fields = fields is None
+        self._had_empty_fields: bool = fields is None
 
-        self._is_current_year = is_current_year
+        self._is_current_year: bool = is_current_year
         if year is None:
-            self._year = self.latest_year
+            self._year: float = self.latest_year
         else:
             self._year = year
 
+        self._positions: Positions = {}
+        self._tracks: Tracks = {}
+        self._artists: Artists = {}
+        self._last_time: str | None = None
         self.reset()
 
         # Set year or use latest year, optionally update field holder
@@ -328,10 +338,10 @@ class Base(ABC):
         Reset current file parsing state.
         """
 
-        self._positions: Positions = {}
-        self._tracks: Tracks = {}
-        self._artists: Artists = {}
-        self._last_time: str | None = None
+        self._positions = {}
+        self._tracks = {}
+        self._artists = {}
+        self._last_time = None
 
     def reset_year(self) -> None:
         """
@@ -436,7 +446,7 @@ class Base(ABC):
         if year_field in row:
             self._tracks[best_key]["jaar"] = row[year_field]
 
-        self._set_position_keys(position, best_key, keys, rejected_keys)
+        self._set_position_keys(position, best_key, keys, rejected_keys, fields)
         return best_key, position
 
     def _clear_previous_years(self, row: Row, fields: FieldMap) -> None:
@@ -448,8 +458,8 @@ class Base(ABC):
                 and self._year != self.first_csv_year
             ):
                 for year in range(int(self.first_year), int(self._year)):
-                    row.pop(str(year), None)
-            row.pop(prv_field, None)
+                    _ = row.pop(str(year), None)
+            _ = row.pop(prv_field, None)
 
     def _check_album_version(self, row: Row, title_field: str) -> None:
         # Album version indicator
@@ -494,7 +504,7 @@ class Base(ABC):
             keys.update(rejected_keys)
             rejected_keys = {}
 
-        keys.pop(best_key, None)
+        _ = keys.pop(best_key, None)
         return best_key, keys, rejected_keys
 
     def _find_keys(
@@ -509,7 +519,6 @@ class Base(ABC):
 
         keys: KeySet = {}
         rejected_keys: KeySet = {}
-        pos_field = fields.get("pos", "position")
         for artist, title in product(artist_alternatives, title_alternatives):
             key = (artist.lower().strip(), title.lower().strip())
             # Ignore alternative-pairs which we have seen this year.
@@ -518,7 +527,7 @@ class Base(ABC):
                 continue
 
             best_key, valid = self._update_row(
-                key, row, pos_field=pos_field, best_key=best_key
+                key, row, fields=fields, best_key=best_key
             )
             if valid:
                 keys[key] = True
@@ -535,7 +544,7 @@ class Base(ABC):
         self,
         key: Key,
         row: Row,
-        pos_field: str | None = None,
+        fields: FieldMap | None = None,
         best_key: Key = ...,
     ) -> tuple[Key, bool]: ...
 
@@ -544,7 +553,7 @@ class Base(ABC):
         self,
         key: Key,
         row: Row,
-        pos_field: str | None = None,
+        fields: FieldMap | None = None,
         best_key: Key | None = None,
     ) -> tuple[Key | None, bool]: ...
 
@@ -552,12 +561,16 @@ class Base(ABC):
         self,
         key: Key,
         row: Row,
-        pos_field: str | None = None,
+        fields: FieldMap | None = None,
         best_key: Key | None = None,
     ) -> tuple[Key | None, bool]:
         """
         Update data for a track.
         """
+
+        if fields is None:
+            fields = {}
+        pos_field = fields.get("pos", "position")
 
         if key not in self._tracks:
             self._tracks[key] = row.copy()
@@ -596,7 +609,9 @@ class Base(ABC):
             ):
                 LOGGER.track(
                     "di-rect",
-                    str(self._tracks[key]["artiest"]).lower(),
+                    str(
+                        self._tracks[key][fields.get("artist", "artiest")]
+                    ).lower(),
                     "Collision",
                     self._year,
                     key,
@@ -669,6 +684,7 @@ class Base(ABC):
         best_key: Key,
         keys: KeySet,
         rejected_keys: KeySet,
+        fields: FieldMap,
     ) -> None:
         # Now we handle row[pos_field] and finalize best keys in the data
         self._set_accepted_keys(
@@ -688,10 +704,12 @@ class Base(ABC):
         if position is not None and self._is_current_year:
             self._tracks[best_key]["best"] = True
             for key in chain([best_key], keys, rejected_keys):
-                self._artists.setdefault(key[0], [])
+                _ = self._artists.setdefault(key[0], [])
                 LOGGER.track(
                     "Mary J",
-                    str(self._tracks[best_key]["artiest"]),
+                    str(
+                        self._tracks[best_key][fields.get("artist", "artiest")]
+                    ),
                     position,
                     key,
                     self._artists[key[0]],
@@ -703,6 +721,12 @@ class Base(ABC):
         self, position: int | None, keys: list[Key], rejected_keys: KeySet
     ) -> None:
         if position is not None:
+            LOGGER.track(
+                "don't let the sun go down on me",
+                keys[0][0],
+                keys,
+                rejected_keys,
+            )
             self._positions[position] = keys
 
     def select_relevant_keys(

@@ -2,23 +2,23 @@
 Base settings-based output format.
 """
 
+import tomllib
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from pathlib import Path
-
-import tomllib
 from typing import ClassVar, TypeVar
 
 from ..logging import LOGGER
-from ..readers.base import Artists, Key, Positions
-from ..readers.base import Base as ReaderBase
+from ..readers.base import Artists, Base as ReaderBase, Key, Positions
 
 Setting = int | bool | dict[str, str]
+Settings = dict[str, dict[str, Setting]]
 KeyPair = tuple[int, list[Key]]
 
 FormatT = TypeVar("FormatT", bound=type["Format"])
 
 
-class Format:
+class Format(ABC):
     """
     Output formatter.
     """
@@ -51,7 +51,7 @@ class Format:
         return cls._formats[name]
 
     @classmethod
-    def _load_settings(cls) -> dict[str, dict[str, Setting]]:
+    def _load_settings(cls) -> Settings:
         if cls._output_settings is None:
             with Path("output.toml").open("rb") as settings_file:
                 cls._output_settings = tomllib.load(settings_file)
@@ -60,10 +60,10 @@ class Format:
     def __init__(
         self, first_year: float, current_year: float, latest_year: float
     ) -> None:
-        self._first_year = int(first_year)
-        self._current_year = int(current_year)
-        self._latest_year = int(latest_year)
-        self._settings = self._load_settings()
+        self._first_year: int = int(first_year)
+        self._current_year: int = int(current_year)
+        self._latest_year: int = int(latest_year)
+        self._settings: Settings = self._load_settings()
 
         self.reset()
 
@@ -104,6 +104,7 @@ class Format:
 
         self._last_position: int | None = None
 
+    @abstractmethod
     def output_file(
         self,
         readers: list[ReaderBase],

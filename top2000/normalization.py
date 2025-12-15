@@ -31,11 +31,13 @@ class Normalizer:
                 tomllib.load(fixes_file)
             )
 
-        self._replaces = str.maketrans(self._get_mapping("replaces"))
+        self._replaces: dict[int, str] = str.maketrans(
+            self._get_mapping("replaces")
+        )
         artist_splits = "|".join(
             re.escape(split) for split in self._get_list("artist_splits")
         )
-        self._artist_splits = re.compile(f"({artist_splits})")
+        self._artist_splits: re.Pattern[str] = re.compile(f"({artist_splits})")
 
     def _get_list(self, name: str) -> list[str]:
         items = self._fixes[name]["items"]
@@ -84,10 +86,12 @@ class Normalizer:
                 return [title_fixes[prefix]]
             alternatives.append(prefix)
         if title.startswith("("):
-            alternatives.extend((
-                title.replace("(", "").replace(")", ""),
-                title.split(") ")[-1],
-            ))
+            alternatives.extend(
+                (
+                    title.replace("(", "").replace(")", ""),
+                    title.split(") ")[-1],
+                )
+            )
 
         alternatives.append(title)
         return alternatives
@@ -189,7 +193,7 @@ class Normalizer:
         if artist != old_artist and split_count == 0:
             alternatives.update(self.find_artist_splits(artist)[0])
         # Ensure normal key is last
-        alternatives.pop(artist, None)
+        _ = alternatives.pop(artist, None)
         alternatives[artist] = True
 
         return list(alternatives.keys())
