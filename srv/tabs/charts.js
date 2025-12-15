@@ -1,5 +1,7 @@
 import * as d3 from "d3";
 
+const EXPECTED_POSITIONS = 2000;
+const CHART_COUNT = 10;
 const stroke = d3.scaleOrdinal(d3.schemeTableau10);
 const cycle = stroke.range().length;
 
@@ -77,11 +79,12 @@ export default class Charts {
                 type: "bar",
                 swap: true,
                 source: () => d3.sort(d3.zip(data.positions, data.tracks),
-                    p => p[1][data.year - 1] <= data.start ?
+                    p => p[1][data.year - 1] <= EXPECTED_POSITIONS ?
                         p[0] - p[1][data.year - 1] : 0
                 ),
                 min: _ => 0,
                 max: x => x.domain()[0][1][data.year - 1] - x.domain()[0][0],
+                count: domain => d3.bisector((p, c) => c - (p[1][data.year - 1] - p[0])).left(domain, 0),
                 y: p => p[1][data.year - 1] - p[0],
                 x: p => format.track(...p),
                 yFormat: y => `\u25b2${y}`
@@ -91,9 +94,9 @@ export default class Charts {
                 name: "Doorbraak uit De Extra 500",
                 type: "bar",
                 swap: true,
-                enabled: () => d3.some(data.tracks, d => d[data.year - 1] > data.start),
+                enabled: () => d3.some(data.tracks, d => d[data.year - 1] > EXPECTED_POSITIONS),
                 source: () => d3.sort(d3.zip(data.positions, data.tracks),
-                    p => p[1][data.year - 1] > data.start ?
+                    p => p[1][data.year - 1] > EXPECTED_POSITIONS ?
                         p[0] - p[1][data.year - 1] : 0
                 ),
                 min: _ => 0,
@@ -112,6 +115,7 @@ export default class Charts {
                 ),
                 min: _ => 0,
                 max: x => x.domain()[0][0] - x.domain()[0][1][data.year - 1],
+                count: domain => d3.bisector((p, c) => c - (p[0] - p[1][data.year - 1])).left(domain, 0),
                 y: p => p[0] - p[1][data.year - 1],
                 x: p => format.track(...p),
                 yFormat: y => `\u25bc${y}`
@@ -123,7 +127,7 @@ export default class Charts {
                 swap: true,
                 source: () => d3.sort(d3.map(d3.zip(data.positions, data.tracks), p => {
                     for (let year = data.year - 1; year >= data.first_year; year--) {
-                        if (year in p[1] && p[1][year] <= data.start) {
+                        if (year in p[1] && p[1][year] <= EXPECTED_POSITIONS) {
                             return [...p, year - data.year];
                         }
                     }
@@ -159,11 +163,11 @@ export default class Charts {
                 swap: true,
                 source: () => d3.sort(d3.filter(d3.zip(data.positions, data.tracks),
                     p => d3.every(d3.range(data.first_year, data.year),
-                        year => !(year in p[1]) || p[1][year] > data.start
+                        year => !(year in p[1]) || p[1][year] > EXPECTED_POSITIONS
                     )
                 ), p => p[1].year),
                 min: _ => data.year,
-                max: x => x.domain()[0][1].year,
+                max: x => x.domain()?.[0]?.[1]?.year || data.latest_year,
                 y: p => p[1].year,
                 x: p => format.track(...p),
                 yFormat: y => y
@@ -236,7 +240,7 @@ export default class Charts {
                 source: () => d3.map(data.tracks, track => {
                     let startYear = data.year;
                     for (let year = data.first_year; year < data.year; year++) {
-                        if (year in track && track[year] <= data.start) {
+                        if (year in track && track[year] <= EXPECTED_POSITIONS) {
                             startYear = year;
                             break;
                         }
@@ -362,6 +366,13 @@ export default class Charts {
         return source;
     }
 
+    getDomainCount(chart, source) {
+        const fixedCount = Number.isInteger(chart.count) ? chart.count : CHART_COUNT;
+        const domain = source().slice(0,);
+        const count = Math.min(domain.length, typeof chart.count === "function" ? chart.count(domain) : fixedCount);
+        return [domain.slice(0, count), count];
+    }
+
     createChart(column, chart) {
         // Stats chart
         const width = 800;
@@ -381,9 +392,9 @@ export default class Charts {
 
         const hExtent = [marginLeft, width - marginRight];
         const vExtent = [height - marginBottom, marginTop];
-        const count = chart.count || 10;
+        const [domain, count] = this.getDomainCount(chart, source);
         const x = d3.scaleOrdinal()
-            .domain(source().slice(0, count))
+            .domain(domain)
             .range(chart.swap ?
                 d3.range(vExtent[1] + barWidth / 2, vExtent[0] + barWidth / 2,
                     (height - marginTop - marginBottom) / count
@@ -511,7 +522,7 @@ export default class Charts {
                 .attr("href", d => d.id ? `#/charts/${d.id}` : null)
                 .classed("dropdown-item", d => d.type !== "divider")
                 .classed("dropdown-divider", d => d.type === "divider")
-                .on("click", function (event, chart) {
+                .on("click", function(event, chart) {
                     if (chart.type === "divider") {
                         event.stopPropagation();
                         return;
