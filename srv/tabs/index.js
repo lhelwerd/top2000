@@ -160,7 +160,7 @@ export default class Tabs {
             .text(d => `\u00a0${this.tabs.get(d).text}`);
 
         items.call(tab => this.setActive(tab));
-        d3.select("body").on("hashchange",
+        d3.select(globalThis).on("hashchange",
             () => items.call(tab => this.setActive(tab))
         );
     }

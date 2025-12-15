@@ -2,7 +2,7 @@ const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const {WebpackManifestPlugin} = require('webpack-manifest-plugin');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 
 const singleFile = process.env.SINGLE_FILE === 'true';
 const external = process.env.EXTERNAL_MANIFEST === 'true';
@@ -22,7 +22,7 @@ module.exports = {
             "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Authorization"
         }
     },
-    devtool: process.env.NODE_ENV === 'development' ? 'eval-source-map': false,
+    devtool: process.env.NODE_ENV === 'development' ? 'eval-source-map' : false,
     entry: external ? './srv/external-manifest.js' : './srv/index.js',
     mode: process.env.NODE_ENV === 'development' ? 'development' : 'production',
     module: {
@@ -64,7 +64,7 @@ module.exports = {
         splitChunks: {
             minChunks: singleFile ? Number.MAX_SAFE_INTEGER : 1,
             minSize: singleFile ? Number.MAX_SAFE_INTEGER : 20 * 1024,
-            cacheGroups: singleFile ? {default: false} : {
+            cacheGroups: singleFile ? { default: false } : {
                 data: {
                     chunks: 'all',
                     filename: '[name].[contenthash].js',
@@ -123,6 +123,6 @@ module.exports = {
         }
     },
     watchOptions: {
-        ignored: ['**/.git', '**/dist', '**/node_modules', '**/top2000']
+        ignored: ['**/.git', '**/dist', '**/node_modules', '**/top2000/**/*.py']
     }
 };
