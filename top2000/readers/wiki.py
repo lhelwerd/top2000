@@ -12,7 +12,7 @@ from itertools import chain
 from pathlib import Path
 from typing import cast, final
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urljoin
+from urllib.parse import parse_qs, quote, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 from typing_extensions import override
@@ -97,7 +97,12 @@ class WikiHTMLParser(HTMLParser):
 
             self._state = f"{self._state}/{tag}"
             if tag == "a" and self._headers:
-                self._title = str(attributes["title"])
+                if "class" in attributes and "new" in str(attributes["class"]):
+                    url = str(attributes["href"])
+                    title = parse_qs(urlparse(url).query)["title"][0]
+                    self._title = title.replace("_", " ")
+                else:
+                    self._title = str(attributes["title"])
         if tag == "tr":
             self._rows.append({})
             self._links.append({})
