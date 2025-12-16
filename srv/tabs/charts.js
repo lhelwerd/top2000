@@ -368,7 +368,7 @@ export default class Charts {
 
     getDomainCount(chart, source) {
         const fixedCount = Number.isInteger(chart.count) ? chart.count : CHART_COUNT;
-        const domain = source().slice(0,);
+        const domain = source().slice(0, fixedCount);
         const count = Math.min(domain.length, typeof chart.count === "function" ? chart.count(domain) : fixedCount);
         return [domain.slice(0, count), count];
     }
