@@ -2,6 +2,7 @@
 Multiple file reader.
 """
 
+import bisect
 from pathlib import Path
 from typing import final
 
@@ -151,6 +152,23 @@ class Years(Base):
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)
                 self._year_positions[year] = csv.positions
                 self._year_artists[year] = csv.artists
+                self._fill_old_year_overview()
+
+    def _fill_old_year_overview(self) -> None:
+        for key, track in self._tracks.items():
+            for field, value in track.items():
+                if (
+                    field.isnumeric()
+                    and (year := float(field)) < self.first_csv_year
+                    and (pos := int(value)) > 0
+                ):
+                    year_positions = self._year_positions.setdefault(year, {})
+                    year_positions.setdefault(pos, []).append(key)
+
+                    year_artists = self._year_artists.setdefault(year, {})
+                    chart = year_artists.setdefault(key[0], [])
+                    if pos not in chart:
+                        bisect.insort(chart, pos)
 
     @property
     @override

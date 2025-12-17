@@ -240,12 +240,13 @@ class JSON(Format):
                     relevant_keys, key_pair[0], key_pair[1], primary=readers[0]
                 )
             primary = False
-        LOGGER.track(
-            "bob marley",
-            next(iter(relevant_keys.values()))[0],
-            reader_keys,
-            relevant_keys,
-        )
+        if relevant_keys:
+            LOGGER.track(
+                "bob marley",
+                next(iter(relevant_keys.values()))[0],
+                reader_keys,
+                relevant_keys,
+            )
         return list(relevant_keys.values())
 
     def _select_artists(

@@ -42,6 +42,8 @@ json.rows = ["positions"]
 
 [[years]]
 year = 2025
+csv = {artist="Artiest", title="Titel", pos="Notering", year="Jaartal", name="TOP2000-2025.csv", skip=1}
+json.rows = ["positions"]
 
 [wiki]
 api = "https://nl.wikipedia.org/w/api.php"

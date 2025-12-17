@@ -56,6 +56,8 @@ class CSV(Base):
         }
         offset = self._get_int_field("offset", 0)
         with csv_path.open("r", encoding=encoding) as csv_file:
+            for _ in range(self._get_int_field("skip", 0)):
+                _ = csv_file.readline()
             reader = csv.DictReader(csv_file)
             for row in reader:
                 _ = self._read_row(row, fields, offset=offset)

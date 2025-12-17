@@ -216,9 +216,9 @@ def main(argv: list[str]) -> int:
 
             readers[index : index + 1] = [reader]
 
-            previous_year = year - 1 if year is not None else current_year - 1
-            if old_data_available and previous_year >= ReaderBase.first_year:
-                years.append(previous_year)
+        previous_year = year - 1 if year is not None else current_year - 1
+        if old_data_available and previous_year >= ReaderBase.first_year:
+            years.append(previous_year)
 
         if not _write_year(
             outputs, readers, current_year, latest_year, old_data_available
