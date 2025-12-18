@@ -93,7 +93,9 @@ class CSV(Format):
             if self._rows:
                 writer.writerows(self._rows)
 
-        print(f"{self._lines} lines above indicate problems with tracks.")
+        LOGGER.info(
+            "%d lines above indicate problems with tracks.", self._lines
+        )
         return self._lines == 0
 
     def _format_cells(
@@ -200,7 +202,7 @@ class CSV(Format):
         """
         # pylint: disable=line-too-long, unused-argument, unused-variable
 
-        if not LOGGER.isEnabledFor(logging.DEBUG):
+        if not LOGGER.isEnabledFor(logging.INFO):
             return
 
         line = f"{cells['position']}. {cells['artist']} - {cells['title']}"
@@ -263,7 +265,7 @@ class CSV(Format):
         ]
         if any(checks) and position <= ReaderBase.expected_positions:
             self._lines += 1
-            LOGGER.debug(
+            LOGGER.info(
                 "%s prv=%s %s=%s",
                 line,
                 track.get(prv_field),

@@ -2,10 +2,12 @@
 Parse lists of song tracks in the NPO Radio 2 Top 2000 from various years.
 """
 
+import logging
 import sys
 from collections import deque
 from itertools import zip_longest
 
+from .logging import LOGGER
 from .output.base import Format
 from .readers.base import Base as ReaderBase
 from .readers.multi import OldFiles, Years
@@ -181,6 +183,8 @@ def main(argv: list[str]) -> int:
     """
     Main entry point.
     """
+
+    LOGGER.setLevel(logging.INFO)
 
     try:
         argv, inputs, outputs, latest_year = _parse_first_args(deque(argv))
