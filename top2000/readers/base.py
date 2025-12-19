@@ -664,6 +664,7 @@ class Base(ABC):
         update_fields = {
             "artist": fields.get("artist", "artiest"),
             "titel": fields.get("title", "titel"),
+            "pos": "",
         }
         LOGGER.track(
             "iron butterfly",

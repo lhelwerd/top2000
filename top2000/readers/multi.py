@@ -124,6 +124,7 @@ class Years(Base):
 
         if old is not None:
             self._read_old_files(old)
+            self._fill_old_year_overview()
 
     def _read_old_files(self, old: OldFiles) -> None:
         """
@@ -155,7 +156,6 @@ class Years(Base):
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)
                 self._year_positions[year] = csv.positions
                 self._year_artists[year] = csv.artists
-                self._fill_old_year_overview()
 
     def _fill_old_year_overview(self) -> None:
         for key, track in self._tracks.items():
