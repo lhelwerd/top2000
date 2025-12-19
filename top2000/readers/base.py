@@ -3,6 +3,7 @@ Base row-based data parser.
 """
 
 import bisect
+import logging
 import tomllib
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, MutableMapping, MutableSequence
@@ -573,6 +574,15 @@ class Base(ABC):
         pos_field = fields.get("pos", "position")
 
         if key not in self._tracks:
+            LOGGER.track(
+                "danny vera",
+                key[0],
+                key,
+                best_key,
+                row,
+                self._year,
+                level=logging.INFO,
+            )
             self._tracks[key] = row.copy()
             return best_key, True
 
@@ -608,7 +618,7 @@ class Base(ABC):
                 and self._tracks[key]["best"] is not True
             ):
                 LOGGER.track(
-                    "di-rect",
+                    "danny vera",
                     str(row[fields.get("artist", "artiest")]).lower(),
                     "Collision",
                     self._year,
@@ -616,6 +626,7 @@ class Base(ABC):
                     best_key,
                     row,
                     self._tracks[key],
+                    level=logging.INFO,
                 )
                 self._tracks[key] = new_row
 

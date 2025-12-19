@@ -179,10 +179,13 @@ def _write_year(
     return True
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str] | None = None) -> int:
     """
     Main entry point.
     """
+
+    if argv is None:
+        argv = sys.argv[1:]
 
     LOGGER.setLevel(logging.INFO)
 
