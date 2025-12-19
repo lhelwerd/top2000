@@ -3,7 +3,6 @@ Base row-based data parser.
 """
 
 import bisect
-import logging
 import tomllib
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, MutableMapping, MutableSequence
@@ -581,7 +580,6 @@ class Base(ABC):
                 best_key,
                 row,
                 self._year,
-                level=logging.INFO,
             )
             self._tracks[key] = row.copy()
             return best_key, True
@@ -626,7 +624,6 @@ class Base(ABC):
                     best_key,
                     row,
                     self._tracks[key],
-                    level=logging.INFO,
                 )
                 self._tracks[key] = new_row
 
