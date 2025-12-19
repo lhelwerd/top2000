@@ -8,6 +8,7 @@ from typing import final
 
 from typing_extensions import override
 
+from ..logging import LOGGER
 from .base import Artists, Base, FieldHolder, Positions, Row
 from .csv import CSV
 from .json import JSON
@@ -134,6 +135,7 @@ class Years(Base):
             overview_json_path = Path(overview_json_name)
             skip_json = self._fields.get_bool_field(year, "json", "skip")
             if overview_json_path.exists() and not skip_json:
+                LOGGER.info("Reading JSON for old year %d", year)
                 json = JSON(year, is_current_year=False, fields=self._fields)
                 if self._fields.get_bool_field(year, "json", "old"):
                     json.read_old_file(overview_json_path, tracks=self._tracks)
@@ -145,6 +147,7 @@ class Years(Base):
                 # No JSON file, so instead use CSV (very old years)
                 # These are overview CSV files with possibly multiple years
                 # The current year position is stored in a "pos XXXX" field
+                LOGGER.info("Reading CSV for old year %d", year)
                 self._fields.update_year(
                     year, {"csv": {"pos": f"pos {int(year)}"}}
                 )

@@ -107,6 +107,8 @@ class CSV(Format):
     ) -> dict[str, str]:
         key = keys[0]
         track = tracks[key]
+        if "artiest" not in track or "titel" not in track:
+            LOGGER.warning("Missing fields: %r", track)
         artist = str(track["artiest"])
         title = str(track["titel"])
 

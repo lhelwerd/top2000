@@ -575,8 +575,8 @@ class Base(ABC):
 
         if key not in self._tracks:
             LOGGER.track(
-                "danny vera",
-                key[0],
+                "danny vera/roller coaster",
+                "/".join(key),
                 key,
                 best_key,
                 row,

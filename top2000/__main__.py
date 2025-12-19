@@ -133,6 +133,11 @@ def _read_year(
         reader.year = current_year = _select_year(
             current_year, latest_year, year
         )
+        LOGGER.debug(
+            "Selecting year %d from existing multi-reader %r",
+            current_year,
+            reader,
+        )
         new_latest_year = (
             latest_year if latest_year is not None else current_year
         )
@@ -146,6 +151,7 @@ def _read_year(
             current_year = _select_year(current_year, latest_year, year)
             new_latest_year = max(latest_year, reader.latest_year)
 
+        LOGGER.debug("Reading year %d with reader %r", current_year, reader)
         if isinstance(reader, Years):
             reader.read_files(*_parse_year_args(reader, argv, current_year))
         else:
@@ -168,7 +174,9 @@ def _write_year(
             latest_year if latest_year is not None else current_year,
         )
         for output_format in formatter.output_names:
-            print(f"Writing file format {output_format} year {current_year}")
+            LOGGER.info(
+                "Writing file format %s year %d", output_format, current_year
+            )
             if not formatter.output_file(
                 readers.copy(),
                 output_format,
