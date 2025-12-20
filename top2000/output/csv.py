@@ -7,8 +7,9 @@ import logging
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
+from typing import Required
 
-from typing_extensions import override
+from typing_extensions import TypedDict, override
 
 from ..logging import LOGGER
 from ..readers.base import (
@@ -20,6 +21,16 @@ from ..readers.base import (
     Tracks,
 )
 from .base import Format
+
+
+class Check(TypedDict, total=False):
+    """
+    Validation check.
+    """
+
+    name: Required[str]
+    check: Required[bool]
+    position: int
 
 
 @Format.register("csv")
@@ -93,8 +104,10 @@ class CSV(Format):
             if self._rows:
                 writer.writerows(self._rows)
 
-        print(f"{self._lines} lines above indicate problems with tracks.")
-        return self._lines == 0
+        LOGGER.info(
+            "%d lines above indicate problems with tracks.", self._lines
+        )
+        return self._lines == 0 or self._current_year < self._latest_year
 
     def _format_cells(
         self,
@@ -105,6 +118,8 @@ class CSV(Format):
     ) -> dict[str, str]:
         key = keys[0]
         track = tracks[key]
+        if "artiest" not in track or "titel" not in track:
+            LOGGER.warning("Missing fields: %r", track)
         artist = str(track["artiest"])
         title = str(track["titel"])
 
@@ -200,7 +215,7 @@ class CSV(Format):
         """
         # pylint: disable=line-too-long, unused-argument, unused-variable
 
-        if not LOGGER.isEnabledFor(logging.DEBUG):
+        if not LOGGER.isEnabledFor(logging.INFO):
             return
 
         line = f"{cells['position']}. {cells['artist']} - {cells['title']}"
@@ -213,63 +228,84 @@ class CSV(Format):
         title = str(track["titel"])
         max_artist_key = self._find_artist_chart(position, keys, artists)
         first_csv_year = 2014
-        checks = [
-            # SONGS THAT WERE RELEASED BEFORE THIS YEAR BUT ARE NEW
-            all(
-                str(year) not in track
-                for year in range(first_csv_year, self._current_year)
-            )
-            and (
-                "jaar" not in track or track["jaar"] != str(self._current_year)
-            ),
-            # MISSING YEARS
-            "yr" not in track and "jaar" not in track,
-            # UPPERCASE ARTISTS/TITLES (sometimes happens with new tracks?)
-            (
-                artist.isupper()
-                or title.isupper()
-                or artist.islower()
-                or title.islower()
-            )
-            and (
-                title.isupper()
-                or track["artiest"]
-                not in (
-                    "U2",
-                    "10cc",
-                    "INXS",
-                    "KISS",
-                    "Q65",
-                    "LP",
-                    "ABBA",
-                    "MGMT",
-                    "R.E.M.",
-                    "UB40",
-                    "3JS",
-                    "BAP",
-                    "AC/DC",
-                    "S10",
+        check_position = 1440  # ReaderBase.expected_positions
+        checks: list[Check] = [
+            {
+                "name": "Songs that were released before this year but are new",
+                "check": all(
+                    str(year) not in track
+                    for year in range(first_csv_year, self._current_year)
                 )
-            ),
-            # INCONSISTENT PREVIOUS YEAR FIELDS (missing/wrong merges/etc)
-            (
-                prv_field in track
-                and int(track[prv_field]) != int(track.get(previous_year, 0))
-            )
-            and int(track.get(previous_year, 0))
-            <= ReaderBase.expected_positions,
-            max_artist_key not in artists
-            or (len(artists[max_artist_key]) == 1 and artist.count(" ") > 2),
+                and (
+                    "jaar" not in track
+                    or track["jaar"] != str(self._current_year)
+                ),
+            },
+            {
+                "name": "Missing years",
+                "check": "yr" not in track and "jaar" not in track,
+            },
+            {
+                "name": "Single-case artists/titles (new tracks in some years)",
+                "check": (
+                    artist.isupper()
+                    or title.isupper()
+                    or artist.islower()
+                    or title.islower()
+                )
+                and (
+                    title.isupper()
+                    or track["artiest"]
+                    not in (
+                        "U2",
+                        "10cc",
+                        "INXS",
+                        "KISS",
+                        "Q65",
+                        "LP",
+                        "ABBA",
+                        "MGMT",
+                        "R.E.M.",
+                        "UB40",
+                        "3JS",
+                        "BAP",
+                        "AC/DC",
+                        "S10",
+                        "K3",
+                    )
+                ),
+            },
+            {
+                "name": "Inconsistent previous year field (failed/wrong merge)",
+                "check": (
+                    prv_field in track
+                    and int(track[prv_field])
+                    != int(track.get(previous_year, 0))
+                )
+                and int(track.get(previous_year, 0))
+                <= ReaderBase.expected_positions,
+            },
+            {
+                "name": "Additional artists with missing maximum artist",
+                "check": max_artist_key not in artists
+                or (
+                    len(artists[max_artist_key]) == 1 and artist.count(" ") > 2
+                ),
+            },
         ]
-        if any(checks) and position <= ReaderBase.expected_positions:
-            self._lines += 1
-            LOGGER.debug(
-                "%s prv=%s %s=%s",
-                line,
-                track.get(prv_field),
-                previous_year,
-                track.get(previous_year),
-            )
+        for check in checks:
+            if check["check"] and position <= check.get(
+                "position", check_position
+            ):
+                self._lines += 1
+                LOGGER.info(
+                    "%s prv=%s %s=%s (%s)",
+                    line,
+                    track.get(prv_field),
+                    previous_year,
+                    track.get(previous_year),
+                    check["name"],
+                )
 
     def add_row(
         self,

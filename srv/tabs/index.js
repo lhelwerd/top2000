@@ -2,7 +2,8 @@ import * as d3 from "d3";
 import Data from "../data.js";
 
 export default class Tabs {
-    constructor(data, scroll, charts) {
+    constructor(locale, data, scroll, charts) {
+        this.locale = locale;
         this.data = data;
         this.scroll = scroll;
         this.charts = charts;

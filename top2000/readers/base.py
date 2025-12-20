@@ -573,6 +573,14 @@ class Base(ABC):
         pos_field = fields.get("pos", "position")
 
         if key not in self._tracks:
+            LOGGER.track(
+                "danny vera/roller coaster",
+                "/".join(key),
+                key,
+                best_key,
+                row,
+                self._year,
+            )
             self._tracks[key] = row.copy()
             return best_key, True
 
@@ -608,10 +616,8 @@ class Base(ABC):
                 and self._tracks[key]["best"] is not True
             ):
                 LOGGER.track(
-                    "di-rect",
-                    str(
-                        self._tracks[key][fields.get("artist", "artiest")]
-                    ).lower(),
+                    "danny vera",
+                    str(row[fields.get("artist", "artiest")]).lower(),
                     "Collision",
                     self._year,
                     key,
@@ -652,6 +658,11 @@ class Base(ABC):
         title_alternatives: list[str],
         fields: FieldMap,
     ) -> tuple[Key, bool]:
+        update_fields = {
+            "artist": fields.get("artist", "artiest"),
+            "titel": fields.get("title", "titel"),
+            "pos": "",
+        }
         LOGGER.track(
             "iron butterfly",
             artist_alternatives[-1].lower(),
@@ -659,11 +670,13 @@ class Base(ABC):
             artist_alternatives,
             title_alternatives,
             best_key,
-            self._tracks[best_key][fields.get("artist", "artiest")],
+            row[update_fields["artist"]],
         )
         old_current_year = self._is_current_year
         self._is_current_year = True
-        best_key = self._update_row(best_key, row, best_key=best_key)[0]
+        best_key = self._update_row(
+            best_key, row, fields=update_fields, best_key=best_key
+        )[0]
         self._is_current_year = old_current_year
         if self._is_current_year:
             # Collision was detected, possibly update the merged row

@@ -12,7 +12,9 @@ from .base import Artists, Base, Row, RowElement, Tracks
 
 Rows = list[Row] | dict[str | int, "Rows"]
 NestedRow = dict[str, Row | RowElement]
-NestedRows = list[NestedRow] | dict[str | int, "NestedRow"]
+NestedRows = (
+    list[NestedRow] | dict[str | int, NestedRow] | list[list[NestedRow]]
+)
 RowT = TypeVar("RowT", Row, NestedRow)
 
 
@@ -35,20 +37,33 @@ class JSON(Base):
 
     def _load_rows(self, json_path: Path, row_type: type[RowT]) -> list[RowT]:
         with json_path.open("r", encoding="utf-8") as json_file:
-            rows: list[RowT] | dict[str | int, list[RowT]] = cast(
-                list[RowT] | dict[str | int, list[RowT]], json.load(json_file)
+            rows = cast(
+                list[RowT] | dict[str | int, list[RowT]] | list[list[RowT]],
+                json.load(json_file),
             )
             for key_index in self._get_path_field("rows"):
-                if not isinstance(rows, dict):
-                    raise TypeError(f"Unable to follow path {key_index}")
-                rows = cast(
-                    list[RowT] | dict[str | int, list[RowT]], rows[key_index]
-                )
+                # Typing is smart...
+                if isinstance(rows, list):
+                    if isinstance(key_index, str):
+                        raise TypeError(f"Unable to follow path {key_index}")
+                    rows = cast(
+                        list[RowT]
+                        | dict[str | int, list[RowT]]
+                        | list[list[RowT]],
+                        rows[key_index],
+                    )
+                else:
+                    rows = cast(
+                        list[RowT]
+                        | dict[str | int, list[RowT]]
+                        | list[list[RowT]],
+                        rows[key_index],
+                    )
             if not isinstance(rows, list):
                 raise TypeError(
                     f"Expected list (row type: {row_type}), found {type(rows)}"
                 )
-            return rows
+            return cast(list[RowT], rows)
 
     def read_old_file(
         self,

@@ -2,10 +2,12 @@
 Parse lists of song tracks in the NPO Radio 2 Top 2000 from various years.
 """
 
+import logging
 import sys
 from collections import deque
 from itertools import zip_longest
 
+from .logging import LOGGER
 from .output.base import Format
 from .readers.base import Base as ReaderBase
 from .readers.multi import OldFiles, Years
@@ -131,6 +133,11 @@ def _read_year(
         reader.year = current_year = _select_year(
             current_year, latest_year, year
         )
+        LOGGER.debug(
+            "Selecting year %d from existing multi-reader %r",
+            current_year,
+            reader,
+        )
         new_latest_year = (
             latest_year if latest_year is not None else current_year
         )
@@ -144,6 +151,7 @@ def _read_year(
             current_year = _select_year(current_year, latest_year, year)
             new_latest_year = max(latest_year, reader.latest_year)
 
+        LOGGER.debug("Reading year %d with reader %r", current_year, reader)
         if isinstance(reader, Years):
             reader.read_files(*_parse_year_args(reader, argv, current_year))
         else:
@@ -166,7 +174,9 @@ def _write_year(
             latest_year if latest_year is not None else current_year,
         )
         for output_format in formatter.output_names:
-            print(f"Writing file format {output_format} year {current_year}")
+            LOGGER.info(
+                "Writing file format %s year %d", output_format, current_year
+            )
             if not formatter.output_file(
                 readers.copy(),
                 output_format,
@@ -177,10 +187,15 @@ def _write_year(
     return True
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str] | None = None) -> int:
     """
     Main entry point.
     """
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    LOGGER.setLevel(logging.INFO)
 
     try:
         argv, inputs, outputs, latest_year = _parse_first_args(deque(argv))
@@ -216,9 +231,9 @@ def main(argv: list[str]) -> int:
 
             readers[index : index + 1] = [reader]
 
-            previous_year = year - 1 if year is not None else current_year - 1
-            if old_data_available and previous_year >= ReaderBase.first_year:
-                years.append(previous_year)
+        previous_year = year - 1 if year is not None else current_year - 1
+        if old_data_available and previous_year >= ReaderBase.first_year:
+            years.append(previous_year)
 
         if not _write_year(
             outputs, readers, current_year, latest_year, old_data_available

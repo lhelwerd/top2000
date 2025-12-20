@@ -2,11 +2,13 @@
 Multiple file reader.
 """
 
+import bisect
 from pathlib import Path
 from typing import final
 
 from typing_extensions import override
 
+from ..logging import LOGGER
 from .base import Artists, Base, FieldHolder, Positions, Row
 from .csv import CSV
 from .json import JSON
@@ -122,6 +124,7 @@ class Years(Base):
 
         if old is not None:
             self._read_old_files(old)
+            self._fill_old_year_overview()
 
     def _read_old_files(self, old: OldFiles) -> None:
         """
@@ -133,24 +136,42 @@ class Years(Base):
             overview_json_path = Path(overview_json_name)
             skip_json = self._fields.get_bool_field(year, "json", "skip")
             if overview_json_path.exists() and not skip_json:
+                LOGGER.info("Reading JSON for old year %d", year)
                 json = JSON(year, is_current_year=False, fields=self._fields)
                 if self._fields.get_bool_field(year, "json", "old"):
                     json.read_old_file(overview_json_path, tracks=self._tracks)
                 else:
                     json.read_file(overview_json_path, tracks=self._tracks)
-                self._year_positions[year] = json.positions
-                self._year_artists[year] = json.artists
+                self._year_positions[int(year)] = json.positions
+                self._year_artists[int(year)] = json.artists
             else:
                 # No JSON file, so instead use CSV (very old years)
                 # These are overview CSV files with possibly multiple years
                 # The current year position is stored in a "pos XXXX" field
+                LOGGER.info("Reading CSV for old year %d", year)
                 self._fields.update_year(
                     year, {"csv": {"pos": f"pos {int(year)}"}}
                 )
                 csv = CSV(year, is_current_year=False, fields=self._fields)
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)
-                self._year_positions[year] = csv.positions
-                self._year_artists[year] = csv.artists
+                self._year_positions[int(year)] = csv.positions
+                self._year_artists[int(year)] = csv.artists
+
+    def _fill_old_year_overview(self) -> None:
+        for key, track in self._tracks.items():
+            for field, value in track.items():
+                if (
+                    field.isnumeric()
+                    and (year := float(field)) < self.latest_year
+                    and (pos := int(value)) > 0
+                ):
+                    year_positions = self._year_positions.setdefault(year, {})
+                    year_positions.setdefault(pos, []).append(key)
+
+                    year_artists = self._year_artists.setdefault(year, {})
+                    chart = year_artists.setdefault(key[0], [])
+                    if pos not in chart:
+                        bisect.insort(chart, pos)
 
     @property
     @override

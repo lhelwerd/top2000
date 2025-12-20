@@ -54,12 +54,15 @@ display of these texts between the files.
 
 ### Parsing
 
-In this repository, use `python -m top2000` to run the module to read the CSV 
-and JSON files and output as CSV charts. To instead use Wikipedia data, provide 
-arguments to run `python -m top2000 wiki csv` to output as CSV charts. Caching 
-is used to avoid requesting the API on later commands. Finally, it is possible 
-to include both source chart data and external data, for example by running 
-`python -m top2000 multi wiki json` to output as a JSON dump.
+In this repository, use `python3 -m top2000` or `uv run top2000` to run the 
+module to read the CSV and JSON files and output as CSV charts. To instead use 
+Wikipedia data, provide arguments to run `python3 -m top2000 wiki csv` to 
+output as CSV charts. Caching is used to avoid requesting the API on later 
+commands. Finally, it is possible to include both source chart data and 
+external data, for example by running `python3 -m top2000 multi wiki json` to 
+output as a JSON dump. Additional arguments allow selecting which year to 
+output charts for; by default the module attempts to output files for all years 
+from end to start.
 
 This repository contains some settings files which may be customized in order 
 to adjust the normalization and formatting of this module. The following 
