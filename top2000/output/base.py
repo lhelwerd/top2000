@@ -156,7 +156,15 @@ class Format(ABC):
             if possible_key[0] not in artists:
                 continue
             num_tracks = len(artists[possible_key[0]])
-            track_position = artists[possible_key[0]].index(position)
+            try:
+                track_position = artists[possible_key[0]].index(position)
+            except ValueError:
+                LOGGER.debug(
+                    "Missing artist chart of key %s for position %d",
+                    possible_key[0],
+                    position,
+                )
+                continue
             LOGGER.track(
                 possible_key[1],
                 "als ik je weer zie",
@@ -171,6 +179,6 @@ class Format(ABC):
             ):
                 max_tracks = num_tracks
                 max_artist_key = possible_key[0]
-                max_position = artists[possible_key[0]].index(position)
+                max_position = track_position
 
         return max_artist_key

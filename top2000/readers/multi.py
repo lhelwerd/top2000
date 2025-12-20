@@ -142,8 +142,8 @@ class Years(Base):
                     json.read_old_file(overview_json_path, tracks=self._tracks)
                 else:
                     json.read_file(overview_json_path, tracks=self._tracks)
-                self._year_positions[year] = json.positions
-                self._year_artists[year] = json.artists
+                self._year_positions[int(year)] = json.positions
+                self._year_artists[int(year)] = json.artists
             else:
                 # No JSON file, so instead use CSV (very old years)
                 # These are overview CSV files with possibly multiple years
@@ -154,15 +154,15 @@ class Years(Base):
                 )
                 csv = CSV(year, is_current_year=False, fields=self._fields)
                 csv.read_file(Path(overview_csv_name), tracks=self._tracks)
-                self._year_positions[year] = csv.positions
-                self._year_artists[year] = csv.artists
+                self._year_positions[int(year)] = csv.positions
+                self._year_artists[int(year)] = csv.artists
 
     def _fill_old_year_overview(self) -> None:
         for key, track in self._tracks.items():
             for field, value in track.items():
                 if (
                     field.isnumeric()
-                    and (year := float(field)) < self.first_csv_year
+                    and (year := float(field)) < self.latest_year
                     and (pos := int(value)) > 0
                 ):
                     year_positions = self._year_positions.setdefault(year, {})
