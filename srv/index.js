@@ -36,7 +36,7 @@ const load = (data = defaultData) => {
     const info = new Info(data);
     const table = new Table(locale, data, search, scroll, state);
 
-    const tabs = new Tabs(data, scroll, charts);
+    const tabs = new Tabs(locale, data, scroll, charts);
 
     tabs.create();
     scroll.create();
