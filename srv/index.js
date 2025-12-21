@@ -15,6 +15,18 @@ import Table from "./tabs/table.js";
 const locale = new Locale();
 const state = { autoscroll: true };
 const defaultData = new Data(currentData, locale);
+const yearData = {};
+try {
+    const rawData = globalThis.localStorage.getItem("data");
+    if (rawData !== null) {
+        for (const [year, data] of Object.entries(JSON.parse(rawData))) {
+            yearData[year] = data;
+        }
+    }
+}
+catch (error) {
+    console.error(error);
+}
 
 const load = (data = defaultData) => {
     d3.select("#container").remove();
@@ -36,7 +48,7 @@ const load = (data = defaultData) => {
     const info = new Info(data);
     const table = new Table(locale, data, search, scroll, state);
 
-    const tabs = new Tabs(locale, data, scroll, charts);
+    const tabs = new Tabs(locale, data, search, scroll, charts);
 
     tabs.create();
     scroll.create();
@@ -50,4 +62,7 @@ const load = (data = defaultData) => {
     return tabs;
 };
 
-load().enable(load);
+load(yearData[defaultData.year] ?
+    new Data(yearData[defaultData.year], locale) :
+    defaultData
+).enable(load, yearData);

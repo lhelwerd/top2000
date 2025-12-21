@@ -16,6 +16,7 @@ $ultrahd: 1744px;
 @forward "bulma/sass/elements/icon";
 @forward "bulma/sass/elements/table";
 @forward "bulma/sass/elements/title";
+@forward "bulma/sass/form/file";
 @forward "bulma/sass/form/input-textarea";
 @forward "bulma/sass/form/tools";
 @forward "bulma/sass/grid/columns";
@@ -181,6 +182,10 @@ table.main {
             min-height: 26.86rem;
         }
     }
+}
+#upload .file-label {
+  min-width: 28.6rem;
+  text-align: center;
 }
 @include mixins.tablet {
     .level {
