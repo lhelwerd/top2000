@@ -12,7 +12,7 @@ export default defineConfig([
         "dist/",
         "node_modules/",
     ]),
-	{
+    {
         files: ["srv/**/*.js"],
         plugins: {
             js,
@@ -21,23 +21,24 @@ export default defineConfig([
             unicorn,
         },
         extends: ["js/recommended"],
-		languageOptions: {
-			ecmaVersion: 2025,
+        languageOptions: {
+            ecmaVersion: 2025,
             globals: {
                 ...globals.browser,
             },
-			sourceType: "module",
-		},
+            sourceType: "module",
+        },
         rules: {
             ...sonarjs.configs.recommended.rules,
             //...unicorn.configs.unopinionated.rules,
-            "complexity": ["error", {"max": 15}],
+            "complexity": ["error", { "max": 15 }],
             "max-params": ["warn", 7],
             "no-array-constructor": "error",
-            "no-unused-vars": ["warn", {"argsIgnorePattern": "^_"}],
+            "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
             "unicorn/escape-case": ["error", "lowercase"],
-            "unicorn/number-literal-case": ["error", {"hexadecimalValue": "lowercase"}],
-            "unicorn/prefer-at": ["error"],
+            "unicorn/number-literal-case": ["error", { "hexadecimalValue": "lowercase" }],
+            "unicorn/prefer-at": "error",
+            "unicorn/prefer-blob-reading-methods": "error",
         },
-	},
+    },
 ]);

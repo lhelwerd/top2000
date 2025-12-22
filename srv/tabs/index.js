@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import Data from "../data.js";
+import Upload from "../modal/upload.js";
 
 export default class Tabs {
     constructor(locale, data, search, scroll, charts) {
@@ -25,24 +26,7 @@ export default class Tabs {
 
     fixAnchorScroll(content, d, hash, selector = null) {
         if (selector === null) {
-            const tab = this.tabs.get(d);
-            if (content.empty() || content.classed("is-hidden")) {
-                if (hash === `#/${d}` && tab.activate) {
-                    tab.activate(d, hash);
-                    return false;
-                }
-                return false;
-            }
-            if (hash.startsWith(`#/${d}`) && tab.scroll) {
-                tab.scroll(d, hash);
-            }
-            else if (hash.startsWith("#/") &&
-                (!tab.year || d === this.data.year)
-            ) {
-                content.node().scrollIntoView(true);
-                this.fixStickyScroll();
-            }
-            return true;
+            this.updateVisible(content, d, hash);
         }
         const element = content.select(selector);
         if (!element.empty()) {
@@ -50,6 +34,32 @@ export default class Tabs {
             return true;
         }
         return false;
+    }
+
+    updateVisible(content, d, hash) {
+        const tab = this.tabs.get(d);
+        const active = hash.startsWith(`#/${d}`);
+        if (content.empty() || content.classed("is-hidden")) {
+            if (active && tab.activate) {
+                tab.activate(d, hash);
+                return false;
+            }
+            return false;
+        }
+        if (!active && tab.activate && content.classed("is-active")) {
+            content.classed("is-active", false);
+            return false;
+        }
+        if (active && tab.scroll) {
+            tab.scroll(d, hash);
+        }
+        else if (hash.startsWith("#/") &&
+            (!tab.year || d === this.data.year)
+        ) {
+            content.node().scrollIntoView(true);
+            this.fixStickyScroll();
+        }
+        return true;
     }
 
     checkActive(content, d, hash) {
@@ -131,6 +141,13 @@ export default class Tabs {
                 });
             }
         };
+        const updateActive = () => items.call(tab => this.setActive(tab));
+        const closeActive = (d) => {
+            const extraHash = document.location.hash.startsWith(`#/${d}`) ?
+                document.location.hash.slice(`#/${d}`.length) : "";
+            document.location.hash = `#${extraHash}`;
+        };
+
         for (const index of years) {
             const year = this.data.first_year + index;
             this.tabs.set(year, {
@@ -143,6 +160,9 @@ export default class Tabs {
                     "is-hidden" : ""
             });
         }
+
+        const upload = new Upload(this.data, this.locale, load, yearData);
+        upload.createModal();
 
         this.tabs.set("charts", {
             icon: String.fromCodePoint(0x1f4ca),
@@ -160,12 +180,12 @@ export default class Tabs {
         this.tabs.set("search", {
             icon: String.fromCodePoint(0x1f50e),
             container: "#search",
-            activate: () => this.search.open()
+            activate: (d) => this.search.open(() => closeActive(d))
         });
         this.tabs.set("upload", {
             icon: String.fromCodePoint(0x1f4e4),
             container: "#upload",
-            activate: () => this.openUpload(load, yearData)
+            activate: (d) => upload.open(() => closeActive(d))
         });
 
         const items = this.list.selectAll("li")
@@ -181,106 +201,7 @@ export default class Tabs {
             .classed("is-hidden-tablet-only is-hidden-fullhd-only", true)
             .text(d => `\u00a0${this.tabs.get(d).text || ""}`);
 
-        items.call(tab => this.setActive(tab));
-        d3.select(globalThis).on("hashchange",
-            () => items.call(tab => this.setActive(tab))
-        );
-    }
-
-    openUpload(load, yearData) {
-        d3.select("#upload").remove();
-        const modal = d3.select("body").append("div")
-            .attr("id", "upload")
-            .classed("modal is-active", true);
-        const closeModal = () => modal.classed("is-active", false);
-        modal.append("div")
-            .classed("modal-background", true)
-            .on("click", closeModal);
-        const container = modal.append("div")
-            .classed("modal-content", true);
-        const box = container.append("box")
-            .classed("box", true);
-
-        const file = box.append("div")
-            .classed("file is-large is-boxed", true);
-        const label = file.append("label")
-            .classed("file-label", true);
-        const input = label.append("input")
-            .classed("file-input", true)
-            .attr("type", "file");
-        const text = label.append("span")
-            .classed("file-cta", true);
-        text.append("span")
-            .classed("file-icon", true)
-            .text(String.fromCodePoint(0x1f4e4));
-        text.append("span")
-            .classed("file-label", true)
-            .text("[ Upload / drag-&-drop dump ]");
-
-        const rows = box.append("table")
-            .classed("table is-fullwidth is-narrow is-hoverable is-striped",
-                true
-            )
-            .append("tbody");
-        const updateRows = () => {
-            rows.selectAll("tr")
-                .data(Object.entries(yearData))
-                .join(enter => {
-                    const row = enter.append("tr")
-                        .classed("is-clickable", true)
-                        .on("click", (_, y) => {
-                            delete yearData[y[0]];
-                            globalThis.localStorage.setItem("data", JSON.stringify(yearData));
-                            updateRows();
-                            if (Number(y[0]) === this.data.latest_year) {
-                                globalThis.location.reload();
-                            }
-                        });
-                    row.append("td").text(y => y[0]);
-                    row.append("td").text(y => Object.values(y[1].columns).join(", "));
-                    row.append("td").text("\u2716");
-                })
-        };
-        updateRows();
-
-        const uploadFile = (dump) => {
-            if (!dump) {
-                file.classed("is-error", true);
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    const data = JSON.parse(reader.result);
-                    yearData[data.year] = data;
-                    globalThis.localStorage.setItem("data", JSON.stringify(yearData));
-                    updateRows();
-                    file.classed("is-error", false);
-                    load(new Data(yearData[data.year], this.locale)).enable(load, yearData);
-                }
-                catch {
-                    file.classed("is-error", true);
-                }
-            };
-            reader.onerror = () => {
-                file.classed("is-error", true);
-            };
-            reader.readAsText(dump);
-        };
-        input.on("change", (event) => uploadFile(event.target.files[0]));
-        file.on("dragenter", (event) => {
-            // Adjust the display to show we are a proper drop zone
-            event.stopPropagation();
-            event.preventDefault();
-        })
-            .on("dragover", (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-            })
-            .on("drop", (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                uploadFile(event.dataTransfer.files[0]);
-            });
+        updateActive();
+        d3.select(globalThis).on("hashchange", updateActive);
     }
 }

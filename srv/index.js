@@ -6,7 +6,7 @@ import Data from "./data.js";
 import Format from "./format.js";
 import Locale from "./locale.js";
 import Scroll from "./scroll.js";
-import Search from "./search.js";
+import Search from "./modal/search.js";
 import Tabs from "./tabs/index.js";
 import Charts from "./tabs/charts.js";
 import Info from "./tabs/info.js";

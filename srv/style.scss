@@ -186,6 +186,12 @@ table.main {
 #upload .file-label {
   min-width: 28.6rem;
   text-align: center;
+  .file-cta {
+    border-width: 0.2rem;
+    &.drag {
+      border-style: dashed;
+    }
+  }
 }
 @include mixins.tablet {
     .level {
