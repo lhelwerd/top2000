@@ -18,11 +18,11 @@ export default class Table {
         table.append("thead")
             .append("tr")
             .selectAll("th")
-            .data([...this.data.columns, ""])
+            .data([...this.data.trackColumns, ""])
             .join("th")
             .each((d, i, nodes) => {
                 const cell = d3.select(nodes[i]);
-                if (i === this.data.columns.length) {
+                if (i === this.data.trackColumns.length) {
                     cell.append("a")
                         .on("click", () => this.search.open())
                         .text(String.fromCodePoint(0x1f50e));
@@ -44,15 +44,15 @@ export default class Table {
             search: this.search
         };
         const state = this.state;
-        rows.on("click", function (_, d) {
+        rows.on("click", function(_, d) {
             toggleInfoCell(infoParams, this, d);
             state.autoscroll = false;
         });
         rows.selectAll("td")
-            .data((_, i) => new Array(this.data.columns.length + 1).fill(i))
+            .data((_, i) => new Array(this.data.trackColumns.length + 1).fill(i))
             .join("td")
-            .text((pos, i) => i === this.data.columns.length ? "\u25b6" :
-                this.data.fields[this.data.columns[i]].field(this.data.tracks[pos],
+            .text((pos, i) => i === this.data.trackColumns.length ? "\u25b6" :
+                this.data.fields[this.data.trackColumns[i]].field(this.data.tracks[pos],
                     this.data.positions[pos], this.data.keys[pos]
                 )
             );

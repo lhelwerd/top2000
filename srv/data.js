@@ -6,10 +6,10 @@ export default class Data {
         this.end = this.positions[0];
         this.start = this.reverse ? this.end : this.front;
 
-        this.columns = ["position", "artist", "title"];
+        this.trackColumns = ["position", "artist", "title"];
         this.artistColumns = ["position", "title", "year"];
         if (this.tracks[0].timestamp) {
-            this.columns.push("timestamp");
+            this.trackColumns.push("timestamp");
             this.artistColumns.push("timestamp");
         }
         this.fields = {
@@ -36,7 +36,7 @@ export default class Data {
         };
     }
 
-    findTrack(pos, field="tracks") {
+    findTrack(pos, field = "tracks") {
         return this[field][this.reverse ? this.tracks.length - pos : pos - 1];
     }
 
