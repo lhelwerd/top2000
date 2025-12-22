@@ -39,6 +39,7 @@ export default defineConfig([
             "unicorn/number-literal-case": ["error", { "hexadecimalValue": "lowercase" }],
             "unicorn/prefer-at": "error",
             "unicorn/prefer-blob-reading-methods": "error",
+            "unicorn/prefer-class-fields": "error",
         },
     },
 ]);
