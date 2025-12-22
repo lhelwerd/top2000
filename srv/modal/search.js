@@ -1,11 +1,15 @@
 import MiniSearch from "minisearch";
 import * as d3 from "d3";
-import { toggleInfoCell } from "./info.js";
+import { toggleInfoCell } from "../info.js";
+import Modal from "./index.js";
 
 const searchColumns = ["position", "artist", "title"];
 
-export default class SearchModal {
+export default class SearchModal extends Modal {
+    MODAL_ID = "search";
+
     constructor(locale, data, state, scroll) {
+        super();
         this.locale = locale;
         this.data = data;
         this.state = state;
@@ -47,17 +51,7 @@ export default class SearchModal {
         }
     }
 
-    createModal() {
-        d3.select("#search").remove();
-        const modal = d3.select("body").append("div")
-            .attr("id", "search")
-            .classed("modal", true);
-        const closeModal = () => modal.classed("is-active", false);
-        modal.append("div")
-            .classed("modal-background", true)
-            .on("click", closeModal);
-        const container = modal.append("div")
-            .classed("modal-content", true);
+    createContent(modal, container) {
         const input = this.createBox(container, {
             filter: (r) => Number.isInteger(r.id),
             fuzzy: 0.2,
@@ -82,12 +76,9 @@ export default class SearchModal {
         });
         input.on("keydown", (event) => {
             if (event.key === "Escape") {
-                closeModal();
+                this.close();
             }
         });
-        modal.append("button")
-            .classed("modal-close is-large", true)
-            .on("click", closeModal);
     }
 
     createBox(container, searchOptions, handleClick) {
@@ -112,10 +103,9 @@ export default class SearchModal {
         return input;
     }
 
-    open() {
-        const modal = d3.select("#search")
-            .classed("is-active", true);
-        const input = modal.select("input").node();
+    open(closeCallback = null) {
+        super.open(closeCallback);
+        const input = d3.select("#search input").node();
         input.focus();
         input.select();
     }
@@ -127,7 +117,7 @@ export default class SearchModal {
             .join(enter => enter.append("tr")
                 .classed("is-clickable", true)
             )
-            .on("click", function (_, r) {
+            .on("click", function(_, r) {
                 handleClick(r, results, text);
             })
             .selectAll("td")

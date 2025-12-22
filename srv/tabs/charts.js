@@ -270,7 +270,7 @@ export default class Charts {
                 return track.artist;
             }
             if (this.data.artist_links) {
-                const name = Object.values(this.data.findTrack(position, "artist_links")).find(filterName);
+                const name = Object.values(this.data.findTrack(position, "artist_links") || []).find(filterName);
                 if (name) {
                     return name;
                 }
@@ -330,7 +330,7 @@ export default class Charts {
     }
 
     getTitleLength(d) {
-        return d.title.replaceAll(/(?: |^)\([^)]+\)(?: |$)/g, "").length;
+        return d.title?.replaceAll(/(?: |^)\([^)]+\)(?: |$)/g, "").length;
     }
 
     getTrackTime(i) {
@@ -519,7 +519,7 @@ export default class Charts {
             .join(enter => enter.append(
                 d => document.createElement(d.type === "divider" ? "hr" : "a")
             )
-                .attr("href", d => d.id ? `#/charts/${d.id}` : null)
+                .attr("href", d => d.id ? `#/charts/${this.data.year}/${d.id}` : null)
                 .classed("dropdown-item", d => d.type !== "divider")
                 .classed("dropdown-divider", d => d.type === "divider")
                 .on("click", function(event, chart) {

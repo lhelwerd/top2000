@@ -1,10 +1,13 @@
 import * as d3 from "d3";
 import Data from "../data.js";
+import Upload from "../modal/upload.js";
 
 export default class Tabs {
-    constructor(locale, data, scroll, charts) {
+    constructor(locale, data, search, scroll, charts) {
         this.locale = locale;
         this.data = data;
+
+        this.search = search;
         this.scroll = scroll;
         this.charts = charts;
 
@@ -23,19 +26,7 @@ export default class Tabs {
 
     fixAnchorScroll(content, d, hash, selector = null) {
         if (selector === null) {
-            if (content.empty() || content.classed("is-hidden")) {
-                return false;
-            }
-            if (hash.startsWith(`#/${d}`) && this.tabs.get(d).scroll) {
-                this.tabs.get(d).scroll(d, hash);
-            }
-            else if (hash.startsWith("#/") &&
-                (!this.tabs.get(d).year || d === this.data.year)
-            ) {
-                content.node().scrollIntoView(true);
-                this.fixStickyScroll();
-            }
-            return true;
+            this.updateVisible(content, d, hash);
         }
         const element = content.select(selector);
         if (!element.empty()) {
@@ -43,6 +34,32 @@ export default class Tabs {
             return true;
         }
         return false;
+    }
+
+    updateVisible(content, d, hash) {
+        const tab = this.tabs.get(d);
+        const active = hash.startsWith(`#/${d}`);
+        if (content.empty() || content.classed("is-hidden")) {
+            if (active && tab.activate) {
+                tab.activate(d, hash);
+                return false;
+            }
+            return false;
+        }
+        if (!active && tab.activate && content.classed("is-active")) {
+            content.classed("is-active", false);
+            return false;
+        }
+        if (active && tab.scroll) {
+            tab.scroll(d, hash);
+        }
+        else if (hash.startsWith("#/") &&
+            (!tab.year || d === this.data.year)
+        ) {
+            content.node().scrollIntoView(true);
+            this.fixStickyScroll();
+        }
+        return true;
     }
 
     checkActive(content, d, hash) {
@@ -60,7 +77,7 @@ export default class Tabs {
             .classed("is-active", d => {
                 const content = this.container.select(this.tabs.get(d).container);
                 const active = this.checkActive(content, d, hash);
-                if (!active && /^#\/\d{4}/.test(hash) &&
+                if (!active && /^#\/(?:\d{4}|search|upload)/.test(hash) &&
                     this.tabs.get(d).year
                 ) {
                     return active;
@@ -98,11 +115,50 @@ export default class Tabs {
         return String.fromCodePoint(year < this.data.year ? 0x1f519 : 0x1f51c);
     }
 
-    enable(load) {
+    enable(load, yearData) {
         const latestYear = this.data.latest_year || this.data.year;
         const years = this.data.old_data_available ?
             [...new Array(latestYear - this.data.first_year + 1).keys()] :
             [latestYear - this.data.first_year];
+        const loadYear = async (d, hash) => {
+            if (d === this.data.year) {
+                this.scroll.scrollYearHash(d, hash);
+            }
+            else if (yearData[d]) {
+                load(new Data(yearData[d], this.locale)).enable(load, yearData);
+            }
+            else if (d === latestYear) {
+                load().enable(load, yearData);
+                this.scroll.scrollYearHash(d, hash);
+            }
+            else {
+                const data = await import(
+                    /* webpackInclude: /output-\d\d\d\d\.json$/ */
+                    `@output/output-${d}.json`
+                );
+                load(new Data(data, this.locale)).enable(load, yearData);
+                this.scroll.scrollYearHash(d, hash);
+            }
+        };
+        const updateActive = () => {
+            items.call(tab => this.setActive(tab));
+            const activeTab = items.filter(".is-active");
+            activeTab.node().scrollIntoView({
+                container: "nearest",
+                inline: "center",
+            });
+            const active = activeTab.datum();
+            items.selectAll("a")
+                .attr("href", d => d === active || this.tabs.get(d).year ?
+                    `#/${d}` : `#/${d}/${active}`
+                );
+        };
+        const closeActive = (d) => {
+            const extraHash = document.location.hash.startsWith(`#/${d}/`) ?
+                document.location.hash.slice(`#/${d}`.length) : `/${this.data.year}`;
+            document.location.hash = `#${extraHash}`;
+        };
+
         for (const index of years) {
             const year = this.data.first_year + index;
             this.tabs.set(year, {
@@ -110,41 +166,49 @@ export default class Tabs {
                 text: `${year}`,
                 container: ".main",
                 year: true,
-                scroll: (d, hash) => {
-                    if (d === this.data.year) {
-                        this.scroll.scrollYearHash(d, hash);
-                    }
-                    else if (d === latestYear) {
-                        load().enable(load);
-                        this.scroll.scrollYearHash(d, hash);
-                    }
-                    else {
-                        import(
-                            /* webpackInclude: /output-\d\d\d\d\.json$/ */
-                            `@output/output-${d}.json`
-                        ).then(data => {
-                            load(new Data(data, this.locale)).enable(load);
-                            this.scroll.scrollYearHash(d, hash);
-                        });
-                    }
-                },
+                scroll: loadYear,
                 classed: year !== latestYear && (year < this.data.year - 1 || year > this.data.year + 1) ?
                     "is-hidden" : ""
             });
         }
 
+        const upload = new Upload(this.data, this.locale, load, yearData);
+        upload.createModal();
+
         this.tabs.set("charts", {
             icon: String.fromCodePoint(0x1f4ca),
             text: "Charts",
             container: "#charts",
-            scroll: (d, hash) => this.charts.select(hash.startsWith(`#/${d}/`) ?
-                hash.slice(`#/${d}/`.length) : this.charts.sources[0].id
-            )
+            scroll: (d, hash) => {
+                let chart = "";
+                const hashPrefix = `#/${d}/`;
+                if (hash.startsWith(`${hashPrefix}${this.data.year}`)) {
+                    chart = hash.slice(`${hashPrefix}${this.data.year}/`.length);
+                }
+                else if (/^#\/charts\/\d{4}(?:\/|$)/.test(hash)) {
+                    loadYear(Number(hash.substr(hashPrefix.length, 4)), hash);
+                    return;
+                }
+                else if (hash.startsWith(hashPrefix)) {
+                    chart = hash.slice(hashPrefix.length);
+                }
+                this.charts.select(chart || this.charts.sources[0].id);
+            }
         });
         this.tabs.set("info", {
             icon: "\u2139\ufe0f",
             text: "Info",
             container: "#info"
+        });
+        this.tabs.set("search", {
+            icon: String.fromCodePoint(0x1f50e),
+            container: "#search",
+            activate: (d) => this.search.open(() => closeActive(d))
+        });
+        this.tabs.set("upload", {
+            icon: String.fromCodePoint(0x1f4e4),
+            container: "#upload",
+            activate: (d) => upload.open(() => closeActive(d))
         });
 
         const items = this.list.selectAll("li")
@@ -152,17 +216,15 @@ export default class Tabs {
             .join("li");
         const tabLinks = items.append("a")
             .attr("href", d => `#/${d}`)
-            .attr("title", d => this.tabs.get(d).text);
+            .attr("title", d => this.tabs.get(d).text || null);
         tabLinks.append("span")
             .classed("icon", true)
             .text(d => this.tabs.get(d).icon);
         tabLinks.append("span")
             .classed("is-hidden-tablet-only is-hidden-fullhd-only", true)
-            .text(d => `\u00a0${this.tabs.get(d).text}`);
+            .text(d => `\u00a0${this.tabs.get(d).text || ""}`);
 
-        items.call(tab => this.setActive(tab));
-        d3.select(globalThis).on("hashchange",
-            () => items.call(tab => this.setActive(tab))
-        );
+        updateActive();
+        d3.select(globalThis).on("hashchange", updateActive);
     }
 }

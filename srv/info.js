@@ -496,7 +496,7 @@ export const toggleInfoCell = (context, node, d = null, toggle = true, other = n
     const cell = d3.select(node.parentNode).insert("tr", () => node.nextSibling)
         .classed("info", true)
         .append("td")
-        .attr("colspan", context.data.columns.length + 1)
+        .attr("colspan", context.data.trackColumns.length + 1)
         .append("div")
         .classed("columns is-multiline is-centered is-vcentered", true);
 
