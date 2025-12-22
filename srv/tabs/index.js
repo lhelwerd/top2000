@@ -120,7 +120,7 @@ export default class Tabs {
         const years = this.data.old_data_available ?
             [...new Array(latestYear - this.data.first_year + 1).keys()] :
             [latestYear - this.data.first_year];
-        const loadYear = (d, hash) => {
+        const loadYear = async (d, hash) => {
             if (d === this.data.year) {
                 this.scroll.scrollYearHash(d, hash);
             }
@@ -132,19 +132,25 @@ export default class Tabs {
                 this.scroll.scrollYearHash(d, hash);
             }
             else {
-                import(
+                const data = await import(
                     /* webpackInclude: /output-\d\d\d\d\.json$/ */
                     `@output/output-${d}.json`
-                ).then(data => {
-                    load(new Data(data, this.locale)).enable(load, yearData);
-                    this.scroll.scrollYearHash(d, hash);
-                });
+                );
+                load(new Data(data, this.locale)).enable(load, yearData);
+                this.scroll.scrollYearHash(d, hash);
             }
         };
-        const updateActive = () => items.call(tab => this.setActive(tab));
+        const updateActive = () => {
+            items.call(tab => this.setActive(tab));
+            const active = items.filter(".is-active").datum();
+            items.selectAll("a")
+                .attr("href", d => d === active || this.tabs.get(d).year ?
+                    `#/${d}` : `#/${d}/${active}`
+                );
+        };
         const closeActive = (d) => {
-            const extraHash = document.location.hash.startsWith(`#/${d}`) ?
-                document.location.hash.slice(`#/${d}`.length) : "";
+            const extraHash = document.location.hash.startsWith(`#/${d}/`) ?
+                document.location.hash.slice(`#/${d}`.length) : `/${this.data.year}`;
             document.location.hash = `#${extraHash}`;
         };
 
@@ -168,9 +174,21 @@ export default class Tabs {
             icon: String.fromCodePoint(0x1f4ca),
             text: "Charts",
             container: "#charts",
-            scroll: (d, hash) => this.charts.select(hash.startsWith(`#/${d}/`) ?
-                hash.slice(`#/${d}/`.length) : this.charts.sources[0].id
-            )
+            scroll: (d, hash) => {
+                let chart = "";
+                const hashPrefix = `#/${d}/`;
+                if (hash.startsWith(`${hashPrefix}${this.data.year}`)) {
+                    chart = hash.slice(`${hashPrefix}${this.data.year}/`.length);
+                }
+                else if (/^#\/charts\/\d{4}(?:\/|$)/.test(hash)) {
+                    loadYear(Number(hash.substr(hashPrefix.length, 4)), hash);
+                    return;
+                }
+                else if (hash.startsWith(hashPrefix)) {
+                    chart = hash.slice(hashPrefix.length);
+                }
+                this.charts.select(chart || this.charts.sources[0].id);
+            }
         });
         this.tabs.set("info", {
             icon: "\u2139\ufe0f",
