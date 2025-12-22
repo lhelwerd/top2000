@@ -52,7 +52,14 @@ export default class UploadModal extends Modal {
         const updateRows = () => rows.selectAll("tr")
             .data(Object.keys(this.yearData))
             .join(enter => {
-                const row = enter.append("tr")
+                const row = enter.append("tr");
+                row.append("td")
+                    .append("a")
+                    .attr("href", y => `#/${y}`)
+                    .on("click", () => this.close())
+                    .text(y => y);
+                row.append("td").text(y => Object.values(this.yearData[y].columns || []).join(", "));
+                row.append("td")
                     .classed("is-clickable", true)
                     .on("click", (_, y) => {
                         delete this.yearData[y];
@@ -61,10 +68,8 @@ export default class UploadModal extends Modal {
                         if (Number(y) === this.data?.latest_year) {
                             globalThis.location.reload();
                         }
-                    });
-                row.append("td").text(y => y);
-                row.append("td").text(y => Object.values(this.yearData[y].columns || []).join(", "));
-                row.append("td").text("\u2716");
+                    })
+                    .text(String.fromCodePoint(0x1f5d1));
             });
         updateRows();
 
