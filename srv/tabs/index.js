@@ -142,7 +142,12 @@ export default class Tabs {
         };
         const updateActive = () => {
             items.call(tab => this.setActive(tab));
-            const active = items.filter(".is-active").datum();
+            const activeTab = items.filter(".is-active");
+            activeTab.node().scrollIntoView({
+                container: "nearest",
+                inline: "center",
+            });
+            const active = activeTab.datum();
             items.selectAll("a")
                 .attr("href", d => d === active || this.tabs.get(d).year ?
                     `#/${d}` : `#/${d}/${active}`

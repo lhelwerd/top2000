@@ -23,7 +23,8 @@ export default class UploadModal extends Modal {
             .classed("file-label", true);
         label.append("input")
             .classed("file-input", true)
-            .attr("type", "file");
+            .attr("type", "file")
+            .attr("accept", ".json,application/json");
         const text = label.append("span")
             .classed("file-cta", true);
         text.append("span")
