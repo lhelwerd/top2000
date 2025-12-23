@@ -12,6 +12,7 @@ json = {artist="a", title="s", pos="pos", prv="prv", year="yr", old=true, rows=[
 [[years]]
 year = 2020
 json = {artist="a", title="s", pos="pos", prv="prv", year="yr", old=true, rows=["data", 0]}
+csv = {artist="ARTIEST", title="TITEL", pos="NR.", year="JAAR"}
 
 [[years]]
 year = 2021

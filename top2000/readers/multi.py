@@ -106,6 +106,7 @@ class Years(Base):
             json = JSON(self._year, fields=self._fields)
             json.read_file(
                 Path(current_year_json),
+                positions=self._year_positions.get(self._year),
                 tracks=self._tracks,
                 artists=self._artists,
             )
@@ -136,24 +137,43 @@ class Years(Base):
             overview_json_path = Path(overview_json_name)
             skip_json = self._fields.get_bool_field(year, "json", "skip")
             if overview_json_path.exists() and not skip_json:
-                LOGGER.info("Reading JSON for old year %d", year)
+                LOGGER.info("Reading JSON for old year %g", year)
                 json = JSON(year, is_current_year=False, fields=self._fields)
                 if self._fields.get_bool_field(year, "json", "old"):
-                    json.read_old_file(overview_json_path, tracks=self._tracks)
+                    json.read_old_file(
+                        overview_json_path,
+                        positions=self._year_positions.get(int(year)),
+                        tracks=self._tracks,
+                        artists=self._year_artists.get(int(year)),
+                    )
                 else:
-                    json.read_file(overview_json_path, tracks=self._tracks)
+                    json.read_file(
+                        overview_json_path,
+                        positions=self._year_positions.get(int(year)),
+                        tracks=self._tracks,
+                        artists=self._year_artists.get(int(year)),
+                    )
                 self._year_positions[int(year)] = json.positions
                 self._year_artists[int(year)] = json.artists
             else:
-                # No JSON file, so instead use CSV (very old years)
+                # No JSON file, so use overview CSV (very old years)
                 # These are overview CSV files with possibly multiple years
                 # The current year position is stored in a "pos XXXX" field
-                LOGGER.info("Reading CSV for old year %d", year)
                 self._fields.update_year(
                     year, {"csv": {"pos": f"pos {int(year)}"}}
                 )
+
+            overview_csv_path = Path(overview_csv_name)
+            if overview_csv_path.exists():
+                # Read CSV even if JSON exists for release year information
+                LOGGER.info("Reading CSV for old year %g", year)
                 csv = CSV(year, is_current_year=False, fields=self._fields)
-                csv.read_file(Path(overview_csv_name), tracks=self._tracks)
+                csv.read_file(
+                    overview_csv_path,
+                    positions=self._year_positions.get(int(year)),
+                    tracks=self._tracks,
+                    artists=self._year_artists.get(int(year)),
+                )
                 self._year_positions[int(year)] = csv.positions
                 self._year_artists[int(year)] = csv.artists
 

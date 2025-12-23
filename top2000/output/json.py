@@ -141,28 +141,34 @@ class JSON(Format):
 
         self._last_position = next_position
 
+    def _format_original_field(self, field: str) -> str:
+        if field in {"album_version", "timestamp"}:
+            return f"{field}{self._current_year}"
+        return field
+
     def _build_fields(
         self, readers: list[ReaderBase], output_format: str
     ) -> tuple[list[FieldMap], set[str]]:
         reader_fields = [
-            self._get_dict_setting(
-                output_format,
-                "fields"
-                if index == 0 or reader.input_format is None
-                else reader.input_format,
-            )
+            {
+                self._format_original_field(original): translate
+                for original, translate in self._get_dict_setting(
+                    output_format,
+                    "fields"
+                    if index == 0 or reader.input_format is None
+                    else reader.input_format,
+                ).items()
+            }
             for index, reader in enumerate(readers)
         ]
-        reader_fields[0].update(
-            {
-                str(year): str(year)
-                for year in range(self._first_year, self._current_year)
-            }
-        )
+        years = {
+            str(year): str(year)
+            for year in range(self._first_year, self._latest_year + 1)
+            if year != self._current_year
+        }
+        reader_fields[0].update(years)
         numeric_fields = {"year"}
-        numeric_fields.update(
-            {str(year) for year in range(self._first_year, self._latest_year)}
-        )
+        numeric_fields.update(years.keys())
         return reader_fields, numeric_fields
 
     def _aggregate_track(
