@@ -35,6 +35,7 @@ def _compare_field(field: str, first_track: Track, second_track: Track) -> bool:
         case _, first, second if first is not None and second is not None:
             return type(first) is type(second) and first == second
         case _, _, _:
+            # Fall through to default return value
             pass
 
     return False
