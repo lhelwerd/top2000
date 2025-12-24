@@ -34,6 +34,8 @@ def _compare_field(field: str, first_track: Track, second_track: Track) -> bool:
             return second > ReaderBase.expected_positions
         case _, first, second if first is not None and second is not None:
             return type(first) is type(second) and first == second
+        case _, _, _:
+            pass
 
     return False
 
