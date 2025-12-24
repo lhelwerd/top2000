@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { EXPECTED_POSITIONS } from "./data.js";
 import { sep } from "./format.js";
 
 const chartLimit = 12;
@@ -40,19 +41,24 @@ export class Info {
         this.positions = new Map();
         this.positionIndexes = new Map();
         this.years = [];
+        this.currentYearIndex = -1;
 
         const progression = [];
-        const lastDate = new Date(this.data.year, 0);
-
-        for (let year = this.data.first_year; year < this.data.year; year++) {
-            const date = new Date(year, 0);
-            this.years.push(date);
-            progression.push(this.track[year]);
-        }
-        this.years.push(lastDate);
-
         const position = this.data.positions[this.pos];
-        progression.push(position);
+
+        this.latestYear = this.data.latest_year || this.data.year;
+        for (let year = this.data.first_year; year <= this.latestYear; year++) {
+            const date = new Date(year, 0);
+            if (year === this.data.year) {
+                this.currentYearIndex = this.years.length;
+                progression.push(position);
+            }
+            else {
+                progression.push(this.track[year]);
+            }
+            this.years.push(date);
+        }
+
         this.positions.set(position, progression);
         this.positionIndexes.set(position, 0);
     }
@@ -63,10 +69,14 @@ export class Info {
         }
         const track = this.data.findTrack(d);
         const chart = [];
-        for (let year = this.data.first_year; year < this.data.year; year++) {
-            chart.push(track[year]);
+        for (let year = this.data.first_year; year <= this.latestYear; year++) {
+            if (year === this.data.year) {
+                chart.push(d);
+            }
+            else {
+                chart.push(track[year]);
+            }
         }
-        chart.push(d);
         this.positionIndexes.set(d, this.positions.size);
         this.positions.set(d, chart);
         return true;
@@ -86,7 +96,7 @@ export class Info {
             .range([marginLeft, width - marginRight]);
         this.y = d3.scaleLinear()
             .range([height - marginBottom, marginTop]);
-        const xTicks = this.x.ticks(this.data.year - this.data.first_year);
+        const xTicks = this.x.ticks(this.latestYear - this.data.first_year);
         xTicks.push(this.years.at(-1));
         const xAxis = d3.axisBottom(this.x)
             .tickValues(xTicks)
@@ -100,8 +110,20 @@ export class Info {
             .attr("transform", `translate(0,${height - marginBottom})`)
             .call(xAxis);
         this.svg.append("g")
+            .classed("x-extra", true)
+            .append("line")
+            .attr("stroke", "currentColor")
+            .attr("x1", this.x(this.years[0]))
+            .attr("x2", width - marginLeft);
+        this.svg.append("g")
             .classed("y", true)
             .attr("transform", `translate(${marginLeft},0)`);
+        this.svg.append("g")
+            .classed("y-current-year", true)
+            .append("line")
+            .attr("stroke", "currentColor")
+            .attr("y1", marginTop)
+            .attr("y2", height - marginBottom);
         this.updateProgressionLines();
         column.node().scrollTo(width, 0);
     }
@@ -110,7 +132,13 @@ export class Info {
         const maxPosition = d3.max(this.positions.values(), seq => d3.max(seq));
         const yDomain = this.data.reverse ? [this.data.front, Math.max(maxPosition, this.data.end)] :
             [Math.max(maxPosition, this.data.front), this.data.end];
+
         this.y.domain(yDomain);
+
+        this.svg.select("g.x-extra")
+            .classed("is-hidden", maxPosition <= EXPECTED_POSITIONS)
+            .attr("transform", `translate(0,${this.y(EXPECTED_POSITIONS + 1)})`);
+
         const yTicks = this.y.ticks(10);
         yTicks.push(yDomain[1]);
         this.svg.select("g.y")
@@ -118,6 +146,9 @@ export class Info {
                 .tickFormat(d3.format(".0f"))
                 .tickValues(yTicks)
             );
+
+        this.svg.select("g.y-current-year")
+            .attr("transform", `translate(${this.x(this.years[this.currentYearIndex])},0)`);
 
         const line = d3.line()
             .defined(p => p !== undefined)
@@ -164,7 +195,7 @@ export class Info {
         points.select("path")
             .attr("fill", t => stroke(t[2] % cycle))
             .attr("d", t =>
-                symbols(t[1] === this.years.length - 1 ? (t[2] % fill) + 1 : 0)
+                symbols(t[1] === this.currentYearIndex ? (t[2] % fill) + 1 : 0)
             );
         points.select("text")
             .text(t => t[0]);
@@ -176,7 +207,7 @@ export class Info {
         const chartCell = chartColumn.append("div");
 
         // Artist charts
-        const artists = (this.data.artist_links ?
+        const artists = (this.data.artist_links?.[this.pos] ?
             Object.entries(this.data.artist_links[this.pos]) : []
         ).concat(this.data.keys[this.pos]);
         const charts = new Map();
@@ -195,10 +226,13 @@ export class Info {
     }
 
     makeArtistChart(artist, i, chartCell, charts) {
-        const isLink = this.data.artist_links?.[this.pos][artist[0]];
+        const isLink = this.data.artist_links?.[this.pos]?.[artist[0]];
         let key = isLink ? artist[1].toLowerCase() : artist[0];
         if (!this.data.artists[key]) {
-            key = this.data.keys[this.pos][i][0];
+            key = this.data.keys[this.pos]?.[i]?.[0];
+            if (!this.data.artists[key]) {
+                return;
+            }
         }
         this.artists.add(key);
         const chart = this.data.artists[key];
