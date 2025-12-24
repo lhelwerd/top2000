@@ -33,6 +33,7 @@ validate = [
 
 [project.scripts]
 top2000 = "top2000.__main__:main"
+compare = "top2000.compare:main"
 
 [project.urls]
 "Website" = "https://lhelwerd.github.io/top2000/"
