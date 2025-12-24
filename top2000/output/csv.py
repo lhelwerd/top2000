@@ -126,7 +126,7 @@ class CSV(Format):
         extra_text = self._format_rank_change(track, position)
 
         # Album version indicator
-        if track.get("album_version"):
+        if track.get(f"album_version{self._current_year}"):
             title += " \u29be"
 
         max_artist_key = self._find_artist_chart(position, keys, artists)
@@ -141,7 +141,7 @@ class CSV(Format):
             "position": str(position),
             "artist": artist,
             "title": f"{title} ({extra_text})",
-            "timestamp": str(track.get("timestamp", "")),
+            "timestamp": str(track.get(f"timestamp{self._current_year}", "")),
         }
 
     def _format_rank_change(self, track: Track, position: int) -> str:
