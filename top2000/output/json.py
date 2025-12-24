@@ -5,8 +5,9 @@ JSON dump output.
 import json
 from itertools import zip_longest
 from pathlib import Path
+from typing import Required
 
-from typing_extensions import override
+from typing_extensions import TypedDict, override
 
 from ..logging import LOGGER
 from ..readers.base import (
@@ -23,17 +24,23 @@ from .base import Format, KeyPair
 FieldMap = dict[str, str]
 
 Track = dict[str, RowElement | Row]
-Dump = dict[
-    str,
-    list[Track]
-    | list[int]
-    | list[list[Key]]
-    | Artists
-    | int
-    | bool
-    | dict[str, str]
-    | ExtraData,
-]
+
+
+class Dump(TypedDict, total=False):
+    """
+    JSON output format.
+    """
+
+    tracks: Required[list[Track]]
+    positions: Required[list[int]]
+    keys: Required[list[list[Key]]]
+    artists: Required[Artists]
+    first_year: Required[int]
+    year: Required[int]
+    latest_year: int
+    old_data_available: bool
+    reverse: bool
+    columns: Required[FieldMap]
 
 
 @Format.register("json")
@@ -99,7 +106,8 @@ class JSON(Format):
             "reverse": reverse,
             "columns": self._get_dict_setting(output_format, "columns"),
         }
-        data.update(self._select_extra_data(readers))
+        for key, value in self._select_extra_data(readers).items():
+            data[key] = value  # type: ignore[literal-required]
 
         with path.open("w", encoding="utf-8") as json_file:
             json.dump(data, json_file, separators=(",", ":"))
@@ -141,28 +149,47 @@ class JSON(Format):
 
         self._last_position = next_position
 
+    def _format_original_field(self, field: str) -> str:
+        if field in {"album_version", "timestamp"}:
+            return f"{field}{self._current_year}"
+        return field
+
+    def build_fields(self, output_format: str) -> tuple[FieldMap, set[str]]:
+        """
+        Retrieve field mapping for the given output format as well as fields to
+        be converted to numbers. This does not take into account preference of
+        reader formats.
+        """
+
+        fields, numeric_fields = self._build_fields([], output_format)
+        return fields[0], numeric_fields
+
     def _build_fields(
         self, readers: list[ReaderBase], output_format: str
     ) -> tuple[list[FieldMap], set[str]]:
+        reader_formats = [reader.input_format for reader in readers]
+        if len(reader_formats) == 0:
+            reader_formats.append(None)
         reader_fields = [
-            self._get_dict_setting(
-                output_format,
-                "fields"
-                if index == 0 or reader.input_format is None
-                else reader.input_format,
-            )
-            for index, reader in enumerate(readers)
-        ]
-        reader_fields[0].update(
             {
-                str(year): str(year)
-                for year in range(self._first_year, self._current_year)
+                self._format_original_field(original): translate
+                for original, translate in self._get_dict_setting(
+                    output_format,
+                    "fields"
+                    if index == 0 or reader_format is None
+                    else reader_format,
+                ).items()
             }
-        )
+            for index, reader_format in enumerate(reader_formats)
+        ]
+        years = {
+            str(year): str(year)
+            for year in range(self._first_year, self._latest_year + 1)
+            if year != self._current_year
+        }
+        reader_fields[0].update(years)
         numeric_fields = {"year"}
-        numeric_fields.update(
-            {str(year) for year in range(self._first_year, self._latest_year)}
-        )
+        numeric_fields.update(years.keys())
         return reader_fields, numeric_fields
 
     def _aggregate_track(

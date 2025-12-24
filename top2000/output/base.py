@@ -92,7 +92,7 @@ class Format(ABC):
     def _get_dict_setting(self, output_format: str, key: str) -> dict[str, str]:
         setting = self._settings.get(output_format, {}).get(key, {})
         assert isinstance(setting, dict), f"{key} must be a mapping"
-        return setting
+        return setting.copy()
 
     def reset(self) -> None:
         """

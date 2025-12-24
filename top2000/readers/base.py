@@ -402,9 +402,8 @@ class Base(ABC):
         Read data extracted from a CSV row or JSON array element.
         """
 
-        if self._is_current_year:
-            self._check_album_version(row, fields["title"])
-            self._check_timestamp(row, fields.get("timestamp"))
+        self._check_album_version(row, fields["title"])
+        self._check_timestamp(row, fields.get("timestamp"))
 
         pos_field = fields.get("pos", "position")
         position = (
@@ -412,16 +411,18 @@ class Base(ABC):
             if pos_field in row and int(row[pos_field]) + offset > 0
             else None
         )
-        if position is not None and not self._is_current_year:
+        if position is not None:
             row[str(int(self._year))] = position
+        row[f"{self.input_format}{int(self._year)}"] = True
 
         self._clear_previous_years(row, fields)
 
         best_key, keys, rejected_keys = self._update_keys(position, row, fields)
         LOGGER.track(
+            "smashing pumpkins",
             best_key[0],
-            ("george michael & queen", "somebody to love (live)"),
             self._year,
+            best_key,
             keys,
             rejected_keys,
         )
@@ -429,6 +430,8 @@ class Base(ABC):
             if self._tracks[key].get("best") is not True:
                 self._tracks[key]["best"] = best_key[0]
                 self._tracks[key]["best_title"] = best_key[1]
+            if position is not None:
+                self._tracks[key][str(int(self._year))] = position
 
         LOGGER.track(
             str(row[fields["title"]]),
@@ -439,7 +442,7 @@ class Base(ABC):
             rejected_keys,
             position,
         )
-        if position is not None and not self._is_current_year:
+        if position is not None:
             self._tracks[best_key][str(int(self._year))] = position
 
         year_field = fields.get("year", "year")
@@ -467,15 +470,15 @@ class Base(ABC):
         title = str(row[title_field])
         new_title = Normalizer.get_instance().check_album_version(title)
         if title != new_title:
-            row["album_version"] = True
+            row[f"album_version{int(self._year)}"] = True
             row[title_field] = new_title
 
     def _check_timestamp(self, row: Row, time_field: str | None) -> None:
         if time_field is not None and time_field in row:
-            row["timestamp"] = row[time_field]
+            row[f"timestamp{int(self._year)}"] = row.pop(time_field)
             self._last_time = None
         elif self._last_time is not None:
-            row["timestamp"] = self._last_time
+            row[f"timestamp{int(self._year)}"] = self._last_time
             self._last_time = None
 
     def _update_keys(
@@ -603,20 +606,13 @@ class Base(ABC):
                 self._tracks[key],
             )
 
-            if (
-                pos_field in self._tracks[key]
-                and self._is_current_year
-                and self._tracks[key][pos_field] == row.get(pos_field)
-            ):
-                return best_key, False
-
             if best_key == key or (
                 best_key is None
                 and "best" in self._tracks[key]
                 and self._tracks[key]["best"] is not True
             ):
                 LOGGER.track(
-                    "danny vera",
+                    "elton john",
                     str(row[fields.get("artist", "artiest")]).lower(),
                     "Collision",
                     self._year,
@@ -648,7 +644,7 @@ class Base(ABC):
         track = self._tracks[key]
         if self._is_current_year:
             return pos_field is not None and pos_field in track
-        return str(int(self._year)) in track
+        return f"{self.input_format}{int(self._year)}" in track
 
     def _update_best_key(
         self,
@@ -678,13 +674,17 @@ class Base(ABC):
             best_key, row, fields=update_fields, best_key=best_key
         )[0]
         self._is_current_year = old_current_year
-        if self._is_current_year:
+        if (
+            self._is_current_year
+            or "artiest" not in self._tracks[best_key]
+            or "titel" not in self._tracks[best_key]
+        ):
             # Collision was detected, possibly update the merged row
             # Update to best combination for current year
             self._tracks[best_key]["artiest"] = artist_alternatives[-1]
             self._tracks[best_key]["titel"] = title_alternatives[-1]
             LOGGER.track(
-                "Comptine",
+                "Hou Van Mij",
                 str(self._tracks[best_key]["titel"]),
                 title_alternatives,
                 self._tracks[best_key],

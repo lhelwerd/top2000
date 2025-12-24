@@ -98,6 +98,14 @@ first install validation dependencies using one of `pip install .[validate]`,
 `poetry install .[validate]` or `uv sync --group validate`, then run 
 `./validate_schema.sh` in this repository.
 
+In order to compare two JSON files containing charts for the same year, use 
+`python3 -m top2000.compare path/to/output-one.json path/to/output-two.json` or 
+`uv run compare path/to/output-one.json path/to/output-two.json`. This outputs 
+human-readable comparison per track on differences in relevant fields. This is 
+useful to compare output files generated based on data collected by a different 
+set of readers or from a different version, to avoid data regression, search 
+for necessary fixes and so on.
+
 ## License
 
 The module and Web application are licensed under the MIT License. See the 

@@ -85,7 +85,11 @@
                     "default": "https://nl.wikipedia.org/wiki/",
                     "description": "Base URL for articles on the Wikipedia where data was retrieved from."
                 }
-            }
+            },
+            "required": [
+                "tracks", "positions", "keys", "artists", "first_year", "year",
+                "columns"
+            ]
         },
         "track": {
             "type": "object",

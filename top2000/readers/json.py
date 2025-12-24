@@ -8,7 +8,7 @@ from typing import TypeVar, cast, final
 
 from typing_extensions import override
 
-from .base import Artists, Base, Row, RowElement, Tracks
+from .base import Artists, Base, Positions, Row, RowElement, Tracks
 
 Rows = list[Row] | dict[str | int, "Rows"]
 NestedRow = dict[str, Row | RowElement]
@@ -68,6 +68,7 @@ class JSON(Base):
     def read_old_file(
         self,
         json_path: Path,
+        positions: Positions | None = None,
         tracks: Tracks | None = None,
         artists: Artists | None = None,
     ) -> None:
@@ -77,6 +78,8 @@ class JSON(Base):
         """
 
         self.reset()
+        if positions is not None:
+            self._positions = positions
         if tracks is not None:
             self._tracks = tracks
         if artists is not None:
@@ -97,6 +100,7 @@ class JSON(Base):
     def read_file(
         self,
         json_path: Path,
+        positions: Positions | None = None,
         tracks: Tracks | None = None,
         artists: Artists | None = None,
     ) -> None:
@@ -106,6 +110,8 @@ class JSON(Base):
         """
 
         self.reset()
+        if positions is not None:
+            self._positions = positions
         if tracks is not None:
             self._tracks = tracks
         if artists is not None:

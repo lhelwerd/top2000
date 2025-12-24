@@ -259,6 +259,7 @@ Il Est Cinq Heures Paris S'\u00c9veille"""
 "Going home" = "Going Home: Theme Of The Local Hero"
 "(I just) Died In Your Arms Tonight" = "(I Just) Died In Your Arms"
 "(I Just Died) In Your Arms Tonight" = "(I Just) Died In Your Arms"
+"(I Just) Died In Your Arms Tonight" = "(I Just) Died In Your Arms"
 "I Just Died In Your Arms Tonight" = "(I Just) Died In Your Arms"
 "Fight For Your Right" = "(You Gotta) Fight For Your Right (To Party!)"
 "(You Gotta) Fight For Your Right" = "(You Gotta) Fight For Your Right (To Party!)"
@@ -277,6 +278,8 @@ Il Est Cinq Heures Paris S'\u00c9veille"""
 "Is She Really Going Out With Him" = "Is She Really Going Out With Him? (Live)"
 "Thank You" = "Thank U"
 "APT." = "Apt."
+"Tonight Tonight" = "Tonight, Tonight"
+"Shackles (Praise You)" = "Breathe (In The Air)" # 2023 overwrite
 
 [album_version]
 type = "list"
@@ -498,3 +501,4 @@ type = "mapping"
 "Earth Wind & Fire" = "Earth, Wind & Fire"
 "Emerson Lake & Palmer" = "Emerson, Lake & Palmer"
 "Dave Brubeck" = "Dave Brubeck Quartet"
+"Mary Mary" = "Pink Floyd" # 2023 overwrite
