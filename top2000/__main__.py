@@ -201,15 +201,15 @@ def main(argv: list[str] | None = None) -> int:
         argv, inputs, outputs, latest_year = _parse_first_args(deque(argv))
     except ValueError:
         print(
-            "Usage: python -m top2000 [inputs...] [outputs...] [latest_year]",
+            "Usage: python3 -m top2000 [inputs...] [outputs...] [latest_year]",
             file=sys.stderr,
         )
         print(
-            "                         [current_csv] [current_json]",
+            "                          [current_csv] [current_json]",
             file=sys.stderr,
         )
         print(
-            "                         [old_year] [old_csv] [old_json] ...",
+            "                          [old_year] [old_csv] [old_json] ...",
             file=sys.stderr,
         )
         return 0
