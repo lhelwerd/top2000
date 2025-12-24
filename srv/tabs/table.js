@@ -29,7 +29,7 @@ export default class Table {
                 }
                 else if (d === "search") {
                     cell.append("a")
-                        .on("click", () => this.search.open())
+                        .attr("href", `#/search/${this.data.year}`)
                         .text(String.fromCodePoint(0x1f50e));
                 }
                 else {
