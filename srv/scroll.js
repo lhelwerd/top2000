@@ -78,6 +78,9 @@ export default class Scroll {
     }
 
     scrollPositionRow(d) {
+        if (d === null && this.state.autoscroll) {
+            d = this.nextPage.datum();
+        }
         const data = this.data;
         const posCell = this.container.selectAll(`${rowsSelector} > td:first-child`)
             .select(function(pos) {
@@ -95,7 +98,7 @@ export default class Scroll {
 
     scrollYearHash(d, hash) {
         this.scrollPositionRow(Number(hash.startsWith(`#/${d}/`) ?
-            hash.slice(`#/${d}/`.length) : this.nextPage.datum()
+            hash.slice(`#/${d}/`.length) : null
         ));
     }
 

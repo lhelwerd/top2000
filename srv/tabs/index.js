@@ -53,9 +53,7 @@ export default class Tabs {
         if (active && tab.scroll) {
             tab.scroll(d, hash);
         }
-        else if (hash.startsWith("#/") &&
-            (!tab.year || d === this.data.year)
-        ) {
+        else if (/^#\/(?!search|upload)/.test(hash) && d === this.data.year) {
             content.node().scrollIntoView(true);
             this.fixStickyScroll();
         }
@@ -77,8 +75,9 @@ export default class Tabs {
             .classed("is-active", d => {
                 const content = this.container.select(this.tabs.get(d).container);
                 const active = this.checkActive(content, d, hash);
-                if (!active && /^#\/(?:\d{4}|search|upload)/.test(hash) &&
-                    this.tabs.get(d).year
+                const found = /^#\/(?<tab>\d{4}|search|upload)/.exec(hash);
+                if (!active && found &&
+                    (this.tabs.get(d).year || this.tabs.get(found.groups.tab)?.activate)
                 ) {
                     return active;
                 }
@@ -148,10 +147,18 @@ export default class Tabs {
                 inline: "center",
             });
             const active = activeTab.datum();
+            const activeYear = this.tabs.get(active).year ? "" : `/${this.data.year}`;
             items.selectAll("a")
-                .attr("href", d => d === active || this.tabs.get(d).year ?
-                    `#/${d}` : `#/${d}/${active}`
-                );
+                .attr("href", d => {
+                    const tab = this.tabs.get(d);
+                    if (d === active || tab.year) {
+                        return `#/${d}`;
+                    }
+                    if (!tab.activate) {
+                        return `#/${d}${activeYear}`;
+                    }
+                    return `#/${d}/${active}${activeYear}`;
+                });
         };
         const closeActive = (d) => {
             const extraHash = document.location.hash.startsWith(`#/${d}/`) ?
