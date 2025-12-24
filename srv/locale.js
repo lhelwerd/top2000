@@ -12,7 +12,8 @@ export default class Locale {
             months: ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"],
             shortMonths: ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
         });
-        this.formatTime = this.time.format("%d-%m %H:%M");
+        this.formatTimeShort = this.time.format("%d-%m %H:%M");
+        this.formatTimeLong = this.time.format("%d-%m-'%y %H:%M");
         this.formatYear = this.time.format("'%y");
         this.formatTimerLong = this.time.utcFormat("%-j:%H:%M:%S");
         this.formatTimerShort = this.time.utcFormat("%H:%M:%S");

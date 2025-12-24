@@ -18,11 +18,16 @@ export default class Table {
         table.append("thead")
             .append("tr")
             .selectAll("th")
-            .data([...this.data.trackColumns, ""])
+            .data([...this.data.trackColumns, "search"])
             .join("th")
             .each((d, i, nodes) => {
                 const cell = d3.select(nodes[i]);
-                if (i === this.data.trackColumns.length) {
+                if (d === "current") {
+                    cell.append("a")
+                        .attr("href", `#/${this.data.latest_year}`)
+                        .text(this.data.latest_year);
+                }
+                else if (d === "search") {
                     cell.append("a")
                         .on("click", () => this.search.open())
                         .text(String.fromCodePoint(0x1f50e));

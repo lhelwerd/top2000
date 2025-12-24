@@ -1,8 +1,10 @@
 import * as d3 from "d3";
+import { EXPECTED_POSITIONS } from "./data.js";
 
 const rowsSelector = "table.main > tbody > tr:not(.info)";
 const currentDisplayDelay = 10000;
 const currentUpdateDelay = 1000;
+const pagesCount = 20;
 
 export default class Scroll {
     constructor(locale, data, format, state) {
@@ -78,7 +80,7 @@ export default class Scroll {
     scrollPositionRow(d) {
         const data = this.data;
         const posCell = this.container.selectAll(`${rowsSelector} > td:first-child`)
-            .select(function (pos) {
+            .select(function(pos) {
                 return d === data.positions[pos] ? this : null;
             })
             .node();
@@ -98,7 +100,7 @@ export default class Scroll {
     }
 
     updatePagination(current = null) {
-        const count = Math.min(Math.max(this.data.end, this.data.front), 20)
+        const count = Math.min(Math.max(this.data.end, this.data.front), pagesCount);
         const pages = d3.ticks(...d3.nice(this.data.end, this.data.front, count), count);
         if (current) {
             const currentIndex = this.data.reverse ? d3.bisectLeft(pages, current) :
@@ -138,6 +140,9 @@ export default class Scroll {
             )
             .classed("is-hidden-touch",
                 (d, i) => i !== 0 && d !== current && d % 500 !== 0
+            )
+            .classed("is-hidden-fullhd",
+                (d, i) => pages.length > pagesCount && i !== 0 && d !== current && d > EXPECTED_POSITIONS && d % 500 !== 0
             )
             .text(d => d);
     }

@@ -1,3 +1,5 @@
+export const EXPECTED_POSITIONS = 2000;
+
 export default class Data {
     constructor(data, locale) {
         Object.assign(this, data);
@@ -8,6 +10,9 @@ export default class Data {
 
         this.trackColumns = ["position", "artist", "title"];
         this.artistColumns = ["position", "title", "year"];
+        if (data.latest_year && data.year !== data.latest_year) {
+            this.trackColumns.push("current");
+        }
         if (this.tracks[0].timestamp) {
             this.trackColumns.push("timestamp");
             this.artistColumns.push("timestamp");
@@ -29,9 +34,20 @@ export default class Data {
                 column: data.columns.year,
                 field: d => d.year
             },
+            current: {
+                column: data.latest_year,
+                field: d => d[data.latest_year] || "\u2014"
+            },
             timestamp: {
                 column: data.columns.timestamp,
-                field: d => d.timestamp ? locale.formatTime(new Date(d.timestamp)) : ""
+                field: d => {
+                    if (!d.timestamp) {
+                        return "";
+                    }
+                    return !data.latest_year || data.year === data.latest_year ?
+                        locale.formatTimeShort(new Date(d.timestamp)) :
+                        locale.formatTimeLong(new Date(d.timestamp));
+                }
             }
         };
     }
@@ -63,7 +79,7 @@ export default class Data {
 
     formatArtistChart(d, position, keys) {
         const artistTracks = this.artists[d.max_artist_key] ?
-            this.artists[d.max_artist_key] : this.artists[keys[0][0]];
+            this.artists[d.max_artist_key] : this.artists[keys[0]?.[0]];
         if (artistTracks) {
             const artistPos = artistTracks.indexOf(position) + 1;
             return ` ${artistPos}/${artistTracks.length}`;

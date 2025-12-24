@@ -159,6 +159,9 @@ table.main {
         }
         .progression {
             overflow: auto;
+            .x-extra, .y-current-year {
+              stroke-dasharray: 4;
+            }
         }
         .container.artist-chart {
             max-width: fit-content;

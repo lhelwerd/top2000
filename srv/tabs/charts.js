@@ -1,6 +1,6 @@
 import * as d3 from "d3";
+import { EXPECTED_POSITIONS } from "../data.js";
 
-const EXPECTED_POSITIONS = 2000;
 const CHART_COUNT = 10;
 const stroke = d3.scaleOrdinal(d3.schemeTableau10);
 const cycle = stroke.range().length;
