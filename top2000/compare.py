@@ -32,8 +32,10 @@ def _compare_field(field: str, first_track: Track, second_track: Track) -> bool:
             return first > ReaderBase.expected_positions
         case _, None, int(second) if field.isnumeric():
             return second > ReaderBase.expected_positions
-        case _, first, second:
-            return first == second
+        case _, first, second if first is not None and second is not None:
+            return type(first) is type(second) and first == second
+
+    return False
 
 
 def _compare_fields(first: Track, second: Track, formatter: JSON) -> list[str]:
