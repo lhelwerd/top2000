@@ -26,7 +26,6 @@ json.rows = ["positions"]
 
 [[years]]
 year = 2023
-json.skip = true # Because Pink Floyd - Breathe is overwritten in old JSON files
 json.rows = ["positions"]
 
 [[years]]

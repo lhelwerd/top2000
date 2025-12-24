@@ -413,6 +413,7 @@ class Base(ABC):
         )
         if position is not None:
             row[str(int(self._year))] = position
+        row[f"{self.input_format}{int(self._year)}"] = True
 
         self._clear_previous_years(row, fields)
 
@@ -429,6 +430,8 @@ class Base(ABC):
             if self._tracks[key].get("best") is not True:
                 self._tracks[key]["best"] = best_key[0]
                 self._tracks[key]["best_title"] = best_key[1]
+            if position is not None:
+                self._tracks[key][str(int(self._year))] = position
 
         LOGGER.track(
             str(row[fields["title"]]),
@@ -472,7 +475,7 @@ class Base(ABC):
 
     def _check_timestamp(self, row: Row, time_field: str | None) -> None:
         if time_field is not None and time_field in row:
-            row[f"timestamp{int(self._year)}"] = row[time_field]
+            row[f"timestamp{int(self._year)}"] = row.pop(time_field)
             self._last_time = None
         elif self._last_time is not None:
             row[f"timestamp{int(self._year)}"] = self._last_time
@@ -609,7 +612,7 @@ class Base(ABC):
                 and self._tracks[key]["best"] is not True
             ):
                 LOGGER.track(
-                    "smashing pumpkins",
+                    "elton john",
                     str(row[fields.get("artist", "artiest")]).lower(),
                     "Collision",
                     self._year,
@@ -641,7 +644,7 @@ class Base(ABC):
         track = self._tracks[key]
         if self._is_current_year:
             return pos_field is not None and pos_field in track
-        return str(int(self._year)) in track
+        return f"{self.input_format}{int(self._year)}" in track
 
     def _update_best_key(
         self,

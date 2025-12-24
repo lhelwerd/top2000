@@ -8,43 +8,48 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import cast
 
+from .normalization import Normalizer
 from .output.json import JSON, Dump, Track
+from .readers.base import Base as ReaderBase
 
 
-def _compare_fields(
-    index: int, first: Track, second: Track, formatter: JSON
-) -> int:
+def _compare_field(field: str, first_track: Track, second_track: Track) -> bool:
+    normalizer = Normalizer.get_instance()
+    match field, first_track.get(field), second_track.get(field):
+        case "artist", str(first), str(second):
+            return first.lower() == second.lower() or not set(
+                normalizer.find_artist_alternatives(first)
+            ).isdisjoint(normalizer.find_artist_alternatives(second))
+        case "title", str(first), str(second):
+            return first.lower() == second.lower() or not set(
+                normalizer.find_title_alternatives(first)
+            ).isdisjoint(normalizer.find_title_alternatives(second))
+        case _, str(first), str(second):
+            return first.lower() == second.lower()
+        case _, int(first), int(second):
+            return first == second
+        case _, int(first), None if field.isnumeric():
+            return first > ReaderBase.expected_positions
+        case _, None, int(second) if field.isnumeric():
+            return second > ReaderBase.expected_positions
+        case _, first, second:
+            return first == second
+
+
+def _compare_fields(first: Track, second: Track, formatter: JSON) -> list[str]:
+    ignored_fields = {"year", "timestamp", "album_version"}
     fields, numeric_fields = formatter.build_fields("sorted")
-    errors = 0
+    errors: list[str] = []
     for field in fields.values():
+        if field in ignored_fields:
+            continue
         if field not in first and field not in second:
             if field not in numeric_fields:
-                errors += 1
-                print(
-                    f"Missing required field {field} in both tracks {first!r} "
-                    + f"and {second!r} at index {index}",
-                    file=sys.stderr,
-                )
-        elif field not in first:
-            errors += 1
-            print(
-                f"Missing field {field} in track {first!r} while it is in "
-                + f"{second!r} at index {index}",
-                file=sys.stderr,
-            )
-        elif field not in second:
-            errors += 1
-            print(
-                f"Field {field} exists in track {first!r} while it missing in "
-                + f"{second!r} at index {index}",
-                file=sys.stderr,
-            )
-        elif first[field] != second[field]:
-            errors += 1
-            print(
-                f"Difference in field {field} for tracks {first!r}, {second!r} "
-                + f"at index {index}: {first[field]} != {second[field]}",
-                file=sys.stderr,
+                errors.append(f"Missing required field {field} in both tracks")
+        elif not _compare_field(field, first, second):
+            errors.append(
+                f"Difference in field {field}: {first.get(field)} !="
+                + f" {second.get(field)}"
             )
 
     return errors
@@ -89,9 +94,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Missing track in {two} at {index}", file=sys.stderr)
                 errors += 1
             else:
-                errors += _compare_fields(
-                    index, first_track, second_track, formatter
+                track_errors = _compare_fields(
+                    first_track, second_track, formatter
                 )
+                if track_errors:
+                    print(
+                        f"Differences between tracks {first_track!r} and "
+                        + f"{second_track!r} at {index}:\n- ",
+                        end="",
+                        file=sys.stderr,
+                    )
+                    print("\n- ".join(track_errors), file=sys.stderr)
+                    errors += len(track_errors)
 
     print(f"Detected {errors} errors")
     return errors

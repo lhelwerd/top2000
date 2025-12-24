@@ -106,7 +106,7 @@ class JSON(Format):
             "reverse": reverse,
             "columns": self._get_dict_setting(output_format, "columns"),
         }
-        for key, value in self._select_extra_data(readers):
+        for key, value in self._select_extra_data(readers).items():
             data[key] = value
 
         with path.open("w", encoding="utf-8") as json_file:
