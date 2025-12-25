@@ -5,29 +5,34 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 
 ## Symbolen
 
-| &#x1f523; | Context    | Betekenis                    |
-| --------- | ---------- | ---------------------------- |
-| &#x1f534; | Tabs       | [Lijst](#lijst) van huidig jaar |
-| &#x1f4ca; | Tabs       | [Grafieken met statistieken](#statistieken) |
+| &#x1f523; | Context     | Betekenis                    |
+| --------- | ----------- | ---------------------------- |
+| &#x1f534; | Tabs        | [Lijst](#lijst) van recentste jaar |
+| &#x1f535; | Tabs        | [Lijst](#lijst) van eerder getoond jaar |
+| &#x1f519; | Tabs        | [Lijst](#lijst) van eerder jaar |
+| &#x1f51c; | Tabs        | [Lijst](#lijst) van later jaar |
+| &#x1f4ca; | Tabs        | [Grafieken met statistieken](#statistieken) |
 | &#x2139;&#xfe0f; | Tabs | Informatie met gebruiksinstructies en credits |
-| &#x1f50e; | Tabel      | [Zoekveld](#zoekveld) openen |
-| &#x29be;  | Titel      | Albumversie                  |
-| &#x25b2;  | Titel      | Aantal plaatsen gestegen     |
-| &#x25bc;  | Titel      | Aantal plaatsen gedaald      |
-| &#x21c4;  | Titel      | Gelijk gebleven              |
-| &#x27f2;  | Titel      | Teruggekeerd uit eerder jaar |
-| &#x2234;  | Titel      | Nieuw, niet in eerder jaar geweest |
-| &#x25b6;  | Rij        | Uitklappen voor informatie over nummer |
-| &#x25bc;  | Rij        | Informatie over nummer inklappen |
-| &#x2b24;  | Progressie | Positie in eerder jaar       |
-| &#x2795;&#xfe0e; | Progressie | Positie van huidig nummer in huidig jaar |
-| &#x29eb;  | Progressie | Progressie van ander nummer in huidig jaar |
-| &#x2b1b;&#xfe0e; | Progressie | Progressie van ander nummer in huidig jaar |
-| &#x2605;  | Progressie | Progressie van ander nummer in huidig jaar |
-| &#x25b2;&#xfe0e; | Progressie | Progressie van ander nummer in huidig jaar |
-| &#x1f501; | Artiestlijst | Andere nummers toevoegen/weghalen bij progressie |
-| &#x2935;&#xfe0f; | Artiestlijst | Nummer lager dan huidig nummer |
-| &#x2934;&#xfe0f; | Artiestlijst | Nummer hoger dan huidig nummer |
+| &#x1f50e; | Tabs, tabel | [Zoekveld](#zoekveld) openen |
+| &#x1f4e4; | Tabs        | [Uploaden](#uploaden)        |
+| &#x29be;  | Titel       | Albumversie                  |
+| &#x25b2;  | Titel       | Aantal plaatsen gestegen     |
+| &#x25bc;  | Titel       | Aantal plaatsen gedaald      |
+| &#x21c4;  | Titel       | Gelijk gebleven              |
+| &#x27f2;  | Titel       | Teruggekeerd uit eerder jaar |
+| &#x2234;  | Titel       | Nieuw, niet in eerder jaar geweest |
+| &#x25b6;  | Rij         | Uitklappen voor informatie over nummer |
+| &#x25bc;  | Rij         | Informatie over nummer inklappen |
+| &#x2b24;  | Progressie  | Positie in eerder jaar       |
+| &#x2795;&#xfe0e; | Progressie  | Positie van huidig nummer in huidig jaar |
+| &#x29eb;  | Progressie  | Progressie van ander nummer in huidig jaar |
+| &#x2b1b;&#xfe0e; | Progressie  | Progressie van ander nummer in huidig jaar |
+| &#x2605;  | Progressie  | Progressie van ander nummer in huidig jaar |
+| &#x25b2;&#xfe0e; | Progressie  | Progressie van ander nummer in huidig jaar |
+| &#x1f501; | Artiestlijst  | Andere nummers toevoegen/weghalen in progressie |
+| &#x2935;&#xfe0f; | Artiestlijst  | Nummer lager dan huidig nummer |
+| &#x2934;&#xfe0f; | Artiestlijst  | Nummer hoger dan huidig nummer |
+| &#x1f5d1; | Upload      | Ingeladen bestand weghalen   |
 
 ## Lijst
 
@@ -65,8 +70,8 @@ eerste nummer begint.
 Door een rij van een nummer uit te klappen wordt meer informatie gerelateerd 
 aan het nummer en de artiest getoond. Een grafiek laat de progressie van het 
 nummer in eerdere jaren zien. De horizontale as heeft verschillende jaren en de 
-verticale as de posities. Hierin heeft het nummer een blauwe kleur, eerdere 
-jaren hebben een cirkel en het laatste jaar is getoond met een plus. In deze 
+verticale as de posities. Hierin heeft het nummer een blauwe kleur, andere 
+jaren hebben een cirkel en het huidige jaar is getoond met een plus. In deze 
 symbolen staat de positie van het nummer in dat jaar. Als het nummer meerdere 
 jaren achter elkaar in de lijst stond, dan wordt een lijn getekend tussen de 
 aaneengesloten punten.
@@ -102,17 +107,32 @@ zoekopdracht worden in een extra lijst getoond en aan de grafiek toegevoegd.
 
 ### Zoekveld
 
-Via de kolomtitel van de lijst en de extra artiestlijst in het informatiepaneel 
-kan naar artiesten, posities en nummers gezocht worden. Er zijn een aantal 
-verschillen tussen de twee manieren:
+Via de tabs, de kolomtitel van de lijst en de extra artiestlijst in het 
+informatiepaneel kan naar artiesten, posities en nummers gezocht worden. Er 
+zijn een aantal verschillen in functionaliteit tussen de manieren waarop het 
+zoekveld wordt benaderd:
 
-| Kolomtitel     | Artiestlijst |
-| -------------- | ------------ |
-| Dialoogvenster | Extra lijst  |
+| Tab en kolomtitel | Artiestlijst |
+| ----------------- | ------------ |
+| Dialoogvenster    | Extra lijst  |
 | Sluiten via `Escape`, druk op achtergrond of kruis | Blijft open in paneel |
 | Alle velden even relevant | Artiestnaam belangrijker |
 | Alleen individuele nummers | Vindt ook artiesten (met alle nummers) |
-| Scrolt naar nummer met geopend infopaneel | Toont  nummer(s) in progressie |
+| Scrolt naar nummer met geopend infopaneel | Toont nummer(s) in progressie |
+
+### Uploaden
+
+Het is mogelijk de lijst te vervangen met informatie die uit andere bronnen is 
+vergaard door een JSON-bestand in te laden. Via een dialoogvenster kan een 
+dergelijk bestand worden geselecteerd van de eigen opslag of met behulp van 
+slepen naar het venster worden geplaatst. Het gaat overigens functioneel niet 
+om een upload, omdat de data alleen in de browser wordt ingeladen en niet naar 
+de hostinglocatie van de webapplicatie wordt gestuurd. Hierdoor kan de lijst 
+van een jaar worden vervangen door uitgebreide data, bijvoorbeeld met tijden 
+waarop nummers worden uitgezonden. Het dialoogvenster toont ook voor welke 
+jaren bestanden zijn ingeladen en welke kolommen beschikbaar zijn in het 
+bestand. Met behulp van de prullenbak kan een ingeladen bestand worden 
+weggehaald, zodat de standaard functionaliteit weer beschikbaar is.
 
 ## Statistieken
 

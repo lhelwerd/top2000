@@ -73,6 +73,7 @@ export default class SearchModal extends Modal {
                 this.state.autoscroll = false;
                 modal.classed("is-active", false);
             }
+            document.location.hash = `#/${this.data.year}/${this.data.positions[r.id]}`;
         });
         input.on("keydown", (event) => {
             if (event.key === "Escape") {

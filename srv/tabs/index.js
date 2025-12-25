@@ -53,7 +53,7 @@ export default class Tabs {
         if (active && tab.scroll) {
             tab.scroll(d, hash);
         }
-        else if (/^#\/(?!search|upload)/.test(hash) && d === this.data.year) {
+        else if (/^#\/(?!search|upload)/.test(hash) && (!tab.year || d === this.data.year)) {
             content.node().scrollIntoView(true);
             this.fixStickyScroll();
         }
@@ -142,6 +142,9 @@ export default class Tabs {
         const updateActive = () => {
             items.call(tab => this.setActive(tab));
             const activeTab = items.filter(".is-active");
+            if (activeTab.empty()) {
+                return;
+            }
             activeTab.node().scrollIntoView({
                 container: "nearest",
                 inline: "center",
