@@ -280,6 +280,7 @@ Il Est Cinq Heures Paris S'\u00c9veille"""
 "APT." = "Apt."
 "Tonight Tonight" = "Tonight, Tonight"
 "Shackles (Praise You)" = "Breathe (In The Air)" # 2023 overwrite
+"feelslikeimfallinginlove" = "Feels Like I'm Falling In Love"
 
 [album_version]
 type = "list"
@@ -292,6 +293,7 @@ type = "mapping"
 " (albumversie)" = ""
 " Albumversie)" = ")"
 " (Albumversie " = " ("
+")(Albumversie)" = ")"
 
 [artist_no_splits]
 # No splits are made for these groups, i.e. the combining characters are seen
@@ -426,6 +428,7 @@ type = "mapping"
 "Florence And The Machine" = "Florence + The Machine"
 "Florence and the Machine" = "Florence + The Machine"
 "Florence & The Machine" = "Florence + The Machine"
+"Florence & the Machine" = "Florence + The Machine"
 "Rowwen Heze" = "Rowwen H\u00e8ze"
 "Guns \u00b4N Roses" = "Guns N' Roses"
 "Pharrell" = "Pharrell Williams"
@@ -502,3 +505,4 @@ type = "mapping"
 "Emerson Lake & Palmer" = "Emerson, Lake & Palmer"
 "Dave Brubeck" = "Dave Brubeck Quartet"
 "Mary Mary" = "Pink Floyd" # 2023 overwrite
+"Sophie Ellis Bextor" = "Sophie Ellis-Bextor"
