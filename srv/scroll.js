@@ -39,7 +39,7 @@ export default class Scroll {
             .classed("pagination-list is-flex-wrap-nowrap", true);
         this.nextPage = this.nav.append("a")
             .attr("id", "pagination-next")
-            .classed("pagination-next has-background-danger-dark is-hidden", true);
+            .classed("pagination-next is-hidden", true);
         this.nextPage.on("click", (_, d) => {
             this.scrollPage(d, d);
         });

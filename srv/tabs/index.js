@@ -3,9 +3,10 @@ import Data from "../data.js";
 import Upload from "../modal/upload.js";
 
 export default class Tabs {
-    constructor(locale, data, search, scroll, charts) {
+    constructor(locale, data, state, search, scroll, charts) {
         this.locale = locale;
         this.data = data;
+        this.state = state;
 
         this.search = search;
         this.scroll = scroll;
@@ -73,6 +74,8 @@ export default class Tabs {
 
     setActive(tab) {
         const hash = document.location.hash;
+        tab.select(".icon")
+            .text(d => this.tabs.get(d).icon(d));
         tab.attr("class", d => hash.startsWith(`#/${d}`) ? "" : this.tabs.get(d).classed)
             .classed("is-active", d => {
                 const content = this.container.select(this.tabs.get(d).container);
@@ -116,6 +119,38 @@ export default class Tabs {
         return String.fromCodePoint(year < this.data.year ? 0x1f519 : 0x1f51c);
     }
 
+    updateActive() {
+        const items = this.list.selectAll("li");
+        items.call(tab => this.setActive(tab));
+        const activeTab = items.filter(".is-active");
+        if (activeTab.empty()) {
+            return;
+        }
+        activeTab.node().scrollIntoView({
+            container: "nearest",
+            inline: "center",
+        });
+        const active = activeTab.datum();
+        const activeYear = this.tabs.get(active).year ? "" : `/${this.data.year}`;
+        items.selectAll("a")
+            .attr("href", d => {
+                const tab = this.tabs.get(d);
+                if (d === active || tab.year) {
+                    return `#/${d}`;
+                }
+                if (!tab.activate) {
+                    return `#/${d}${activeYear}`;
+                }
+                return `#/${d}/${active}${activeYear}`;
+            });
+    }
+
+    closeActive(d) {
+        const extraHash = document.location.hash.startsWith(`#/${d}/`) ?
+            document.location.hash.slice(`#/${d}`.length) : `/${this.data.year}`;
+        document.location.hash = `#${extraHash}`;
+    }
+
     enable(load, yearData) {
         const latestYear = this.data.latest_year || this.data.year;
         const years = this.data.old_data_available ?
@@ -141,40 +176,11 @@ export default class Tabs {
                 this.scroll.scrollYearHash(d, hash);
             }
         };
-        const updateActive = () => {
-            items.call(tab => this.setActive(tab));
-            const activeTab = items.filter(".is-active");
-            if (activeTab.empty()) {
-                return;
-            }
-            activeTab.node().scrollIntoView({
-                container: "nearest",
-                inline: "center",
-            });
-            const active = activeTab.datum();
-            const activeYear = this.tabs.get(active).year ? "" : `/${this.data.year}`;
-            items.selectAll("a")
-                .attr("href", d => {
-                    const tab = this.tabs.get(d);
-                    if (d === active || tab.year) {
-                        return `#/${d}`;
-                    }
-                    if (!tab.activate) {
-                        return `#/${d}${activeYear}`;
-                    }
-                    return `#/${d}/${active}${activeYear}`;
-                });
-        };
-        const closeActive = (d) => {
-            const extraHash = document.location.hash.startsWith(`#/${d}/`) ?
-                document.location.hash.slice(`#/${d}`.length) : `/${this.data.year}`;
-            document.location.hash = `#${extraHash}`;
-        };
 
         for (const index of years) {
             const year = this.data.first_year + index;
             this.tabs.set(year, {
-                icon: this.selectYearIcon(year),
+                icon: d => this.selectYearIcon(d),
                 text: `${year}`,
                 container: ".main",
                 year: true,
@@ -188,7 +194,7 @@ export default class Tabs {
         upload.createModal();
 
         this.tabs.set("charts", {
-            icon: String.fromCodePoint(0x1f4ca),
+            icon: () => String.fromCodePoint(0x1f4ca),
             text: "Charts",
             container: "#charts",
             scroll: (d, hash) => {
@@ -209,19 +215,29 @@ export default class Tabs {
             }
         });
         this.tabs.set("info", {
-            icon: "\u2139\ufe0f",
+            icon: () => "\u2139\ufe0f",
             text: "Info",
             container: "#info"
         });
         this.tabs.set("search", {
-            icon: String.fromCodePoint(0x1f50e),
+            icon: () => String.fromCodePoint(0x1f50e),
             container: "#search",
-            activate: (d) => this.search.open(() => closeActive(d))
+            activate: (d) => this.search.open(() => this.closeActive(d))
         });
         this.tabs.set("upload", {
-            icon: String.fromCodePoint(0x1f4e4),
+            icon: () => String.fromCodePoint(0x1f4e4),
             container: "#upload",
-            activate: (d) => upload.open(() => closeActive(d))
+            activate: (d) => upload.open(() => this.closeActive(d))
+        });
+        this.tabs.set("theme", {
+            icon: () => this.state.theme === "dark" ? "\u2600\ufe0f" :
+                String.fromCodePoint(0x1f319),
+            container: "#container",
+            activate: (d) => {
+                this.state.theme = this.state.theme === "light" ? "dark" : "light";
+                d3.select("html").attr("data-theme", this.state.theme);
+                this.closeActive(d);
+            }
         });
 
         const items = this.list.selectAll("li")
@@ -232,12 +248,12 @@ export default class Tabs {
             .attr("title", d => this.tabs.get(d).text || null);
         tabLinks.append("span")
             .classed("icon", true)
-            .text(d => this.tabs.get(d).icon);
+            .text(d => this.tabs.get(d).icon(d));
         tabLinks.append("span")
             .classed("is-hidden-tablet-only is-hidden-fullhd-only", true)
             .text(d => `\u00a0${this.tabs.get(d).text || ""}`);
 
-        updateActive();
-        d3.select(globalThis).on("hashchange", updateActive);
+        this.updateActive();
+        d3.select(globalThis).on("hashchange", () => this.updateActive());
     }
 }
