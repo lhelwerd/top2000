@@ -42,6 +42,19 @@ export default class Scroll {
             this.scrollPage(d, d);
         });
 
+        this.input = this.nav.append("input")
+            .attr("id", "pagination-input")
+            .classed("pagination-next", true)
+            .attr("type", "number")
+            .attr("min", Math.min(this.data.end, this.data.front))
+            .attr("max", Math.max(this.data.end, this.data.front))
+            .on("change", (event) => {
+                if (event.target.validity.valid) {
+                    this.scrollPage(Number(event.target.value));
+                    event.target.blur();
+                }
+            });
+
         d3.select(document).on("visibilitychange", () => {
             if (!document.hidden && this.currentTimer !== null) {
                 const previousTimer = this.currentTimer;
@@ -121,9 +134,11 @@ export default class Scroll {
                 .classed("track", true)
                 .text(this.format.track(current, d));
             this.pagination.classed("is-hidden-tablet", true);
+            this.input.classed("is-hidden-tablet", true);
             d3.timeout(() => {
                 this.nextPage.classed("is-hidden", true).text("");
                 this.pagination.classed("is-hidden-tablet", false);
+                this.input.classed("is-hidden-tablet", false);
             }, currentDisplayDelay);
         }
         this.pagination.selectAll("li")

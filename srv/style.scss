@@ -123,6 +123,9 @@ $ultrahd: 1744px;
             animation: marquee 10s linear infinite;
         }
     }
+    input.pagination-next:invalid {
+      border-color: iv.$red;
+    }
 }
 table {
     &.main, &.chart, &.search {
