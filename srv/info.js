@@ -114,7 +114,7 @@ export class Info {
             .append("line")
             .attr("stroke", "currentColor")
             .attr("x1", this.x(this.years[0]))
-            .attr("x2", width - marginLeft);
+            .attr("x2", width - marginRight);
         this.svg.append("g")
             .classed("y", true)
             .attr("transform", `translate(${marginLeft},0)`);
