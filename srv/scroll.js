@@ -13,6 +13,8 @@ export default class Scroll {
         this.format = format;
         this.state = state;
 
+        this.title = d3.select("title");
+        this.originalTitle = this.title.text();
         this.container = d3.select("#container");
         this.head = d3.select("#head");
 
@@ -128,17 +130,20 @@ export default class Scroll {
                 pages.splice(currentIndex, 0, current);
             }
             const d = this.data.findTrack(current);
+            const track = this.format.track(current, d);
             this.nextPage.datum(current)
                 .attr("href", d => `#/${this.data.year}/${d}`)
                 .classed("is-hidden", false)
                 .classed("track", true)
-                .text(this.format.track(current, d));
+                .text(track);
             this.pagination.classed("is-hidden-tablet", true);
             this.input.classed("is-hidden-tablet", true);
+            this.title.text(`${String.fromCodePoint(0x1f534)} ${track}`);
             d3.timeout(() => {
                 this.nextPage.classed("is-hidden", true).text("");
                 this.pagination.classed("is-hidden-tablet", false);
                 this.input.classed("is-hidden-tablet", false);
+                this.title.text(this.originalTitle);
             }, currentDisplayDelay);
         }
         this.pagination.selectAll("li")
