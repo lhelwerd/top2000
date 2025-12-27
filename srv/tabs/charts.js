@@ -545,5 +545,6 @@ export default class Charts {
                 }
                 return d.id === id;
             });
+        return columns;
     }
 }

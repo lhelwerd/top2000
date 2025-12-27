@@ -97,9 +97,9 @@ export default class Scroll {
     }
 
     scrollYearHash(d, hash) {
-        this.scrollPositionRow(Number(hash.startsWith(`#/${d}/`) ?
-            hash.slice(`#/${d}/`.length) : null
-        ));
+        this.scrollPositionRow(hash.startsWith(`#/${d}/`) ?
+            Number(hash.slice(`#/${d}/`.length)) : null
+        );
     }
 
     updatePagination(current = null) {

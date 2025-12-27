@@ -36,6 +36,11 @@ export default class Tabs {
         return false;
     }
 
+    fixContentScroll(content) {
+        content.node().scrollIntoView(true);
+        this.fixStickyScroll();
+    }
+
     updateVisible(content, d, hash) {
         const tab = this.tabs.get(d);
         const active = hash.startsWith(`#/${d}`);
@@ -50,12 +55,9 @@ export default class Tabs {
             content.classed("is-active", false);
             return false;
         }
-        if (active && tab.scroll) {
-            tab.scroll(d, hash);
-        }
-        else if (/^#\/(?!search|upload)/.test(hash) && (!tab.year || d === this.data.year)) {
-            content.node().scrollIntoView(true);
-            this.fixStickyScroll();
+        const scroll = tab.scroll || (() => this.fixContentScroll(content));
+        if (active && !tab.activate) {
+            scroll(d, hash);
         }
         return true;
     }
@@ -202,7 +204,8 @@ export default class Tabs {
                 else if (hash.startsWith(hashPrefix)) {
                     chart = hash.slice(hashPrefix.length);
                 }
-                this.charts.select(chart || this.charts.sources[0].id);
+                const content = this.charts.select(chart || this.charts.sources[0].id);
+                this.fixContentScroll(content);
             }
         });
         this.tabs.set("info", {
