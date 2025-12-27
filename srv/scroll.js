@@ -120,9 +120,11 @@ export default class Scroll {
                 .classed("is-hidden", false)
                 .classed("track", true)
                 .text(this.format.track(current, d));
-            d3.timeout(() => this.nextPage.classed("is-hidden", true)
-                .text(""), currentDisplayDelay
-            );
+            this.pagination.classed("is-hidden-tablet", true);
+            d3.timeout(() => {
+                this.nextPage.classed("is-hidden", true).text("");
+                this.pagination.classed("is-hidden-tablet", false);
+            }, currentDisplayDelay);
         }
         this.pagination.selectAll("li")
             .data(d3.map(pages, d => d3.median([d, this.data.end, this.data.front]))) // Clamp
