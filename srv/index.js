@@ -13,7 +13,18 @@ import Info from "./tabs/info.js";
 import Table from "./tabs/table.js";
 
 const locale = new Locale();
-const state = { autoscroll: true };
+const theme = globalThis.matchMedia('(prefers-color-scheme: dark)');
+const state = {
+    autoscroll: true,
+    theme: theme.matches ? "dark" : "light",
+};
+
+theme.addEventListener('change', event => {
+    state.theme = event.matches ? "light" : "dark";
+    // Toggle the actual theme via tab
+    document.location.hash = "#/theme";
+});
+
 const defaultData = new Data(currentData, locale);
 const yearData = {};
 try {
@@ -48,7 +59,7 @@ const load = (data = defaultData) => {
     const info = new Info(data);
     const table = new Table(locale, data, search, scroll, state);
 
-    const tabs = new Tabs(locale, data, search, scroll, charts);
+    const tabs = new Tabs(locale, data, state, search, scroll, charts);
 
     tabs.create();
     scroll.create();
