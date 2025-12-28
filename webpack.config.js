@@ -1,13 +1,17 @@
-const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import WebpackFavicons from 'webpack-favicons';
+import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 
 const singleFile = process.env.SINGLE_FILE === 'true';
 const external = process.env.EXTERNAL_MANIFEST === 'true';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-module.exports = {
+const config = {
     cache: {
         buildDependencies: {
             config: [__filename]
@@ -41,11 +45,11 @@ module.exports = {
             {
                 test: /\.s[ac]ss$/i,
                 use: [
-                    // Extracts to separate minified CSS file
+                    // Extract to separate minified CSS file
                     MiniCssExtractPlugin.loader,
-                    // Translates CSS into CommonJS
+                    // Translate CSS into CommonJS
                     "css-loader",
-                    // Compiles Sass to CSS
+                    // Compile Sass to CSS
                     {
                         loader: "sass-loader",
                         options: {
@@ -83,7 +87,7 @@ module.exports = {
     output: {
         clean: process.env.NODE_ENV !== 'development',
         filename: '[name].[contenthash].js',
-        path: path.resolve(__dirname, 'dist'),
+        path: resolve(__dirname, 'dist'),
         publicPath: ""
     },
     performance: {
@@ -112,6 +116,16 @@ module.exports = {
             filename: process.env.NODE_ENV === 'development' ? '[name].css' :
                 '[name].[contenthash].css'
         }),
+        new WebpackFavicons({
+            background: '#000000',
+            src: 'srv/logo.svg',
+            theme_color: '#002442',
+            icons: {
+                android: true,
+                appleIcon: true,
+                favicons: true
+            }
+        }),
         new WebpackManifestPlugin({
             filter: (file) => file.name !== "index.html" &&
                 !file.name.startsWith("schema/")
@@ -119,10 +133,11 @@ module.exports = {
     ],
     resolve: {
         alias: {
-            "@output": path.resolve(__dirname)
+            "@output": resolve(__dirname)
         }
     },
     watchOptions: {
         ignored: ['**/.git', '**/dist', '**/node_modules', '**/top2000/**/*.py']
     }
 };
+export default config;

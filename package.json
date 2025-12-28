@@ -2,6 +2,7 @@
   "name": "top2000",
   "version": "0.0.2025",
   "description": "NPO Radio 2 Top 2000 chart viewer",
+  "type": "module",
   "scripts": {
     "build": "webpack",
     "dev": "NODE_ENV=development webpack",
@@ -54,6 +55,7 @@
     "webpack": "^5.103.0",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2",
+    "webpack-favicons": "^1.5.43",
     "webpack-manifest-plugin": "^6.0.1"
   },
   "dependencies": {
