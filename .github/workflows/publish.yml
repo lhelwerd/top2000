@@ -47,7 +47,7 @@ jobs:
       - name: Build Web application
         run: |
           npm install
-          OUTPUT_PUBLIC_PATH="$GITHUB_PAGES_URL" npm run build
+          OUTPUT_PUBLIC_PATH="/${GITHUB_REPOSITORY/*\/}" npm run build
       - name: Archive Web application distribution
         uses: actions/upload-artifact@v6.0.0
         with:
