@@ -40,9 +40,6 @@ export default class Scroll {
         this.nextPage = this.nav.append("a")
             .attr("id", "pagination-next")
             .classed("pagination-next is-hidden", true);
-        this.nextPage.on("click", (_, d) => {
-            this.scrollPage(d, d);
-        });
 
         this.input = this.nav.append("input")
             .attr("id", "pagination-input")
@@ -78,9 +75,13 @@ export default class Scroll {
         });
     }
 
-    scrollPage(d, current = null) {
+    scrollPage(d) {
         const posNode = this.scrollPositionRow(d);
         if (posNode) {
+            const current = this.nextPage.datum();
+            if (d === null) {
+                d = current;
+            }
             this.pagination.selectAll(".pagination-link")
                 .classed("is-current", pos => d === pos);
             this.container.selectAll(rowsSelector)
@@ -104,7 +105,7 @@ export default class Scroll {
             .node();
         if (posCell) {
             posCell.scrollIntoView({
-                behavior: "smooth", block: "center"
+                behavior: "smooth", block: "center", container: "nearest"
             });
             return posCell.parentNode;
         }
@@ -112,7 +113,7 @@ export default class Scroll {
     }
 
     scrollYearHash(d, hash) {
-        this.scrollPositionRow(hash.startsWith(`#/${d}/`) ?
+        this.scrollPage(hash.startsWith(`#/${d}/`) ?
             Number(hash.slice(`#/${d}/`.length)) : null
         );
     }
@@ -156,9 +157,6 @@ export default class Scroll {
                 exit => exit.remove()
             )
             .attr("href", d => `#/${this.data.year}/${d}`)
-            .on("click", (_, d) => {
-                this.scrollPage(d, current);
-            })
             .classed("has-background-primary has-text-dark", d => d === current)
             .classed("is-hidden-desktop-only",
                 (d, i) => i !== 0 && d !== current && d % 200 !== 0

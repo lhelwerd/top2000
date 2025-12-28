@@ -25,10 +25,7 @@ export default class Tabs {
         document.documentElement.scrollBy(0, -stickyHeight);
     }
 
-    fixAnchorScroll(content, d, hash, selector = null) {
-        if (selector === null) {
-            this.updateVisible(content, d, hash);
-        }
+    fixAnchorScroll(content, selector) {
         const element = content.select(selector);
         if (!element.empty()) {
             this.fixStickyScroll();
@@ -68,31 +65,29 @@ export default class Tabs {
             return hash.startsWith(`#/${d}`);
         }
         return /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
-            this.fixAnchorScroll(content, d, hash, hash) :
+            this.fixAnchorScroll(content, hash) :
             d === this.data.year; // Fallback: current year list
     }
 
-    setActive(tab) {
+    setActive() {
         const hash = document.location.hash;
+        const tab = this.list.selectAll("li");
         tab.select(".icon")
             .text(d => this.tabs.get(d).icon(d));
         tab.attr("class", d => hash.startsWith(`#/${d}`) ? "" : this.tabs.get(d).classed)
             .classed("is-active", d => {
-                const content = this.container.select(this.tabs.get(d).container);
+                const tab = this.tabs.get(d);
+                const content = this.container.select(tab.container);
                 const active = this.checkActive(content, d, hash);
-                const found = /^#\/(?<tab>\d{4}|search|upload)/.exec(hash);
+                const found = /^#\/(?<tab>\d{4}|search|upload|theme)/.exec(hash);
                 if (!active && found &&
-                    (this.tabs.get(d).year || this.tabs.get(found.groups.tab)?.activate)
+                    (tab.year || this.tabs.get(found.groups.tab)?.activate)
                 ) {
                     return active;
                 }
                 content.classed("is-hidden", !active)
                     .classed("is-overlay", active && d !== this.data.year);
                 return active;
-            })
-            .each(d => {
-                const content = this.container.select(this.tabs.get(d).container);
-                this.fixAnchorScroll(content, d, document.location.hash);
             });
     }
 
@@ -120,19 +115,25 @@ export default class Tabs {
     }
 
     updateActive() {
-        const items = this.list.selectAll("li");
-        items.call(tab => this.setActive(tab));
-        const activeTab = items.filter(".is-active");
-        if (activeTab.empty()) {
+        this.setActive();
+        const activeItem = this.list.select("li.is-active");
+        if (activeItem.empty()) {
             return;
         }
-        activeTab.node().scrollIntoView({
+        activeItem.node().scrollIntoView({
+            behavior: "instant",
             container: "nearest",
             inline: "center",
         });
-        const active = activeTab.datum();
-        const activeYear = this.tabs.get(active).year ? "" : `/${this.data.year}`;
-        items.selectAll("a")
+        const active = activeItem.datum();
+        const activeTab = this.tabs.get(active);
+        const content = this.container.select(activeTab.container);
+        this.updateVisible(content, active, document.location.hash);
+        if (activeTab.activate) {
+            return;
+        }
+        const activeYear = activeTab.year ? "" : `/${this.data.year}`;
+        this.list.selectAll("a")
             .attr("href", d => {
                 const tab = this.tabs.get(d);
                 if (d === active || tab.year) {
@@ -148,7 +149,13 @@ export default class Tabs {
     closeActive(d) {
         const extraHash = document.location.hash.startsWith(`#/${d}/`) ?
             document.location.hash.slice(`#/${d}`.length) : `/${this.data.year}`;
-        document.location.hash = `#${extraHash}`;
+        if (globalThis.history.state?.modalClosed === d) {
+            this.updateActive();
+        }
+        else {
+            globalThis.history.pushState({}, "", `#${extraHash}`);
+            this.setActive();
+        }
     }
 
     enable(load, yearData) {

@@ -57,6 +57,11 @@ export default class SearchModal extends Modal {
             fuzzy: 0.2,
             prefix: true
         }, (r) => {
+            this.state.autoscroll = false;
+            globalThis.history.pushState({ modalClosed: "search" }, "",
+                `#/${this.data.year}/${this.data.positions[r.id]}`
+            );
+            this.close();
             const posNode = this.scroll.scrollPositionRow(this.data.positions[r.id]);
             if (posNode) {
                 // Expand info
@@ -70,10 +75,7 @@ export default class SearchModal extends Modal {
                     },
                     posNode, null, false
                 );
-                this.state.autoscroll = false;
-                modal.classed("is-active", false);
             }
-            document.location.hash = `#/${this.data.year}/${this.data.positions[r.id]}`;
         });
         input.on("keydown", (event) => {
             if (event.key === "Escape") {
