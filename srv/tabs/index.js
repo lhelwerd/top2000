@@ -179,7 +179,7 @@ export default class Tabs {
                     /* webpackInclude: /output-\d\d\d\d\.json$/ */
                     `@output/output-${d}.json`
                 );
-                load(new Data(data, this.locale)).enable(load, yearData);
+                load(new Data(data.default, this.locale)).enable(load, yearData);
                 this.scroll.scrollYearHash(d, hash);
             }
         };
