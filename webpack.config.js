@@ -6,6 +6,7 @@ import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import WebpackFavicons from 'webpack-favicons';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 
+const outputPublicPath = process.env.OUTPUT_PUBLIC_PATH || '';
 const singleFile = process.env.SINGLE_FILE === 'true';
 const external = process.env.EXTERNAL_MANIFEST === 'true';
 const __filename = fileURLToPath(import.meta.url);
@@ -88,7 +89,7 @@ const config = {
         clean: process.env.NODE_ENV !== 'development',
         filename: '[name].[contenthash].js',
         path: resolve(__dirname, 'dist'),
-        publicPath: ""
+        publicPath: outputPublicPath
     },
     performance: {
         maxAssetSize: singleFile ? 1.75 * 1024 * 1024 : 1024 * 1024,
@@ -120,6 +121,7 @@ const config = {
             appName: 'Top 2000',
             appDescription: 'NPO Radio 2 Top 2000 chart viewer',
             background: '#000000',
+            path: '',
             src: 'srv/logo.svg',
             theme_color: '#002442',
             icons: {
