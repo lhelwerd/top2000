@@ -175,8 +175,10 @@ table.main {
             top: 2.46rem;
         }
     }
-    .is-selected > td {
-      border-color: iv.$grey;
+    .is-selected, .is-hour-start {
+      & > td {
+        border-color: iv.$grey;
+      }
     }
     .info {
         & > td {
