@@ -117,6 +117,8 @@ const config = {
                 '[name].[contenthash].css'
         }),
         new WebpackFavicons({
+            appName: 'Top 2000',
+            appDescription: 'NPO Radio 2 Top 2000 chart viewer',
             background: '#000000',
             src: 'srv/logo.svg',
             theme_color: '#002442',
