@@ -40,6 +40,10 @@ export default class Table {
             .data(this.data.tracks)
             .join("tr")
             .classed("is-clickable", true)
+            .classed("is-hour-start", (d, i) => d.timestamp &&
+                i - this.data.direction in this.data.tracks &&
+                new Date(d.timestamp).getHours() !== new Date(this.data.tracks[i - this.data.direction].timestamp).getHours()
+            )
             .each((d, i, nodes) => this.scroll.setCurrent(d, i, nodes));
         const infoParams = {
             locale: this.locale,
