@@ -123,6 +123,7 @@ const config = {
             background: '#000000',
             path: '',
             src: 'srv/logo.svg',
+            start_url: outputPublicPath,
             theme_color: '#002442',
             icons: {
                 android: true,
