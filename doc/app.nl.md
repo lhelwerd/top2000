@@ -15,6 +15,8 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 | &#x2139;&#xfe0f; | Tabs | Informatie met gebruiksinstructies en credits |
 | &#x1f50e; | Tabs, tabel | [Zoekveld](#zoekveld) openen |
 | &#x1f4e4; | Tabs        | [Uploaden](#uploaden)        |
+| &#x2600;&#xfe0f; | Tabs | Licht thema gebruiken        |
+| &#x1f319; | Tabs        | Donker thema gebruiken       |
 | &#x29be;  | Titel       | Albumversie                  |
 | &#x25b2;  | Titel       | Aantal plaatsen gestegen     |
 | &#x25bc;  | Titel       | Aantal plaatsen gedaald      |
