@@ -15,8 +15,15 @@ export default class Table {
             .classed("table main is-narrow is-hoverable is-striped is-fullwidth",
                 true
             );
-        table.append("thead")
-            .append("tr")
+
+        const head = table.append("thead");
+
+        const setOffset = (node) => head.style("top", `${node.getBoundingClientRect().height}px`);
+        const header = d3.select("#head-container").node();
+        setOffset(header);
+        new ResizeObserver(entries => setOffset(entries[0].target)).observe(header);
+
+        head.append("tr")
             .selectAll("th")
             .data([...this.data.trackColumns, "search"])
             .join("th")
