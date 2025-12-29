@@ -3,6 +3,7 @@
 *.json
 !package*.json
 !schema/*.json
+!tsconfig.json
 top2000-*.html
 top2000-app.zip
 wiki*.html
