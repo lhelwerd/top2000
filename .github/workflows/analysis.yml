@@ -47,6 +47,7 @@ jobs:
           ruff check top2000
           if [ $? -ne 0 ]; then ruff check --output-format=json --output-file=ruff-report.json top2000; ruff check --output-format=github top2000; fi
       - name: Validate schema
+        if: "${{ always() }}"
         run: |
           source .venv/bin/activate
           ./validate_schema.sh
