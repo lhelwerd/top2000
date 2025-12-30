@@ -9,6 +9,7 @@ and we adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Add changelog linked from usage information code credits with version (GH-47)
 - Add logo and Web app manifest for progressive web app installation (GH-31)
 - Toggle to switch between dark and light mode themes (GH-54)
 - Pagination input box to scroll to specific position (GH-53)
