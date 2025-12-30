@@ -11,6 +11,7 @@ const singleFile = process.env.SINGLE_FILE === 'true';
 const external = process.env.EXTERNAL_MANIFEST === 'true';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const anchors = new Map();
 
 const config = {
     cache: {
@@ -40,7 +41,45 @@ const config = {
                 test: /\.md$/i,
                 use: [
                     "html-loader",
-                    "markdown-loader"
+                    {
+                        loader: "markdown-loader",
+                        options: {
+                            extensions: {
+                                renderers: {
+                                    heading({ tokens, raw, depth }) {
+                                        let text = this.parser.parseInline(tokens);
+                                        const found = text.match(/(?<version>.+)(?: - (?<date>[\d-]+))?/);
+                                        if (found) {
+                                            text = found.groups.date ?
+                                                `${found.groups.version} - <time>${found.groups.date}</time>` :
+                                                found.groups.date;
+                                        }
+                                        let anchor = raw.toLowerCase()
+                                            .replace(/(?: -|:) .*/, '')
+                                            .replace(/[^\w]+/g, ' ')
+                                            .trim()
+                                            .replace(/ /g, '-');
+                                        if (/^\d/.test(anchor)) {
+                                            anchor = `v${anchor}`;
+                                        }
+                                        while (anchors.has(anchor)) {
+                                            const count = anchors.get(anchor);
+                                            anchors.set(anchor, count + 1);
+                                            anchor = `${anchor}-${count}`;
+                                        }
+                                        anchors.set(anchor, 1);
+                                        return `
+                                        <h${depth} class="anchor-title" id="${anchor}">
+                                            <a class="anchor-link" href="#${anchor}">
+                                                ${String.fromCodePoint(0x1f517)}
+                                            </a>
+                                            ${text}
+                                        </h${depth}>`;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 ]
             },
             {

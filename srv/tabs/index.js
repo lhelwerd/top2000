@@ -2,6 +2,8 @@ import * as d3 from "d3";
 import Data from "../data.js";
 import Upload from "../modal/upload.js";
 
+const ANCHOR_SELECTOR = /^#[a-z][-a-z0-9_:.]*$/;
+
 export default class Tabs {
     constructor(locale, data, state, search, scroll, charts) {
         this.locale = locale;
@@ -19,24 +21,38 @@ export default class Tabs {
         this.list = d3.select("#tabs-list");
     }
 
-    fixStickyScroll() {
-        const stickyHeight = this.head.node().scrollHeight +
-            this.container.select("table.main > thead").node().scrollHeight;
-        document.documentElement.scrollBy(0, -stickyHeight);
-    }
-
-    fixAnchorScroll(content, selector) {
-        const element = content.select(selector);
-        if (!element.empty()) {
-            this.fixStickyScroll();
+    fixStickyScroll(element = null) {
+        if (element === null || !element.empty()) {
+            const stickyHeight = this.head.node().scrollHeight +
+                this.container.select("table.main > thead").node().scrollHeight;
+            document.documentElement.scrollBy(0, -stickyHeight);
             return true;
         }
         return false;
     }
 
-    fixContentScroll(content) {
-        content.node().scrollIntoView(true);
-        this.fixStickyScroll();
+    fixAnchorScroll(content, selector) {
+        if (ANCHOR_SELECTOR.test(selector)) {
+            try {
+                const element = content.select(selector);
+                if (!element.empty()) {
+                    element.node().scrollIntoView(true);
+                    this.fixStickyScroll();
+                    return element;
+                }
+            }
+            catch {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    fixContentScroll(content, selector = "") {
+        if (!this.fixAnchorScroll(content, `#${selector}`)) {
+            content.node().scrollIntoView(true);
+            this.fixStickyScroll();
+        }
     }
 
     updateVisible(content, d, hash) {
@@ -53,7 +69,7 @@ export default class Tabs {
             content.classed("is-active", false);
             return false;
         }
-        const scroll = tab.scroll || (() => this.fixContentScroll(content));
+        const scroll = tab.scroll || (() => this.fixContentScroll(content, hash.slice(`#/${d}/`.length)));
         if (active && !tab.activate) {
             scroll(d, hash);
         }
@@ -64,7 +80,7 @@ export default class Tabs {
         if (hash.startsWith("#/")) { // Tab datum
             return hash.startsWith(`#/${d}`);
         }
-        return /^#[a-z][-a-z0-9_:.]*$/.test(hash) ? // Element ID
+        return ANCHOR_SELECTOR.test(hash) ? // Element ID
             this.fixAnchorScroll(content, hash) :
             d === this.data.year; // Fallback: current year list
     }
@@ -225,6 +241,12 @@ export default class Tabs {
             icon: () => "\u2139\ufe0f",
             text: "Info",
             container: "#info"
+        });
+        this.tabs.set("changelog", {
+            icon: () => String.fromCodePoint(0x1f4c3),
+            text: "",
+            container: "#tags",
+            classed: "is-hidden"
         });
         this.tabs.set("search", {
             icon: () => String.fromCodePoint(0x1f50e),

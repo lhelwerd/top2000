@@ -23,8 +23,8 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 | &#x21c4;  | Titel       | Gelijk gebleven              |
 | &#x27f2;  | Titel       | Teruggekeerd uit eerder jaar |
 | &#x2234;  | Titel       | Nieuw, niet in eerder jaar geweest |
-| &#x25b6;  | Rij         | Uitklappen voor informatie over nummer |
-| &#x25bc;  | Rij         | Informatie over nummer inklappen |
+| &#x25b6;  | Rij         | [Informatie](#informatiepaneel) over nummer tonen |
+| &#x25bc;  | Rij         | [Informatiepaneel](#informatiepaneel) verbergen |
 | &#x2b24;  | Progressie  | Positie in eerder jaar       |
 | &#x2795;&#xfe0e; | Progressie  | Positie van huidig nummer in huidig jaar |
 | &#x29eb;  | Progressie  | Progressie van ander nummer in huidig jaar |

@@ -69,6 +69,11 @@ export default class Info {
                     url: this.data.web_url
                 },
                 {
+                    icon: `${String.fromCodePoint(0x1f3f7)}\ufe0f`,
+                    text: packageInfo.version,
+                    url: `#/changelog/v${packageInfo.version.replace(/\./g, "-")}`
+                },
+                {
                     icon: `${String.fromCodePoint(0x1f9d1)}\u200d${String.fromCodePoint(0x1f4bb)}`,
                     text: (typeof packageInfo.author === "string" ?
                         packageInfo.author : packageInfo.author.name
