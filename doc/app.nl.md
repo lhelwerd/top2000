@@ -41,10 +41,10 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 | &#x1f4bb; | Info        | [Codebronnen](#code)         |
 | &#x1f5a5; | Info        | Volle naam van webapplicatie |
 | &#x1f3f7; | Info        | Versie van webapplicatie     |
-| &#x1f9d1;&#x200d;&x1f4bb; | Info        | Auteur van webapplicatie |
+| &#x1f9d1;&#x200d;&#x1f4bb; | Info        | Auteur van webapplicatie |
 | &#x1f47e; | Info        | Repository van code          |
 | &#x1fab2; | Info        | Issuetracker van code        |
-| &#x2696;&xfe0f; | Info        | Licentie van webapplicatie | 
+| &#x2696;&#xfe0f; | Info        | Licentie van webapplicatie | 
 
 
 ## Lijst
