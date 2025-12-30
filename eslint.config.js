@@ -40,6 +40,7 @@ export default defineConfig([
             "unicorn/prefer-at": "error",
             "unicorn/prefer-blob-reading-methods": "error",
             "unicorn/prefer-class-fields": "error",
+            "unicorn/prefer-string-replace-all": "error",
         },
     },
 ]);
