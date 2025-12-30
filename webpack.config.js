@@ -11,6 +11,14 @@ const singleFile = process.env.SINGLE_FILE === 'true';
 const external = process.env.EXTERNAL_MANIFEST === 'true';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const anchors = new Map();
+const escapeReplacements = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+};
 
 const config = {
     cache: {
@@ -40,7 +48,54 @@ const config = {
                 test: /\.md$/i,
                 use: [
                     "html-loader",
-                    "markdown-loader"
+                    {
+                        loader: "markdown-loader",
+                        options: {
+                            extensions: {
+                                renderers: {
+                                    text({ tokens, text, escaped }) {
+                                        if (tokens) {
+                                            text = this.parser.parseInline(tokens);
+                                        }
+                                        else if (!escaped) {
+                                            text = text.replace(/[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g, c => escapeReplacements[c]);
+                                        }
+                                        return text.replace(/GH-(\d+)/, '<a href="https://github.com/lhelwerd/top2000/issues/$1">#$1</a>');
+                                    },
+                                    heading({ tokens, raw, depth }) {
+                                        let text = this.parser.parseInline(tokens);
+                                        const found = text.match(/(?<version>.+)(?: - (?<date>[\d-]+)| - [^\d-]+)/);
+                                        if (found) {
+                                            text = found.groups.date ?
+                                                `${found.groups.version} - <time>${found.groups.date}</time>` :
+                                                found.groups.version;
+                                        }
+                                        let anchor = raw.toLowerCase()
+                                            .replace(/(?: -|:) .*/, '')
+                                            .replace(/[^\w]+/g, ' ')
+                                            .trim()
+                                            .replace(/ /g, '-');
+                                        if (/^\d/.test(anchor)) {
+                                            anchor = `v${anchor}`;
+                                        }
+                                        while (anchors.has(anchor)) {
+                                            const count = anchors.get(anchor);
+                                            anchors.set(anchor, count + 1);
+                                            anchor = `${anchor}-${count}`;
+                                        }
+                                        anchors.set(anchor, 1);
+                                        return `
+                                        <h${depth} class="anchor-title" id="${anchor}">
+                                            <a class="anchor-link" href="#${anchor}">
+                                                ${String.fromCodePoint(0x1f517)}
+                                            </a>
+                                            ${text}
+                                        </h${depth}>`;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 ]
             },
             {

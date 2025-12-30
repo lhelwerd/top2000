@@ -15,6 +15,7 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 | &#x2139;&#xfe0f; | Tabs | Informatie met gebruiksinstructies en credits |
 | &#x1f50e; | Tabs, tabel | [Zoekveld](#zoekveld) openen |
 | &#x1f4e4; | Tabs        | [Uploaden](#uploaden)        |
+| &#x1f4c3; | Tabs        | Versiegeschiedenis van code  |
 | &#x2600;&#xfe0f; | Tabs | Licht thema gebruiken        |
 | &#x1f319; | Tabs        | Donker thema gebruiken       |
 | &#x29be;  | Titel       | Albumversie                  |
@@ -23,8 +24,8 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 | &#x21c4;  | Titel       | Gelijk gebleven              |
 | &#x27f2;  | Titel       | Teruggekeerd uit eerder jaar |
 | &#x2234;  | Titel       | Nieuw, niet in eerder jaar geweest |
-| &#x25b6;  | Rij         | Uitklappen voor informatie over nummer |
-| &#x25bc;  | Rij         | Informatie over nummer inklappen |
+| &#x25b6;  | Rij         | [Informatie](#informatiepaneel) over nummer tonen |
+| &#x25bc;  | Rij         | [Informatiepaneel](#informatiepaneel) verbergen |
 | &#x2b24;  | Progressie  | Positie in eerder jaar       |
 | &#x2795;&#xfe0e; | Progressie  | Positie van huidig nummer in huidig jaar |
 | &#x29eb;  | Progressie  | Progressie van ander nummer in huidig jaar |
@@ -35,6 +36,16 @@ symbolen betekenen en welke interacties beschikbaar zijn.
 | &#x2935;&#xfe0f; | Artiestlijst  | Nummer lager dan huidig nummer |
 | &#x2934;&#xfe0f; | Artiestlijst  | Nummer hoger dan huidig nummer |
 | &#x1f5d1; | Upload      | Ingeladen bestand weghalen   |
+| &#x1f517; | Info        | Link naar kop                |
+| &#x1f4c4; | Info        | [Databronnen](#data)         |
+| &#x1f4bb; | Info        | [Codebronnen](#code)         |
+| &#x1f5a5; | Info        | Volle naam van webapplicatie |
+| &#x1f3f7; | Info        | Versie van webapplicatie     |
+| &#x1f9d1;&#x200d;&#x1f4bb; | Info        | Auteur van webapplicatie |
+| &#x1f47e; | Info        | Repository van code          |
+| &#x1fab2; | Info        | Issuetracker van code        |
+| &#x2696;&#xfe0f; | Info        | Licentie van webapplicatie | 
+
 
 ## Lijst
 
@@ -42,7 +53,10 @@ De hoofdweergave van de webapplicatie is een lijst van de Top 2000 van het
 recente jaar. Het belangrijkste deel van de weergave omvat een tabel met 
 nummers, met een aantal kolommen:
 
-- `nr.`: De positie van het nummer in de lijst
+- `nr.`: De positie van het nummer in de lijst. Als de lijst van een eerder 
+  jaar is, dan is er ook een kolom voor het recente jaar met de positie van het 
+  nummer in het meest recente jaar of een streepje als het nummer niet meer in 
+  de lijst staat.
 - `artiest`: De namen van de samenwerkende uitvoerende artiesten die aan het 
   nummer bijgedragen hebben, volgens de databronnen. Tussen haakjes staat het 
   jaartal van de release van het nummer, volgens de databronnen. Soms kan een 

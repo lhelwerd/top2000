@@ -10,6 +10,7 @@ import Search from "./modal/search.js";
 import Tabs from "./tabs/index.js";
 import Charts from "./tabs/charts.js";
 import Info from "./tabs/info.js";
+import Changelog from "./tabs/changelog.js";
 import Table from "./tabs/table.js";
 
 const locale = new Locale();
@@ -57,6 +58,7 @@ const load = (data = defaultData) => {
 
     const charts = new Charts(locale, data, format);
     const info = new Info(data);
+    const changelog = new Changelog(locale);
     const table = new Table(locale, data, search, scroll, state);
 
     const tabs = new Tabs(locale, data, state, search, scroll, charts);
@@ -68,6 +70,8 @@ const load = (data = defaultData) => {
     table.create();
     charts.create();
     info.create();
+    changelog.create();
+
     search.createModal();
 
     return tabs;

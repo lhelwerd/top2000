@@ -66,7 +66,12 @@ export default class Info {
                 {
                     icon: `${String.fromCodePoint(0x1f5a5)}\ufe0f`,
                     text: packageInfo.description,
-                    url: this.data.web_url
+                    url: this.data.web_url || "#"
+                },
+                {
+                    icon: `${String.fromCodePoint(0x1f3f7)}\ufe0f`,
+                    text: packageInfo.version,
+                    url: `#/changelog/v${packageInfo.version.replaceAll(".", "-")}`
                 },
                 {
                     icon: `${String.fromCodePoint(0x1f9d1)}\u200d${String.fromCodePoint(0x1f4bb)}`,

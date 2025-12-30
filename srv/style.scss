@@ -236,3 +236,21 @@ table.main {
         }
     }
 }
+.anchor-title {
+  position: relative;
+  &:hover .anchor-link {
+    opacity: 1;
+  }
+  .anchor-link {
+    position: absolute;
+    font-size: 50%;
+    left: -2.28rem;
+    padding: 0.8em 1.28rem 0.28rem 0;
+    opacity: 0;
+    user-select: none;
+    &:hover, &:active {
+      opacity: 1;
+      pointer-events: all;
+    }
+  }
+}

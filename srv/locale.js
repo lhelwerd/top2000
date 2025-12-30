@@ -17,6 +17,7 @@ export default class Locale {
         this.formatYear = this.time.format("'%y");
         this.formatTimerLong = this.time.utcFormat("%-j:%H:%M:%S");
         this.formatTimerShort = this.time.utcFormat("%H:%M:%S");
+        this.formatDate = this.time.format("%-d %B %Y");
     }
 
     get code() {
