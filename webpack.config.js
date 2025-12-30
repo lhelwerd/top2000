@@ -12,6 +12,13 @@ const external = process.env.EXTERNAL_MANIFEST === 'true';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const anchors = new Map();
+const escapeReplacements = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+};
 
 const config = {
     cache: {
@@ -46,13 +53,22 @@ const config = {
                         options: {
                             extensions: {
                                 renderers: {
+                                    text({ tokens, text, escaped }) {
+                                        if (tokens) {
+                                            text = this.parser.parseInline(tokens);
+                                        }
+                                        else if (!escaped) {
+                                            text = text.replace(/[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/g, c => escapeReplacements[c]);
+                                        }
+                                        return text.replace(/GH-(\d+)/, '<a href="https://github.com/lhelwerd/top2000/issues/$1">#$1</a>');
+                                    },
                                     heading({ tokens, raw, depth }) {
                                         let text = this.parser.parseInline(tokens);
-                                        const found = text.match(/(?<version>.+)(?: - (?<date>[\d-]+))?/);
+                                        const found = text.match(/(?<version>.+)(?: - (?<date>[\d-]+)| - [^\d-]+)/);
                                         if (found) {
                                             text = found.groups.date ?
                                                 `${found.groups.version} - <time>${found.groups.date}</time>` :
-                                                found.groups.date;
+                                                found.groups.version;
                                         }
                                         let anchor = raw.toLowerCase()
                                             .replace(/(?: -|:) .*/, '')
