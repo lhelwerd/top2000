@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and we adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.2025] - Unreleased
+## [0.0.2025] - 2025-12-31
 
 ### Added
 
@@ -48,6 +48,7 @@ and we adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Disable next track pagination update when final song is playing or over
 - Adjust table header offset when header container size changes or when it does 
   not fit on one line on full-to-ultra-HD desktops in older year charts (GH-62)
 - Correct full-page display of next track on larger screens sometimes becoming 

@@ -215,6 +215,8 @@ export default class Scroll {
 
     setNextCurrent(next, i, nodes, now) {
         if (!(next in this.data.tracks)) {
+            this.currentTimer = null;
+            this.currentTimerParams = null;
             return;
         }
         this.currentTimerParams = [next, i];
